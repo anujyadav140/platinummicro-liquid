@@ -1,0 +1,9 @@
+{
+  "sections": {
+    "pm-customer-register": {
+      "type": "pm-customer-register",
+      "settings": {}
+    }
+  },
+  "order": ["pm-customer-register"]
+}

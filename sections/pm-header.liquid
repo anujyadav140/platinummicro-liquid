@@ -1,0 +1,306 @@
+<header class="pm-header" id="pm-header" role="banner">
+  {%- comment -%} ── TOP ROW: Logo · Search · Actions ── {%- endcomment -%}
+  <div class="pm-header__top">
+    {%- comment -%} Hamburger (mobile only) {%- endcomment -%}
+    <button class="pm-header__action-btn pm-header__hamburger" id="pm-mobile-open" aria-label="Open menu" aria-expanded="false" aria-controls="pm-mobile-nav">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+    </button>
+
+    {%- comment -%} Logo {%- endcomment -%}
+    <a class="pm-header__logo" href="/" aria-label="{{ shop.name }} home">
+      {%- if section.settings.logo != blank -%}
+        <img
+          src="{{ section.settings.logo | image_url: height: 96 }}"
+          alt="{{ shop.name }}"
+          height="48"
+          width="{{ section.settings.logo.width | times: 48 | divided_by: section.settings.logo.height }}"
+          style="height:48px;width:auto;"
+          loading="eager"
+        >
+      {%- elsif shop.brand.logo != blank -%}
+        <img
+          src="{{ shop.brand.logo | image_url: height: 96 }}"
+          alt="{{ shop.name }}"
+          height="48"
+          style="height:48px;width:auto;"
+          loading="eager"
+        >
+      {%- else -%}
+        <span style="font-weight:800;font-size:18px;color:var(--pm-navy-deep);letter-spacing:-0.02em;">{{ shop.name }}</span>
+      {%- endif -%}
+    </a>
+
+    {%- comment -%} Search {%- endcomment -%}
+    <div class="pm-header__search">
+      <form action="/search" method="get" role="search">
+        <input
+          type="search"
+          name="q"
+          placeholder="{{ section.settings.search_placeholder | default: 'Search by keyword, brand, or SKU' }}"
+          aria-label="Search"
+          autocomplete="off"
+          value="{{ search.terms | escape }}"
+        >
+        <input type="hidden" name="type" value="product">
+        {%- comment -%}
+          options[prefix]=last → only the last word is a prefix match.
+          (I tested options[fields] live on this store — it's a no-op for
+          product searches, so we don't bother sending it.)
+        {%- endcomment -%}
+        <input type="hidden" name="options[prefix]" value="last">
+        <button type="submit">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+          Search
+        </button>
+      </form>
+    </div>
+
+    {%- comment -%} Action buttons {%- endcomment -%}
+    <div class="pm-header__actions">
+      <button type="button" class="pm-header__action-btn" data-qo-open aria-haspopup="dialog">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+        <span>Quick order</span>
+      </button>
+
+      {%- if customer -%}
+        <a class="pm-header__action-btn" href="/account">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>{{ customer.first_name }}</span>
+        </a>
+      {%- else -%}
+        <a class="pm-header__action-btn" href="/pages/sign-in">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>Sign in</span>
+        </a>
+      {%- endif -%}
+
+      <button type="button" class="pm-header__action-btn pm-header__cart-btn" data-cart-open aria-haspopup="dialog" aria-label="Cart ({{ cart.item_count }} items)">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        <span>Cart</span>
+        <span class="pm-header__cart-badge" data-cart-badge {% if cart.item_count == 0 %}hidden{% endif %}>{{ cart.item_count }}</span>
+      </button>
+    </div>
+  </div>
+
+  {%- comment -%}
+    ─────────────────────────────────────────────────────────────────────
+    NAV RAIL + MEGA MENU
+    ─────────────────────────────────────────────────────────────────────
+    Each `_children_*` is a pipe-delimited list of cards, where every
+    card is `Title~handle~image-filename~blurb`. Image filenames resolve
+    against the Shopify CDN path stored in `_cdn_base`. Blurbs and images
+    are baked-in defaults from the Hydrogen reference — when a Shopify
+    collection with the same handle exists *and* the merchant has set a
+    custom image, that wins (handled by `snippets/pm-mega-card.liquid`).
+  {%- endcomment -%}
+
+  {%- assign _cdn_base = 'https://cdn.shopify.com/s/files/1/0715/8841/3523/files/' -%}
+
+  {%- capture _children_servers -%}Accessories~accessories~BRT-0003-RR__98568.jpg~171 products. iStarUSA BRT-0003-RR Bracket for 2U PS in 3U CASE|Barebones~barebones~ZBOX-CI325NANO-U-6__21696.jpg~82 products. ZOTAC ZBOX-CI325NANO-U Series Nano Fan-Less Mini PC|General Purpose Servers~general-purspose-servers~e283-z90-aad1-01__62526.jpg~67 products. Gigabyte 2U Edge Server Barebone — AMD EPYC 9004|GPU Servers~gpu-servers~R152-P31_rev-100-01-2__85749.png~13 products. Gigabyte R152-P31 1U AI Inference Server|High Density Servers~high-density-servers~h273-z80-aan1-01__65814.jpg~3 products. Gigabyte 2U High Density Server Barebone|Storage Servers~storage-servers~s472-z30-01__97626.jpg~3 products. Gigabyte 4U Storage Server Barebone — AMD EPYC 7003{%- endcapture -%}
+
+  {%- capture _children_storage -%}Storage Devices~storage-devices~33447_5_-5__72396.jpg~1,007 products. Adata ALRAI910CWH MFi Certified Lightning Card Reader/Writer Plus|Solid State Drives~solid-state-drives~33447_5_-4__76799.jpg~573 products. Adata ASD700-512GU3-CBK SD700 Durable 512GB Portable USB3.1|Internal Hard Drives~internal-hard-drives~WD1003FZEX_2__19420.jpg~311 products. WD 3.5-Inch Black Performance Desktop Hard Disk Drive|External Hard Drives~external-hard-drives~31kJ7BvAISL-1__06902.jpg~208 products. Seagate STEA1500400 Expansion 1.5TB 2.5" Portable USB 3.0|Network Attached Storage~network-attached-storage~TS-231P-US__80459.jpg~199 products. Qnap TS-231P-US Personal Cloud NAS with DLNA mobile apps|USB Flash Drive~usb-flash-drive~33447_5_-5__72396.jpg~57 products. Adata ALRAI910CWH MFi Certified Lightning Card Reader{%- endcapture -%}
+
+  {%- capture _children_networking -%}Network Attached Storage~network-attached-storage~TS-231P-US__80459.jpg~221 products. Qnap TS-231P-US Personal Cloud NAS with DLNA mobile apps|Switches & Hub~switches-hub~514JLOCpwCL._AC_SL1500___10235.jpg~35 products. HPE Networking Instant On 1960 24-Port Gb Smart Switch|Access Point~access-point~61JHL83k35L._AC_SL1500___86784.1613714737.500.750__21201.jpg~22 products. Cisco Catalyst 9117AXI-B Wireless Access Point, Wi-Fi 6|Wireless Routers~wireless-routers~R2X10A__98320.1666031953.500.750__87395.jpg~7 products. HPE Networking Instant On AP17 2x2 Outdoor Access Point{%- endcapture -%}
+
+  {%- capture _children_components -%}Storage Devices~storage-devices~33447_5_-5__72396.jpg~2,087 products. Adata ALRAI910CWH MFi Certified Lightning Card Reader|Cooling Devices~cooling-devices~15177__75911.jpg~1,547 products. Dynatron A27G 2U Side Fan CPU Cooler for AMD AM2 AM3|Graphics Cards~graphics-cards~11G-P4-6390-KR_3__87057.jpg~345 products. EVGA 11G-P4-6390-KR GeForce GTX 1080 Ti Founders Edition|Development Boards~development-boards~C1207-2GB_2__59220.jpg~295 products. Raspberry RPI4-MODBP-2GB Pi 4 Model B 2019 Quad Core 64 Bit|CPU Processors~cpu-processors~29839__15063.jpg~256 products. Intel BX80646I74790K Core i7-4790K 4.0GHz LGA 1150 88W Quad-Core|Motherboards~motherboards~31940_5__75601.jpg~179 products. Gigabyte GA-Z170X-Gaming 3 Intel Z170 Chipset ATX Motherboard{%- endcapture -%}
+
+  {%- capture _children_computers -%}Tablets & Laptops~tablets-laptops~Aero_15W_v8-BK4_bundle-New__02462.jpg~48 products. Gigabyte Aero 15W v8-BK4 15" Ultra Slim Gaming Laptop Bundle|Mini PC~mini-pc~GB-BRR7H-48003__96730.jpg~32 products. Gigabyte BRIX GB-BRR7H-4800-BWUS Ultra Compact PC Kit|Mini PC Bare Bones~mini-pc-bare-bones~1000__02363.png~10 products. GIGABYTE BRIX EXTREME GB-BEi7HS-1260-BWUS Intel i7-1260P|Desktop Computer~desktop-computer~bl631s_bl_gallery_01_s__50258.png~4 products. Platinum Micro The Multi Tasker Mini Desktop PC | Intel Core i7{%- endcapture -%}
+
+  {%- capture _children_peripherals -%}Audio~audio~28984__67260.jpg~206 products. Microlab M102WHITE Daisy-Chain Compact Mini Stereo Speaker|External Hard Drives~external-hard-drives~31kJ7BvAISL-1__06902.jpg~100 products. Seagate STEA1500400 Expansion 1.5TB 2.5" Portable USB 3.0|Monitors~monitors~AEMNT00028A__85413.jpg~85 products. Arctic AEMNT00028A Z+1 Pro Monitor Arm Extension Kit|Keyboards & Mices~keyboards-mices~31528__11152.jpg~63 products. Logitech 920-002555 Wireless Wave Combo MK550 Keyboard & Mouse|Video~video~~58 products. Logitech 960-000694 C270 3MP HD Webcam, Retail|Optical Drives~optical-drives~30508_2__72127.jpg~27 products. Pioneer BDR-XU03 External Slim Blu-Ray 6X USB 3.0 Writer Drive{%- endcapture -%}
+
+  {%- capture _children_software -%}Productivity~productivity~PDR-EF00-RPM0-00__52997.jpg~29 products. Cyberlink PDR-EF00-RPM0-00 PowerDirector 15 Ultimate|Antivirus & Internet Security~antivirus-internet-security~31960__59813.jpg~13 products. McAfee 2016 AntiVirus Plus Unlimited Devices Key Code|Operating Systems~operating-systems~server__54657.jpg~11 products. Microsoft P73-07132 Windows Server Standard 2016 64Bit 24 Core{%- endcapture -%}
+
+  {%- capture _children_bundles -%}All Bundles~bundles~server__54657.jpg~Browse all pre-configured server, storage, and networking bundles|NAS Server~nas-server~AS6510T__06181.jpg~19 products. Asustor AS6510T Lockerstor 10 Enterprise 2.1GHz Quad-Core 10-Bay|AI Solutions~ai-solutions~61h-fLOcrKL._AC_SL1119___41433.jpg~1 product. Nvidia 940-54242-0000-100 DGX Spark bundle + GB10 Connecting Cable{%- endcapture -%}
+
+  {%- comment -%}
+    Partner-brands rail — visible on Networking, Components, Computers,
+    Peripherals, Software, and Bundles panels. Each entry: "Alt|cdn-file|handle".
+  {%- endcomment -%}
+  {%- assign _partner_brands = 'Hewlett Packard Enterprise|HPE_BIG.png|hewlett-packard-enterprise!!Intel|INTC.png|intel!!AMD|AMD_BIG.png|amd!!Samsung|005930.KS_BIG.png|samsung!!Seagate|STX_BIG.png|seagate!!WD|WDC_BIG.png|wd' -%}
+
+  <nav class="pm-nav" id="pm-nav" aria-label="Main navigation">
+    <div class="pm-nav__inner">
+      {%- for link in linklists[section.settings.menu].links -%}
+
+        {%- assign _key = link.title | handleize -%}
+        {%- assign _static_children = '' -%}
+        {%- assign _show_brands     = false -%}
+        {%- case _key -%}
+          {%- when 'servers' -%}     {%- assign _static_children = _children_servers     -%}
+          {%- when 'storage' -%}     {%- assign _static_children = _children_storage     -%}
+          {%- when 'networking' -%}  {%- assign _static_children = _children_networking  -%}{%- assign _show_brands = true -%}
+          {%- when 'components' -%}  {%- assign _static_children = _children_components  -%}{%- assign _show_brands = true -%}
+          {%- when 'computers' -%}   {%- assign _static_children = _children_computers   -%}{%- assign _show_brands = true -%}
+          {%- when 'peripherals' -%} {%- assign _static_children = _children_peripherals -%}{%- assign _show_brands = true -%}
+          {%- when 'software' -%}    {%- assign _static_children = _children_software    -%}{%- assign _show_brands = true -%}
+          {%- when 'bundles' -%}     {%- assign _static_children = _children_bundles     -%}{%- assign _show_brands = true -%}
+        {%- endcase -%}
+
+        {%- assign _has_admin_children = false -%}
+        {%- if link.links.size > 0 -%}{%- assign _has_admin_children = true -%}{%- endif -%}
+        {%- assign _has_static_children = false -%}
+        {%- if _static_children != blank -%}{%- assign _has_static_children = true -%}{%- endif -%}
+        {%- assign _has_mega = false -%}
+        {%- if _has_admin_children or _has_static_children -%}{%- assign _has_mega = true -%}{%- endif -%}
+
+        <div
+          class="pm-nav__item{% if _show_brands %} pm-nav__item--with-brands{% endif %}"
+          data-key="{{ _key }}"
+          {%- if _has_mega -%}
+            onmouseenter="PmHeader.scheduleOpen('{{ _key }}')"
+            onmouseleave="PmHeader.scheduleClose()"
+          {%- endif -%}
+        >
+          <a
+            class="pm-nav__link"
+            href="{{ link.url }}"
+            {%- if _has_mega -%}
+              aria-haspopup="true"
+              aria-expanded="false"
+              aria-controls="pm-mega-{{ _key }}"
+            {%- endif -%}
+          >
+            {{ link.title }}
+            {%- if _has_mega -%}
+              <svg class="pm-nav__chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+            {%- endif -%}
+          </a>
+
+          {%- if _has_mega -%}
+            {%- assign _has_grandchildren = false -%}
+            {%- if _has_admin_children -%}
+              {%- for _child in link.links -%}
+                {%- if _child.links.size > 0 -%}{%- assign _has_grandchildren = true -%}{%- endif -%}
+              {%- endfor -%}
+            {%- endif -%}
+
+            <div
+              class="pm-mega{% if _show_brands %} pm-mega--with-brands{% endif %}"
+              id="pm-mega-{{ _key }}"
+              role="region"
+              aria-label="{{ link.title }} submenu"
+              onmouseenter="PmHeader.cancelClose()"
+              onmouseleave="PmHeader.scheduleClose()"
+            >
+              {%- if _has_grandchildren -%}
+
+                {%- comment -%} COLUMN layout (nested admin menu) {%- endcomment -%}
+                <div class="pm-mega__inner" style="grid-template-columns: repeat({{ link.links.size | at_most: 4 | at_least: 1 }}, 1fr);">
+                  {%- for child in link.links -%}
+                    <div class="pm-mega__col">
+                      {%- if child.links.size > 0 -%}
+                        <div class="pm-mega__col-title">{{ child.title }}</div>
+                        <ul class="pm-mega__col-list">
+                          {%- for grandchild in child.links -%}
+                            <li><a class="pm-mega__col-link" href="{{ grandchild.url }}">{{ grandchild.title }}</a></li>
+                          {%- endfor -%}
+                        </ul>
+                      {%- else -%}
+                        <a class="pm-mega__col-link" href="{{ child.url }}" style="font-weight:600;font-size:14px;color:var(--pm-ink-900);display:block;padding:4px 0;">{{ child.title }}</a>
+                      {%- endif -%}
+                    </div>
+                  {%- endfor -%}
+                </div>
+
+              {%- else -%}
+
+                {%- comment -%}
+                  CARD-GRID layout (Hydrogen mega menu).
+                  When the menu fits in one row (≤3 cards) we add a
+                  `--single-row` modifier so the card body switches to
+                  the bigger "image stacked under the blurb" layout that
+                  matches the Bundles/Software Hydrogen panels.
+                {%- endcomment -%}
+                {%- if _has_admin_children -%}
+                  {%- assign _card_count = link.links.size -%}
+                {%- else -%}
+                  {%- assign _card_count = _static_children | split: '|' | size -%}
+                {%- endif -%}
+                {%- assign _grid_class = 'pm-mega__card-grid' -%}
+                {%- if _card_count <= 3 -%}
+                  {%- assign _grid_class = _grid_class | append: ' pm-mega__card-grid--single-row' -%}
+                {%- endif -%}
+
+                <div class="pm-mega__card-wrap">
+                  <div class="pm-mega__split">
+                    <div class="pm-mega__cards-col">
+                      <div class="{{ _grid_class }}">
+                        {%- if _has_admin_children -%}
+                          {%- for child in link.links -%}
+                            {%- assign _col_handle = child.url | split: '/collections/' | last | split: '?' | first -%}
+                            {%- render 'pm-mega-card', col_handle: _col_handle, col_title: child.title -%}
+                          {%- endfor -%}
+                        {%- else -%}
+                          {%- assign _pairs = _static_children | split: '|' -%}
+                          {%- for _pair in _pairs -%}
+                            {%- assign _parts = _pair | split: '~' -%}
+                            {%- assign _t = _parts[0] -%}
+                            {%- assign _h = _parts[1] -%}
+                            {%- assign _img_file = _parts[2] -%}
+                            {%- assign _bl = _parts[3] -%}
+                            {%- assign _img_full = '' -%}
+                            {%- if _img_file != blank -%}{%- assign _img_full = _cdn_base | append: _img_file -%}{%- endif -%}
+                            {%- render 'pm-mega-card',
+                                col_handle: _h,
+                                col_title: _t,
+                                col_image_url: _img_full,
+                                col_blurb: _bl -%}
+                          {%- endfor -%}
+                        {%- endif -%}
+                      </div>
+                    </div>
+
+                    {%- if _show_brands -%}
+                      <aside class="pm-mega__brands" aria-label="Partner brands">
+                        <div class="pm-mega__brands-title">Partner brands</div>
+                        <div class="pm-mega__brands-grid">
+                          {%- assign _brands = _partner_brands | split: '!!' -%}
+                          {%- for _b in _brands -%}
+                            {%- assign _bp = _b | split: '|' -%}
+                            {%- assign _b_alt = _bp[0] -%}
+                            {%- assign _b_file = _bp[1] -%}
+                            {%- assign _b_handle = _bp[2] -%}
+                            <a class="pm-mega__brand" href="/collections/{{ _b_handle }}" aria-label="{{ _b_alt }}">
+                              <img src="{{ _cdn_base | append: _b_file }}" alt="{{ _b_alt }}" loading="lazy">
+                            </a>
+                          {%- endfor -%}
+                        </div>
+                      </aside>
+                    {%- endif -%}
+                  </div>
+                </div>
+
+              {%- endif -%}
+            </div>
+          {%- endif -%}
+        </div>
+      {%- endfor -%}
+    </div>
+  </nav>
+</header>
+
+{% schema %}
+{
+  "name": "PM — Header",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo image",
+      "info": "Displayed at 48px height. Upload a PNG or SVG with transparent background."
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Main navigation menu",
+      "default": "main-menu"
+    },
+    {
+      "type": "text",
+      "id": "search_placeholder",
+      "label": "Search placeholder text",
+      "default": "Search by keyword, brand, or SKU"
+    }
+  ]
+}
+{% endschema %}

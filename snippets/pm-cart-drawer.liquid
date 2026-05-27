@@ -1,0 +1,69 @@
+{%- comment -%}
+  PM — Cart Drawer
+  Slide-out from the right. Listens for `pm:cart-changed` events (fired by
+  Quick Order + native add-to-cart hooks) and refreshes its contents from
+  /cart.js. Trigger to open via window.PmCart.open() or [data-cart-open].
+{%- endcomment -%}
+
+<div class="pm-cart" id="pm-cart-drawer" aria-hidden="true">
+  <div class="pm-cart__backdrop" data-cart-close></div>
+  <aside class="pm-cart__panel" role="dialog" aria-modal="true" aria-labelledby="pm-cart-title">
+    <header class="pm-cart__head">
+      <div class="pm-cart__heading">
+        <h3 class="pm-cart__title" id="pm-cart-title">Your cart</h3>
+        <span class="pm-cart__count" id="pm-cart-count">0 items</span>
+      </div>
+      <button type="button" class="pm-cart__close" data-cart-close aria-label="Close cart">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </header>
+
+    <div class="pm-cart__body" id="pm-cart-body">
+      {%- comment -%} Default empty state — overwritten by JS when cart has items {%- endcomment -%}
+      <div class="pm-cart__empty" id="pm-cart-empty">
+        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        <p class="pm-cart__empty-title">Your cart is empty.</p>
+        <p class="pm-cart__empty-lead">Add SKUs with Quick order or browse the catalog to get started.</p>
+        <a href="/collections/all" class="pm-btn pm-btn--primary" data-cart-close>Browse catalog</a>
+      </div>
+      <ul class="pm-cart__items" id="pm-cart-items"></ul>
+    </div>
+
+    <footer class="pm-cart__foot" id="pm-cart-foot" hidden>
+      <p class="pm-cart__fineprint">Shipping, tax, and coupon codes apply at checkout.</p>
+      <div class="pm-cart__actions">
+        <button type="button" class="pm-btn pm-btn--ghost" id="pm-cart-clear">Clear</button>
+        <a href="/cart" class="pm-btn pm-btn--primary">
+          View cart
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+      </div>
+    </footer>
+  </aside>
+</div>
+
+<template id="pm-cart-item-template">
+  <li class="pm-cart__item" data-cart-item>
+    <a class="pm-cart__item-img" data-cart-link>
+      <img alt="" loading="lazy">
+    </a>
+    <div class="pm-cart__item-main">
+      <a class="pm-cart__item-name" data-cart-link></a>
+      <div class="pm-cart__item-meta">
+        <span class="pm-cart__item-sku"></span>
+        <span class="pm-cart__item-dot">·</span>
+        <span class="pm-cart__item-price"></span>
+      </div>
+      <div class="pm-cart__item-controls">
+        <div class="pm-cart__qty">
+          <button type="button" class="pm-cart__qty-btn" data-cart-dec aria-label="Decrease quantity">−</button>
+          <input type="number" class="pm-cart__qty-input" min="0" step="1" aria-label="Quantity">
+          <button type="button" class="pm-cart__qty-btn" data-cart-inc aria-label="Increase quantity">+</button>
+        </div>
+        <button type="button" class="pm-cart__remove" data-cart-remove aria-label="Remove item">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        </button>
+      </div>
+    </div>
+  </li>
+</template>

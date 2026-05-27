@@ -1,0 +1,9 @@
+{
+  "sections": {
+    "pm-product-detail": {
+      "type": "pm-product-detail",
+      "settings": {}
+    }
+  },
+  "order": ["pm-product-detail"]
+}

@@ -1,0 +1,130 @@
+<section class="pm-promo-section">
+  <div class="pm-container">
+    <div
+      class="pm-promo-card"
+      style="
+        {%- if section.settings.bg_color != blank %}background-color:{{ section.settings.bg_color }};{% endif -%}
+        border-radius: {{ section.settings.border_radius | default: 12 }}px;
+      "
+    >
+      <div class="pm-promo-card__content">
+        {%- if section.settings.eyebrow != blank -%}
+          <div class="pm-promo-card__eyebrow">{{ section.settings.eyebrow }}</div>
+        {%- endif -%}
+
+        {%- if section.settings.title != blank -%}
+          <h2 class="pm-promo-card__title">{{ section.settings.title }}</h2>
+        {%- endif -%}
+
+        {%- if section.settings.body != blank -%}
+          <p class="pm-promo-card__body">{{ section.settings.body }}</p>
+        {%- endif -%}
+
+        {%- if section.settings.cta_label != blank and section.settings.cta_href != blank -%}
+          <a
+            class="pm-promo-card__cta"
+            href="{{ section.settings.cta_href }}"
+            style="{%- if section.settings.accent_color != blank %}background:{{ section.settings.accent_color }};{% endif -%}"
+          >
+            {{ section.settings.cta_label }}
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+        {%- endif -%}
+      </div>
+
+      {%- if section.settings.image != blank -%}
+        <div
+          class="pm-promo-card__image"
+          style="background-image:url('{{ section.settings.image | image_url: width: 900 }}');background-position:{{ section.settings.image_position | default: 'center' }};"
+          role="img"
+          aria-label="{{ section.settings.title }}"
+        ></div>
+      {%- endif -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "PM — Promotion Card",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Card image (right side)"
+    },
+    {
+      "type": "select",
+      "id": "image_position",
+      "label": "Image position",
+      "options": [
+        { "value": "center", "label": "Center" },
+        { "value": "top", "label": "Top" },
+        { "value": "bottom", "label": "Bottom" },
+        { "value": "left center", "label": "Left" },
+        { "value": "right center", "label": "Right" }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow text",
+      "default": "LIMITED-TIME OFFER"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Headline",
+      "default": "Cisco refresh window — Q4 pricing locked."
+    },
+    {
+      "type": "textarea",
+      "id": "body",
+      "label": "Body text",
+      "default": "HPE, Cisco, and Dell lease returns arriving now. Fixed-price bundles, no auction, NASPO-aligned."
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "CTA label",
+      "default": "View the deal"
+    },
+    {
+      "type": "url",
+      "id": "cta_href",
+      "label": "CTA link"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Card background color",
+      "default": "#0D2340"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Button color",
+      "default": "#A63D2F"
+    },
+    {
+      "type": "number",
+      "id": "border_radius",
+      "label": "Card border radius (px)",
+      "default": 12
+    }
+  ],
+  "presets": [
+    {
+      "name": "PM — Promotion Card",
+      "settings": {
+        "eyebrow": "LIMITED-TIME OFFER",
+        "title": "Cisco refresh window — Q4 pricing locked.",
+        "body": "HPE, Cisco, and Dell lease returns arriving now. Fixed-price bundles, no auction, NASPO-aligned.",
+        "cta_label": "View the deal"
+      }
+    }
+  ]
+}
+{% endschema %}

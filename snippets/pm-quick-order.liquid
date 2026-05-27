@@ -1,0 +1,97 @@
+{%- comment -%}
+  PM — Quick Order modal
+  1:1 port of Hydrogen's PmQuickOrder component.
+  Renders an initially-hidden modal that any "Quick order" trigger can open
+  via window.PmQuickOrder.open().
+
+  Behaviour:
+    • SKU + Qty rows, add-another-row, remove-row
+    • Validates each SKU against the storefront via /search/suggest.json
+    • Shows a warm "We couldn't find that SKU in the catalog" banner when one
+      or more SKUs miss; valid ones are still added.
+    • Posts adds to /cart/add.js (multi-add) and dispatches `pm:cart-changed`
+      so the cart drawer can open itself.
+{%- endcomment -%}
+
+<div class="pm-qo" id="pm-quick-order-modal" aria-hidden="true">
+  <div class="pm-qo__backdrop" data-qo-close></div>
+  <div class="pm-qo__panel" role="dialog" aria-modal="true" aria-labelledby="pm-qo-title">
+    <div class="pm-qo__head">
+      <div>
+        <h3 class="pm-qo__title" id="pm-qo-title">Quick order</h3>
+        <p class="pm-qo__lead">Already know what you need? Enter SKUs and quantities to add them straight to your cart.</p>
+      </div>
+      <button type="button" class="pm-qo__close" data-qo-close aria-label="Close quick order">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+    </div>
+
+    <div class="pm-qo__body">
+      {%- comment -%} Error banner (hidden by default; populated by JS) {%- endcomment -%}
+      <div class="pm-qo__alert" id="pm-qo-alert" hidden>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <div class="pm-qo__alert-text">
+          <div class="pm-qo__alert-title">We couldn't find that SKU in the catalog.</div>
+          <div class="pm-qo__alert-skus" id="pm-qo-alert-skus"></div>
+          <div class="pm-qo__alert-hint">Double-check the spelling, or remove them and submit again. The rest of your list has been added.</div>
+        </div>
+      </div>
+
+      <div class="pm-qo__cols">
+        <span class="pm-qo__col-label">SKU</span>
+        <span class="pm-qo__col-label">Qty</span>
+        <span></span>
+      </div>
+
+      <div class="pm-qo__rows" id="pm-qo-rows">
+        {%- comment -%} initial row, then JS clones {%- endcomment -%}
+      </div>
+
+      <button type="button" class="pm-qo__add-row" id="pm-qo-add-row">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M8 12h8M12 8v8"/></svg>
+        Add another row
+      </button>
+    </div>
+
+    <div class="pm-qo__foot">
+      <span class="pm-qo__count" id="pm-qo-count">0 SKUs · 0 units ready to add</span>
+      <div class="pm-qo__actions">
+        <button type="button" class="pm-btn pm-btn--ghost" data-qo-close>Cancel</button>
+        <button type="button" class="pm-btn pm-btn--primary" id="pm-qo-submit" disabled>
+          <span class="pm-qo__submit-label">Add to cart</span>
+          <span class="pm-qo__submit-spinner" aria-hidden="true" hidden>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+          </span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{%- comment -%} Row template (cloned by JS) {%- endcomment -%}
+<template id="pm-qo-row-template">
+  <div class="pm-qo__row" data-qo-row>
+    <input
+      type="text"
+      class="pm-qo__sku"
+      name="sku"
+      placeholder="e.g. P58416-B21"
+      autocomplete="off"
+      autocorrect="off"
+      spellcheck="false"
+      aria-label="SKU"
+    >
+    <input
+      type="number"
+      class="pm-qo__qty"
+      name="qty"
+      value="1"
+      min="1"
+      step="1"
+      aria-label="Quantity"
+    >
+    <button type="button" class="pm-qo__row-remove" data-qo-remove aria-label="Remove row">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+</template>

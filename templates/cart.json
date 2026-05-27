@@ -1,0 +1,9 @@
+{
+  "sections": {
+    "pm-cart": {
+      "type": "pm-cart",
+      "settings": {}
+    }
+  },
+  "order": ["pm-cart"]
+}

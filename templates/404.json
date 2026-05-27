@@ -1,0 +1,8 @@
+{
+  "sections": {
+    "main": {
+      "type": "pm-404"
+    }
+  },
+  "order": ["main"]
+}

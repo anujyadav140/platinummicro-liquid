@@ -1,0 +1,318 @@
+{%- comment -%}
+  PM — Facets sidebar
+  Always renders Brand / Price / Availability / Promotions groups so the
+  PLP doesn't look empty when the merchant hasn't enabled storefront
+  filters in Shopify admin yet.
+
+  Priority for each group:
+    1. Shopify storefront filter (results.filters)  — full counts, AJAX-ready
+    2. Local fallback derived from collection.all_vendors + the products
+       on the current page                          — partial counts, still usable
+    3. Static checkboxes for Availability/Promotions
+
+  Filtering URL params follow Shopify's standard scheme
+  (`filter.p.vendor`, `filter.v.price.gte`, etc.) so when the merchant
+  does enable filters in admin, everything Just Works.
+
+  Params:
+    results — collection or search object
+{%- endcomment -%}
+
+{%- assign _results = results -%}
+{%- assign _is_search = false -%}
+{%- if _results.terms != blank -%}{%- assign _is_search = true -%}{%- endif -%}
+
+{%- comment -%} ── Resolve filters from Shopify or derive ──────────────────── {%- endcomment -%}
+{%- assign _f_brand   = nil -%}
+{%- assign _f_price   = nil -%}
+{%- assign _f_avail   = nil -%}
+{%- assign _f_promo   = nil -%}
+{%- for f in _results.filters -%}
+  {%- assign _pn = f.param_name | downcase -%}
+  {%- if _pn contains 'vendor'        -%}{%- assign _f_brand = f -%}{%- endif -%}
+  {%- if f.type == 'price_range'      -%}{%- assign _f_price = f -%}{%- endif -%}
+  {%- if _pn contains 'availability'  -%}{%- assign _f_avail = f -%}{%- endif -%}
+  {%- if _pn contains 'product_tag'   -%}{%- assign _f_promo = f -%}{%- endif -%}
+{%- endfor -%}
+
+{%- comment -%} ── Derive brand list if no Shopify filter ──────────────────── {%- endcomment -%}
+{%- assign _brand_list = '' -%}
+{%- if _f_brand == nil -%}
+  {%- if _is_search -%}
+    {%- assign _vendors_raw = '' -%}
+    {%- for item in _results.results -%}
+      {%- if item.object_type == 'product' and item.vendor != blank -%}
+        {%- assign _vendors_raw = _vendors_raw | append: '|' | append: item.vendor -%}
+      {%- endif -%}
+    {%- endfor -%}
+  {%- else -%}
+    {%- assign _vendors_raw = _results.all_vendors | join: '|' -%}
+  {%- endif -%}
+  {%- assign _brand_list = _vendors_raw -%}
+{%- endif -%}
+
+{%- comment -%} ── Derive price range from products on this page ───────────── {%- endcomment -%}
+{%- assign _min_price = 0 -%}
+{%- assign _max_price = 0 -%}
+{%- if _f_price -%}
+  {%- assign _max_price = _f_price.range_max | divided_by: 100 | ceil -%}
+{%- else -%}
+  {%- if _is_search -%}
+    {%- for item in _results.results -%}
+      {%- if item.object_type == 'product' -%}
+        {%- assign _p = item.price | divided_by: 100 | ceil -%}
+        {%- if _p > _max_price -%}{%- assign _max_price = _p -%}{%- endif -%}
+      {%- endif -%}
+    {%- endfor -%}
+  {%- else -%}
+    {%- for p in _results.products -%}
+      {%- assign _pp = p.price_max | divided_by: 100 | ceil -%}
+      {%- if _pp > _max_price -%}{%- assign _max_price = _pp -%}{%- endif -%}
+    {%- endfor -%}
+  {%- endif -%}
+  {%- if _max_price < 100 -%}{%- assign _max_price = 100 -%}{%- endif -%}
+{%- endif -%}
+
+{%- comment -%} Current selections (from URL params) {%- endcomment -%}
+{%- assign _curr_min = 0 -%}
+{%- assign _curr_max = _max_price -%}
+{%- if _f_price -%}
+  {%- if _f_price.min_value.value != blank -%}{%- assign _curr_min = _f_price.min_value.value | divided_by: 100 -%}{%- endif -%}
+  {%- if _f_price.max_value.value != blank -%}{%- assign _curr_max = _f_price.max_value.value | divided_by: 100 -%}{%- endif -%}
+{%- endif -%}
+
+{%- comment -%} Active count for mobile badge {%- endcomment -%}
+{%- assign _active_count = 0 -%}
+{%- for filter in _results.filters -%}
+  {%- assign _active_count = _active_count | plus: filter.active_values.size -%}
+{%- endfor -%}
+
+<form
+  id="pm-facets-form"
+  class="pm-facets"
+  data-pm-facets
+  action="{{ _results.url | default: request.path }}"
+  method="get"
+  novalidate
+>
+  {%- if _is_search and _results.terms != blank -%}
+    <input type="hidden" name="q" value="{{ _results.terms | escape }}">
+    <input type="hidden" name="type" value="product">
+    <input type="hidden" name="options[prefix]" value="last">
+  {%- endif -%}
+
+  {%- comment -%} ── BRAND ───────────────────────────────────────────────── {%- endcomment -%}
+  <details class="pm-facet" data-pm-facet open>
+    <summary class="pm-facet__summary">
+      <span>Brand</span>
+      <svg class="pm-facet__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+    </summary>
+    <div class="pm-facet__body">
+      {%- if _f_brand -%}
+        <ul class="pm-facet__values">
+          {%- for value in _f_brand.values -%}
+            {%- assign _dis = false -%}
+            {%- if value.count == 0 and value.active == false -%}{%- assign _dis = true -%}{%- endif -%}
+            <li>
+              <label class="pm-facet__opt {% if _dis %}is-disabled{% endif %}">
+                <input type="checkbox" name="{{ value.param_name }}" value="{{ value.value }}"
+                       {% if value.active %}checked{% endif %} {% if _dis %}disabled{% endif %}>
+                <span class="pm-facet__opt-label">{{ value.label }}</span>
+                <span class="pm-facet__opt-count">{{ value.count }}</span>
+              </label>
+            </li>
+          {%- endfor -%}
+        </ul>
+      {%- elsif _brand_list != blank -%}
+        {%- assign _brands = _brand_list | split: '|' | uniq | sort_natural -%}
+        <ul class="pm-facet__values">
+          {%- for brand in _brands -%}
+            {%- if brand != blank -%}
+              {%- assign _bcount = 0 -%}
+              {%- if _is_search -%}
+                {%- for item in _results.results -%}
+                  {%- if item.object_type == 'product' and item.vendor == brand -%}
+                    {%- assign _bcount = _bcount | plus: 1 -%}
+                  {%- endif -%}
+                {%- endfor -%}
+              {%- else -%}
+                {%- for p in _results.products -%}
+                  {%- if p.vendor == brand -%}{%- assign _bcount = _bcount | plus: 1 -%}{%- endif -%}
+                {%- endfor -%}
+              {%- endif -%}
+              {%- assign _vendor_param = 'filter.p.vendor' -%}
+              {%- assign _brand_enc = brand | url_encode -%}
+              {%- assign _checked = false -%}
+              {%- if request.url contains _brand_enc -%}{%- assign _checked = true -%}{%- endif -%}
+              <li>
+                <label class="pm-facet__opt">
+                  <input type="checkbox" name="{{ _vendor_param }}" value="{{ brand }}" {% if _checked %}checked{% endif %}>
+                  <span class="pm-facet__opt-label">{{ brand }}</span>
+                  {%- if _bcount > 0 -%}<span class="pm-facet__opt-count">{{ _bcount }}</span>{%- endif -%}
+                </label>
+              </li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ul>
+      {%- else -%}
+        <p class="pm-facet__empty">No brands yet.</p>
+      {%- endif -%}
+    </div>
+  </details>
+
+  {%- comment -%} ── PRICE ───────────────────────────────────────────────── {%- endcomment -%}
+  <details class="pm-facet" data-pm-facet open>
+    <summary class="pm-facet__summary">
+      <span>Price</span>
+      <svg class="pm-facet__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+    </summary>
+    <div class="pm-facet__body">
+      <div class="pm-facet__price">
+        <div class="pm-facet__price-inputs">
+          <label class="pm-facet__price-field">
+            <span class="pm-facet__price-prefix">$</span>
+            <input
+              type="number"
+              name="filter.v.price.gte"
+              value="{{ _curr_min | round }}"
+              min="0"
+              max="{{ _max_price }}"
+              placeholder="0"
+              aria-label="Min price"
+              data-pm-price-min
+            >
+          </label>
+          <span class="pm-facet__price-sep">—</span>
+          <label class="pm-facet__price-field">
+            <span class="pm-facet__price-prefix">$</span>
+            <input
+              type="number"
+              name="filter.v.price.lte"
+              value="{{ _curr_max | round }}"
+              min="0"
+              max="{{ _max_price }}"
+              placeholder="{{ _max_price }}"
+              aria-label="Max price"
+              data-pm-price-max
+            >
+          </label>
+        </div>
+        <div class="pm-range" data-pm-range data-bound-max="{{ _max_price }}">
+          <div class="pm-range__track"></div>
+          <div class="pm-range__fill" data-pm-range-fill></div>
+          <input
+            type="range"
+            class="pm-range__thumb pm-range__thumb--min"
+            min="0"
+            max="{{ _max_price }}"
+            value="{{ _curr_min | round }}"
+            step="1"
+            data-pm-range-min
+            aria-label="Minimum price"
+          >
+          <input
+            type="range"
+            class="pm-range__thumb pm-range__thumb--max"
+            min="0"
+            max="{{ _max_price }}"
+            value="{{ _curr_max | round }}"
+            step="1"
+            data-pm-range-max
+            aria-label="Maximum price"
+          >
+        </div>
+        <div class="pm-facet__price-bounds">
+          <span>$0</span>
+          <span>${{ _max_price }}</span>
+        </div>
+      </div>
+    </div>
+  </details>
+
+  {%- comment -%} ── AVAILABILITY ─────────────────────────────────────────── {%- endcomment -%}
+  <details class="pm-facet" data-pm-facet open>
+    <summary class="pm-facet__summary">
+      <span>Availability</span>
+      <svg class="pm-facet__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+    </summary>
+    <div class="pm-facet__body">
+      {%- if _f_avail -%}
+        <ul class="pm-facet__values">
+          {%- for value in _f_avail.values -%}
+            {%- assign _dis = false -%}
+            {%- if value.count == 0 and value.active == false -%}{%- assign _dis = true -%}{%- endif -%}
+            <li>
+              <label class="pm-facet__opt {% if _dis %}is-disabled{% endif %}">
+                <input type="checkbox" name="{{ value.param_name }}" value="{{ value.value }}"
+                       {% if value.active %}checked{% endif %} {% if _dis %}disabled{% endif %}>
+                <span class="pm-facet__opt-label">{{ value.label }}</span>
+                <span class="pm-facet__opt-count">{{ value.count }}</span>
+              </label>
+            </li>
+          {%- endfor -%}
+        </ul>
+      {%- else -%}
+        {%- assign _in_stock = 0 -%}
+        {%- assign _out_stock = 0 -%}
+        {%- if _is_search -%}
+          {%- for item in _results.results -%}
+            {%- if item.object_type == 'product' -%}
+              {%- if item.available -%}{%- assign _in_stock = _in_stock | plus: 1 -%}{%- else -%}{%- assign _out_stock = _out_stock | plus: 1 -%}{%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+        {%- else -%}
+          {%- for p in _results.products -%}
+            {%- if p.available -%}{%- assign _in_stock = _in_stock | plus: 1 -%}{%- else -%}{%- assign _out_stock = _out_stock | plus: 1 -%}{%- endif -%}
+          {%- endfor -%}
+        {%- endif -%}
+        <ul class="pm-facet__values">
+          <li>
+            <label class="pm-facet__opt">
+              <input type="checkbox" name="filter.v.availability" value="1" {% if request.url contains 'availability=1' %}checked{% endif %}>
+              <span class="pm-facet__opt-label">In stock</span>
+              <span class="pm-facet__opt-count">{{ _in_stock }}</span>
+            </label>
+          </li>
+          <li>
+            <label class="pm-facet__opt">
+              <input type="checkbox" name="filter.v.availability" value="0" {% if request.url contains 'availability=0' %}checked{% endif %}>
+              <span class="pm-facet__opt-label">Out of stock</span>
+              <span class="pm-facet__opt-count">{{ _out_stock }}</span>
+            </label>
+          </li>
+        </ul>
+      {%- endif -%}
+    </div>
+  </details>
+
+  {%- comment -%} ── PROMOTIONS (collapsed by default) ────────────────────── {%- endcomment -%}
+  <details class="pm-facet" data-pm-facet>
+    <summary class="pm-facet__summary">
+      <span>Promotions</span>
+      <svg class="pm-facet__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+    </summary>
+    <div class="pm-facet__body">
+      <ul class="pm-facet__values">
+        <li>
+          <label class="pm-facet__opt">
+            <input type="checkbox" name="filter.p.tag" value="on-sale" {% if request.url contains 'tag=on-sale' %}checked{% endif %}>
+            <span class="pm-facet__opt-label">On sale</span>
+          </label>
+        </li>
+        <li>
+          <label class="pm-facet__opt">
+            <input type="checkbox" name="filter.p.tag" value="featured" {% if request.url contains 'tag=featured' %}checked{% endif %}>
+            <span class="pm-facet__opt-label">Featured</span>
+          </label>
+        </li>
+      </ul>
+    </div>
+  </details>
+</form>
+
+{%- comment -%} Mobile filters toggle drawer {%- endcomment -%}
+<button type="button" class="pm-facets__mobile-trigger" data-pm-facets-toggle aria-controls="pm-facets-form">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 3H2l8 9.46V19l4 2v-8.54L22 3z"/></svg>
+  Filters
+  {%- if _active_count > 0 -%}<span class="pm-facets__mobile-badge">{{ _active_count }}</span>{%- endif -%}
+</button>

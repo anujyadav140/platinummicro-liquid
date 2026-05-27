@@ -1,0 +1,8 @@
+{
+  "sections": {
+    "main": {
+      "type": "pm-static-page"
+    }
+  },
+  "order": ["main"]
+}

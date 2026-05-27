@@ -1,0 +1,190 @@
+{%- comment -%}
+  Default hero image — matches Hydrogen reference (Office boardroom + server room).
+  Used when the merchant hasn't picked one in the section settings yet.
+{%- endcomment -%}
+{%- assign _default_hero_url = 'https://cdn.shopify.com/s/files/1/0715/8841/3523/files/179ff61d-240c-4db2-92fa-1da73152b6a0.jpg?v=1779228048' -%}
+
+{%- assign has_image = false -%}
+{%- assign _hero_bg_url = '' -%}
+{%- if section.settings.background_image != blank -%}
+  {%- assign has_image = true -%}
+  {%- assign _hero_bg_url = section.settings.background_image | image_url: width: 1920 -%}
+{%- else -%}
+  {%- assign has_image = true -%}
+  {%- assign _hero_bg_url = _default_hero_url -%}
+{%- endif -%}
+{%- assign text_color = section.settings.text_color | default: 'light' -%}
+{%- assign height_px = section.settings.height_px | default: 480 -%}
+{%- assign show_overlay = section.settings.show_overlay -%}
+
+<section
+  class="pm-hero pm-hero--cover"
+  style="
+    background-color: {{ section.settings.bg_color | default: '#0D2340' }};
+    {%- if section.settings.margin_top != blank %}margin-top:{{ section.settings.margin_top }};{% endif -%}
+    {%- if section.settings.margin_bottom != blank %}margin-bottom:{{ section.settings.margin_bottom }};{% endif -%}
+  "
+>
+  {%- if has_image -%}
+    <div
+      class="pm-hero__bg"
+      style="background-image:url('{{ _hero_bg_url }}');background-position:{{ section.settings.bg_position | default: 'center' }};"
+      aria-hidden="true"
+    ></div>
+  {%- endif -%}
+
+  {%- if show_overlay != false -%}
+    <div class="pm-hero__overlay" aria-hidden="true"></div>
+  {%- endif -%}
+
+  <div
+    class="pm-hero__body"
+    style="min-height:{{ height_px }}px;"
+  >
+    {%- if section.settings.eyebrow != blank -%}
+      <div class="pm-hero__eyebrow">{{ section.settings.eyebrow }}</div>
+    {%- endif -%}
+
+    {%- if section.settings.headline != blank -%}
+      <h1
+        class="pm-hero__headline"
+        style="{%- if text_color != 'light' and text_color != 'dark' -%}color:{{ text_color }};{%- elsif text_color == 'dark' -%}color:var(--pm-ink-900);{%- endif -%}"
+      >
+        {{ section.settings.headline }}
+      </h1>
+    {%- endif -%}
+
+    {%- if section.settings.body != blank -%}
+      <p class="pm-hero__body-text">{{ section.settings.body }}</p>
+    {%- endif -%}
+
+    {%- if section.settings.cta_label != blank and section.settings.cta_href != blank -%}
+      <a
+        class="pm-hero__cta"
+        href="{{ section.settings.cta_href }}"
+        style="{%- if section.settings.accent_color != blank -%}background:{{ section.settings.accent_color }};{%- endif -%}"
+      >
+        {{ section.settings.cta_label }}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+    {%- endif -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "PM — Hero Banner",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "background_image",
+      "label": "Background image"
+    },
+    {
+      "type": "select",
+      "id": "bg_position",
+      "label": "Image position",
+      "options": [
+        { "value": "center", "label": "Center" },
+        { "value": "top", "label": "Top" },
+        { "value": "bottom", "label": "Bottom" },
+        { "value": "left center", "label": "Left" },
+        { "value": "right center", "label": "Right" }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Background color (fallback / overlay base)",
+      "default": "#0D2340"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_overlay",
+      "label": "Show gradient overlay (improves text legibility)",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow text",
+      "default": "PLATINUM MICRO"
+    },
+    {
+      "type": "text",
+      "id": "headline",
+      "label": "Headline",
+      "default": "Go with Platinum Micro for a Platinum Experience."
+    },
+    {
+      "type": "textarea",
+      "id": "body",
+      "label": "Body text",
+      "default": "Two decades of servers, storage, and networking for system integrators and public sector buyers."
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "CTA button label",
+      "default": "Browse Catalog"
+    },
+    {
+      "type": "url",
+      "id": "cta_href",
+      "label": "CTA link",
+      "default": "/collections/all"
+    },
+    {
+      "type": "select",
+      "id": "text_color",
+      "label": "Text color",
+      "options": [
+        { "value": "light", "label": "Light (white — for dark backgrounds)" },
+        { "value": "dark",  "label": "Dark (for light backgrounds)" }
+      ],
+      "default": "light"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Button color",
+      "default": "#A63D2F"
+    },
+    {
+      "type": "range",
+      "id": "height_px",
+      "label": "Banner height (px)",
+      "min": 280,
+      "max": 720,
+      "step": 20,
+      "default": 480
+    },
+    {
+      "type": "text",
+      "id": "margin_top",
+      "label": "Margin top (CSS value)",
+      "placeholder": "0px"
+    },
+    {
+      "type": "text",
+      "id": "margin_bottom",
+      "label": "Margin bottom (CSS value)",
+      "placeholder": "0px"
+    }
+  ],
+  "presets": [
+    {
+      "name": "PM — Hero Banner",
+      "settings": {
+        "eyebrow": "PLATINUM MICRO",
+        "headline": "Go with Platinum Micro for a Platinum Experience.",
+        "body": "Two decades of servers, storage, and networking for system integrators and public sector buyers.",
+        "cta_label": "Browse Catalog",
+        "cta_href": "/collections/all",
+        "height_px": 480
+      }
+    }
+  ]
+}
+{% endschema %}

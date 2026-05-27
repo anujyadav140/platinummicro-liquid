@@ -1,0 +1,9 @@
+{
+  "sections": {
+    "pm-customer-login": {
+      "type": "pm-customer-login",
+      "settings": {}
+    }
+  },
+  "order": ["pm-customer-login"]
+}

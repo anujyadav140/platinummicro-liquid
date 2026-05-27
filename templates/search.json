@@ -1,0 +1,11 @@
+{
+  "sections": {
+    "pm-search": {
+      "type": "pm-search",
+      "settings": {
+        "placeholder": "Search by keyword, brand, or SKU…"
+      }
+    }
+  },
+  "order": ["pm-search"]
+}

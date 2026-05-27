@@ -1,0 +1,90 @@
+{%- comment -%}
+  PM — 404 / static-page renderer.
+
+  Strategy: render BOTH the genuine 404 view AND the seven static bodies
+  (hidden) into the same page. JS reads window.location.pathname and
+  reveals whichever one matches. This is the reliable fallback for when
+  Shopify's `request.path` is empty or normalized inside the 404 context
+  — JS sees the real URL every time.
+{%- endcomment -%}
+
+{%- comment -%} ── Genuine 404 (visible by default; JS hides it if matched) ── {%- endcomment -%}
+<section class="pm-404" id="pm-404-default">
+  <div class="pm-404__inner">
+    <div class="pm-404__code">404</div>
+    <h1 class="pm-404__title">Page not found.</h1>
+    <p class="pm-404__lead">The link you followed may be broken or the page may have been moved. Use the search bar above or jump back to the catalog.</p>
+    <div class="pm-404__actions">
+      <a href="/" class="pm-btn pm-btn--ghost">Back to home</a>
+      <a href="/collections/all" class="pm-btn pm-btn--primary">Browse catalog
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+  </div>
+</section>
+
+{%- comment -%}
+  ── All seven static bodies, pre-rendered, hidden ────────────────────
+  Each wrapper has data-handle so the JS below can match against the URL.
+{%- endcomment -%}
+<div id="pm-static-pool" hidden>
+  <div data-handle="about">              {%- render 'pm-static-body', handle: 'about',                  fallback: '' -%}</div>
+  <div data-handle="brands">             {%- render 'pm-static-body', handle: 'brands',                 fallback: '' -%}</div>
+  <div data-handle="contact">            {%- render 'pm-static-body', handle: 'contact',                fallback: '' -%}</div>
+  <div data-handle="shipping-returns">   {%- render 'pm-static-body', handle: 'shipping-returns',       fallback: '' -%}</div>
+  <div data-handle="site-map">           {%- render 'pm-static-body', handle: 'site-map',               fallback: '' -%}</div>
+  <div data-handle="social-responsibility">{%- render 'pm-static-body', handle: 'social-responsibility', fallback: '' -%}</div>
+  <div data-handle="order-verification"> {%- render 'pm-static-body', handle: 'order-verification',     fallback: '' -%}</div>
+  <div data-handle="compare">            {%- render 'pm-static-body', handle: 'compare',                fallback: '' -%}</div>
+  <div data-handle="sign-in">            {%- render 'pm-static-body', handle: 'sign-in',                fallback: '' -%}</div>
+  <div data-handle="register">           {%- render 'pm-static-body', handle: 'register',               fallback: '' -%}</div>
+</div>
+
+<script>
+  (function () {
+    var path = window.location.pathname || '';
+    var m = path.match(/^\/pages\/([^\/?#]+)/i);
+    if (!m) return;
+    var handle = m[1].toLowerCase();
+    var pool = document.getElementById('pm-static-pool');
+    if (!pool) return;
+    var match = pool.querySelector('[data-handle="' + handle + '"]');
+    if (!match) return;
+    // Promote the matching static body, remove the 404 placeholder.
+    var def = document.getElementById('pm-404-default');
+    if (def) def.parentNode.removeChild(def);
+    pool.removeAttribute('hidden');
+    // Move the matched body's children up out of the pool, then drop
+    // the pool entirely so its other handles don't render.
+    var parent = pool.parentNode;
+    while (match.firstChild) parent.insertBefore(match.firstChild, pool);
+    parent.removeChild(pool);
+    // Fix the document <title> too
+    var titles = {
+      'about': 'About · Platinum Micro',
+      'brands': 'Authorized partner brands · Platinum Micro',
+      'contact': 'Contact · Platinum Micro',
+      'shipping-returns': 'Shipping & returns · Platinum Micro',
+      'site-map': 'Site map · Platinum Micro',
+      'social-responsibility': 'Social responsibility · Platinum Micro',
+      'order-verification': 'Order verification · Platinum Micro',
+      'compare': 'Compare products · Platinum Micro',
+      'sign-in': 'Sign in · Platinum Micro',
+      'register': 'Create account · Platinum Micro'
+    };
+    if (titles[handle]) document.title = titles[handle];
+    // Re-init dynamic components that look for elements that just appeared
+    document.dispatchEvent(new CustomEvent('pm:static-mounted', { detail: { handle: handle } }));
+    // Clear the pending flag set by the head script
+    if (document.documentElement.dataset.pmStaticPending) {
+      delete document.documentElement.dataset.pmStaticPending;
+    }
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "PM — 404",
+  "settings": []
+}
+{% endschema %}

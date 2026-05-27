@@ -1,0 +1,219 @@
+{%- comment -%}
+  PM — Brand Wall (Authorized partners)
+  Mirrors the Hydrogen reference: title block on the left, "All manufacturers →"
+  on the right, then a horizontal-scrolling strip of brand logos with
+  left/right chevron buttons.
+
+  Each block maps a brand `name` (e.g. "HPE", "Intel", "Western Digital")
+  to a logo image. If no image is uploaded in the editor, the section falls
+  back to a CDN URL keyed on the name (handleized) — all of the brand
+  logo files already exist in the store's Shopify Files.
+{%- endcomment -%}
+
+{%- assign _cdn_base = 'https://cdn.shopify.com/s/files/1/0715/8841/3523/files/' -%}
+{%- comment -%}
+  Name (handleized) → CDN filename map.
+  Includes the common name variants we ship by default + the ones visible
+  in the Hydrogen reference.
+{%- endcomment -%}
+{%- assign _brand_map = 'hpe:HPE_BIG.png|hewlett-packard-enterprise:HPE_BIG.png|dell:DELL.png|cisco:CSCO.png|lenovo:0992.HK.png|intel:INTC.png|seagate:STX_BIG.png|western-digital:WDC_BIG.png|wd:WDC_BIG.png|amd:AMD_BIG.png|samsung:005930.KS_BIG.png|microsoft:MSFT_BIG.png|micron:MU_BIG.png|arctic:ARCTIC_logo_white.png' -%}
+
+<section class="pm-brand-wall">
+  <div class="pm-container">
+    <div class="pm-brand-wall__head">
+      <div class="pm-brand-wall__heading">
+        {%- if section.settings.eyebrow != blank -%}
+          <div class="pm-section-eyebrow">{{ section.settings.eyebrow }}</div>
+        {%- endif -%}
+        {%- if section.settings.title != blank -%}
+          <h2 class="pm-brand-wall__title">{{ section.settings.title }}</h2>
+        {%- endif -%}
+      </div>
+      {%- if section.settings.cta_label != blank and section.settings.cta_href != blank -%}
+        <a class="pm-brand-wall__cta" href="{{ section.settings.cta_href }}">
+          {{ section.settings.cta_label }}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
+      {%- endif -%}
+    </div>
+
+    <div class="pm-brand-wall__row">
+      <button type="button" class="pm-brand-wall__nav pm-brand-wall__nav--left" data-brand-scroll="-1" aria-label="Scroll partners left">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+
+      <div class="pm-brand-wall__scroll" id="pm-brand-scroll">
+        {%- for block in section.blocks -%}
+          {%- comment -%} Resolve logo: admin upload wins, else CDN fallback by handle {%- endcomment -%}
+          {%- assign _logo_url = '' -%}
+          {%- if block.settings.logo != blank -%}
+            {%- assign _logo_url = block.settings.logo | image_url: height: 120 -%}
+          {%- else -%}
+            {%- assign _key = block.settings.name | handleize -%}
+            {%- assign _pairs = _brand_map | split: '|' -%}
+            {%- for _p in _pairs -%}
+              {%- assign _kv = _p | split: ':' -%}
+              {%- if _kv[0] == _key -%}
+                {%- assign _logo_url = _cdn_base | append: _kv[1] -%}
+              {%- endif -%}
+            {%- endfor -%}
+          {%- endif -%}
+
+          <div class="pm-brand-logo" {{ block.shopify_attributes }}>
+            {%- if block.settings.link != blank -%}
+              <a href="{{ block.settings.link }}" target="_blank" rel="noopener noreferrer" aria-label="{{ block.settings.name }}">
+            {%- endif -%}
+
+            {%- if _logo_url != '' -%}
+              <img
+                src="{{ _logo_url }}"
+                alt="{{ block.settings.name | default: '' }}"
+                height="56"
+                loading="lazy"
+              >
+            {%- elsif block.settings.name != blank -%}
+              <span class="pm-brand-logo__name">{{ block.settings.name }}</span>
+            {%- endif -%}
+
+            {%- if block.settings.link != blank -%}
+              </a>
+            {%- endif -%}
+          </div>
+        {%- endfor -%}
+      </div>
+
+      <button type="button" class="pm-brand-wall__nav pm-brand-wall__nav--right" data-brand-scroll="1" aria-label="Scroll partners right">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+  </div>
+</section>
+
+<script>
+(function () {
+  var el = document.getElementById('pm-brand-scroll');
+  if (!el) return;
+
+  // Drag-to-scroll on desktop
+  var dragging = false, startX, startScroll;
+  el.addEventListener('mousedown', function (e) {
+    dragging = true;
+    startX = e.pageX - el.offsetLeft;
+    startScroll = el.scrollLeft;
+    el.style.cursor = 'grabbing';
+  });
+  document.addEventListener('mouseup', function () {
+    dragging = false;
+    el.style.cursor = 'grab';
+  });
+  el.addEventListener('mousemove', function (e) {
+    if (!dragging) return;
+    e.preventDefault();
+    el.scrollLeft = startScroll - ((e.pageX - el.offsetLeft) - startX);
+  });
+
+  // Chevron buttons
+  var buttons = document.querySelectorAll('[data-brand-scroll]');
+  buttons.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var dir = parseInt(btn.getAttribute('data-brand-scroll'), 10) || 1;
+      var step = Math.max(240, el.clientWidth * 0.6);
+      el.scrollBy({ left: dir * step, behavior: 'smooth' });
+    });
+  });
+
+  // Hide chevrons at the edges
+  function syncNavState() {
+    var atStart = el.scrollLeft <= 4;
+    var atEnd   = (el.scrollLeft + el.clientWidth) >= (el.scrollWidth - 4);
+    document.querySelector('.pm-brand-wall__nav--left').toggleAttribute('disabled', atStart);
+    document.querySelector('.pm-brand-wall__nav--right').toggleAttribute('disabled', atEnd);
+  }
+  el.addEventListener('scroll', syncNavState);
+  window.addEventListener('resize', syncNavState);
+  setTimeout(syncNavState, 50);
+})();
+</script>
+
+{% schema %}
+{
+  "name": "PM — Brand Wall",
+  "tag": "section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "Authorized partners"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Title",
+      "default": "Stocked, supported, sourced direct."
+    },
+    {
+      "type": "text",
+      "id": "cta_label",
+      "label": "Header CTA label",
+      "default": "All manufacturers"
+    },
+    {
+      "type": "url",
+      "id": "cta_href",
+      "label": "Header CTA link",
+      "default": "/collections/all"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "brand",
+      "name": "Brand",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "logo",
+          "label": "Brand logo (overrides the default)"
+        },
+        {
+          "type": "text",
+          "id": "name",
+          "label": "Brand name",
+          "info": "Used for the alt text + as the key for the default-logo fallback (HPE, Intel, Cisco, Dell, Lenovo, AMD, Samsung, Seagate, Western Digital, Microsoft, Micron, Arctic).",
+          "default": "HPE"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Brand link (optional)"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "PM — Brand Wall",
+      "settings": {
+        "eyebrow": "Authorized partners",
+        "title": "Stocked, supported, sourced direct.",
+        "cta_label": "All manufacturers",
+        "cta_href": "/collections/all"
+      },
+      "blocks": [
+        { "type": "brand", "settings": { "name": "HPE" } },
+        { "type": "brand", "settings": { "name": "Dell" } },
+        { "type": "brand", "settings": { "name": "Cisco" } },
+        { "type": "brand", "settings": { "name": "Lenovo" } },
+        { "type": "brand", "settings": { "name": "Intel" } },
+        { "type": "brand", "settings": { "name": "AMD" } },
+        { "type": "brand", "settings": { "name": "Samsung" } },
+        { "type": "brand", "settings": { "name": "Seagate" } },
+        { "type": "brand", "settings": { "name": "Western Digital" } },
+        { "type": "brand", "settings": { "name": "Microsoft" } },
+        { "type": "brand", "settings": { "name": "Micron" } },
+        { "type": "brand", "settings": { "name": "Arctic" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

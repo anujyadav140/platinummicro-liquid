@@ -1,0 +1,37 @@
+{%- comment -%}
+  PM — Compare floating bar (white card, Hydrogen-style)
+  Hidden by default; pm-compare.js shows it when any product is selected.
+{%- endcomment -%}
+
+<aside class="pm-cmp-bar" id="pm-compare-bar" role="region" aria-label="Compare products" hidden>
+  {%- comment -%} ── Expanded view (default) ─────────────────────────── {%- endcomment -%}
+  <div class="pm-cmp-bar__inner">
+    <div class="pm-cmp-bar__left">
+      <div class="pm-cmp-bar__eyebrow">Compare</div>
+      <div class="pm-cmp-bar__count" id="pm-cmp-count">0 of 4 selected</div>
+    </div>
+
+    <ul class="pm-cmp-bar__thumbs" id="pm-cmp-thumbs"></ul>
+
+    <div class="pm-cmp-bar__actions">
+      <button type="button" class="pm-btn pm-btn--ghost pm-cmp-bar__clear" data-pm-cmp-clear>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/></svg>
+        <span>Clear all</span>
+      </button>
+      <a href="/pages/compare" class="pm-btn pm-btn--navy">
+        <span>Compare</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+      <button type="button" class="pm-cmp-bar__collapse" data-pm-cmp-collapse aria-label="Collapse compare bar" aria-expanded="true">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+    </div>
+  </div>
+
+  {%- comment -%} ── Collapsed pill (visible when .is-collapsed) ─────── {%- endcomment -%}
+  <button type="button" class="pm-cmp-bar__pill" data-pm-cmp-collapse aria-label="Expand compare bar">
+    <span class="pm-cmp-bar__pill-label">Compare</span>
+    <span class="pm-cmp-bar__pill-count" id="pm-cmp-pill-count">0</span>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M18 15l-6-6-6 6"/></svg>
+  </button>
+</aside>

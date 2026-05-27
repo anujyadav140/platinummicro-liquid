@@ -1,0 +1,47 @@
+{%- if section.settings.text != blank -%}
+<div
+  class="pm-banner-strip"
+  style="
+    {%- if section.settings.bg_color != blank %}background-color:{{ section.settings.bg_color }};{% endif -%}
+    {%- if section.settings.text_color != blank %}color:{{ section.settings.text_color }};{% endif -%}
+  "
+>
+  <div class="pm-banner-strip__inner">
+    {{ section.settings.text }}
+  </div>
+</div>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "PM — Banner Strip",
+  "settings": [
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "Strip text (HTML supported)",
+      "default": "<p>Free freight on orders over $5,000. Quotes valid 14 days.</p>"
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Background color",
+      "default": "#F4EFE8"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#344054"
+    }
+  ],
+  "presets": [
+    {
+      "name": "PM — Banner Strip",
+      "settings": {
+        "text": "<p>Free freight on orders over $5,000. Quotes valid 14 days.</p>"
+      }
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,697 @@
+{%- comment -%}
+  PM — Static page body
+  Renders the right baked content for a given handle.
+{%- endcomment -%}
+
+{%- assign _h = handle -%}
+{%- assign _centered = false -%}
+{%- if _h == 'about' -%}{%- assign _centered = true -%}{%- endif -%}
+
+{%- comment -%} Brand logo map (Shopify CDN files) — text fallback for the rest {%- endcomment -%}
+{%- assign _cdn = 'https://cdn.shopify.com/s/files/1/0715/8841/3523/files/' -%}
+{%- assign _brand_logos = 'hpe:HPE_BIG.png|dell:DELL.png|lenovo:0992.HK.png|cisco:CSCO.png|intel:INTC.png|microsoft:MSFT_BIG.png|amd:AMD_BIG.png|samsung:005930.KS_BIG.png|seagate:STX_BIG.png|wd:WDC_BIG.png|micron:MU_BIG.png|arctic:ARCTIC_logo_white.png' -%}
+
+<section class="pm-static{% if _centered %} pm-static--centered{% endif %}">
+
+  {%- comment -%}
+    ── DARK NAVY HERO ──
+    Skipped on /pages/compare and /pages/sign-in because both render
+    their own headers inline.
+  {%- endcomment -%}
+  {%- assign _skip_hero = false -%}
+  {%- if _h == 'compare' or _h == 'sign-in' or _h == 'register' -%}{%- assign _skip_hero = true -%}{%- endif -%}
+  {%- unless _skip_hero -%}
+    <header class="pm-static__hero">
+      <div class="pm-static__hero__inner">
+        {%- case _h -%}
+        {%- when 'about' -%}
+          <div class="pm-static__eyebrow">About Platinum Micro</div>
+          <h1 class="pm-static__title">For two decades, Platinum Micro has distributed enterprise IT from Southern California to system integrators, public-sector buyers, and healthcare networks worldwide.</h1>
+          <p class="pm-static__lead">Forty-plus manufacturer partnerships, real lead times, named account managers — sourced direct, with trade credit available on approved application.</p>
+        {%- when 'brands' -%}
+          <h1 class="pm-static__title">Authorized partner brands.</h1>
+          <p class="pm-static__lead">21 manufacturer relationships across direct authorization and authorized-distributor channels</p>
+        {%- when 'contact' -%}
+          <div class="pm-static__eyebrow">Talk to a Specialist</div>
+          <h1 class="pm-static__title">Talk to Platinum Micro.</h1>
+          <p class="pm-static__lead">Mon–Fri · 7am – 5pm PT · Sylmar, California</p>
+        {%- when 'shipping-returns' -%}
+          <div class="pm-static__eyebrow">Logistics</div>
+          <h1 class="pm-static__title">Shipping &amp; returns.</h1>
+          <p class="pm-static__lead">Free shipping on the continental U.S. · 30-day returns.</p>
+        {%- when 'site-map' -%}
+          <div class="pm-static__eyebrow">Site Map</div>
+          <h1 class="pm-static__title">Browse the Site.</h1>
+          <p class="pm-static__lead">23 pages across 4 sections</p>
+        {%- when 'social-responsibility' -%}
+          <div class="pm-static__eyebrow">Social Responsibility</div>
+          <h1 class="pm-static__title">Where Platinum Micro gives back.</h1>
+          <p class="pm-static__lead">Local-first community partnerships, plus national health and humanitarian programs.</p>
+        {%- when 'order-verification' -%}
+          <div class="pm-static__eyebrow">Order</div>
+          <h1 class="pm-static__title">Order Verification</h1>
+          <p class="pm-static__lead">Effective May 19, 2026</p>
+        {%- else -%}
+          <div class="pm-static__eyebrow">Platinum Micro</div>
+          <h1 class="pm-static__title">{{ page.title | default: 'Page' }}</h1>
+        {%- endcase -%}
+      </div>
+    </header>
+  {%- endunless -%}
+
+  {%- case _h -%}
+
+  {%- comment -%} ────────────────────────────  ABOUT (band layout)  ──── {%- endcomment -%}
+  {%- when 'about' -%}
+    <section class="pm-band pm-band--paper">
+      <div class="pm-band__inner">
+        <div class="pm-static__kicker">Mission</div>
+        <h2 class="pm-static__h2">Sourced direct. Sold honest.</h2>
+        <p>Platinum Micro exists to give institutional IT buyers a straight line to the hardware they need — without the markup theater, the phantom inventory, or the white-glove fees that get layered onto most public-sector contracts.</p>
+        <p>We carry real stock. We quote in writing. We answer the phone. And when a part is on a six-week lead time, we say so before you cut the PO.</p>
+      </div>
+    </section>
+
+    <section class="pm-band pm-band--tint">
+      <div class="pm-band__inner">
+        <div class="pm-static__kicker">Contracts</div>
+        <h2 class="pm-static__h2">Public-sector contract vehicles</h2>
+        <p>Buy from Platinum Micro through the contract that fits your procurement workflow. We honor pricing aligned with the underlying cooperative, federal, or state schedule.</p>
+        <div class="pm-static__cards pm-static__cards--3col">
+          <div class="pm-static__card">
+            <h3>OMNIA Partners</h3>
+            <p>Lead contract vehicle for cooperative public-sector procurement across the United States.</p>
+          </div>
+          <div class="pm-static__card">
+            <h3>TD SYNNEX</h3>
+            <p>Tier-one distribution partnership backing every order with manufacturer-direct supply.</p>
+          </div>
+          <div class="pm-static__card">
+            <h3>GSA-aligned pricing</h3>
+            <p>Schedule-aligned pricing available on request for federal and DoD buyers.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="pm-band pm-band--paper">
+      <div class="pm-band__inner">
+        <div class="pm-static__kicker">Certifications</div>
+        <h2 class="pm-static__h2">Credentials and partnerships</h2>
+        <div class="pm-static__cards pm-static__cards--2col pm-static__cards--icon">
+          <div class="pm-static__card pm-static__card--icon">
+            <span class="pm-static__card-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>
+            <div>
+              <h3>Authorized Reseller</h3>
+              <p>Direct partner status with HPE, Dell, Lenovo, Cisco, Intel, AMD, and 40+ other manufacturers.</p>
+            </div>
+          </div>
+          <div class="pm-static__card pm-static__card--icon">
+            <span class="pm-static__card-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M5 21V7l8-4v18M19 21V11l-6-4"/></svg></span>
+            <div>
+              <h3>Small Business</h3>
+              <p>SBA Small Business certified, eligible for set-aside and small-business goal contracts.</p>
+            </div>
+          </div>
+          <div class="pm-static__card pm-static__card--icon">
+            <span class="pm-static__card-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+            <div>
+              <h3>Public-Sector Focus</h3>
+              <p>Two decades serving K–12, higher ed, healthcare networks, and state / local government.</p>
+            </div>
+          </div>
+          <div class="pm-static__card pm-static__card--icon">
+            <span class="pm-static__card-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8M12 6v12"/></svg></span>
+            <div>
+              <h3>Trade Credit</h3>
+              <p>Net-30 terms available on approved application for qualifying public-sector buyers.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  {%- comment -%} ────────────────────────────  BRANDS (logo grid)  ──── {%- endcomment -%}
+  {%- when 'brands' -%}
+    <div class="pm-static__body">
+      <div class="pm-static__body__inner pm-static__body__inner--wide">
+        <p class="pm-static__intro">Inventory at Platinum Micro flows through two channels — direct authorized-reseller agreements with the manufacturers below, and authorized distribution partnerships (TD SYNNEX, Ingram Micro, and others) for the broader enterprise catalog. Either way, every unit carries the original manufacturer warranty and ships from a verified channel — never from grey-market or secondary sources.</p>
+
+        <article class="pm-brands__block">
+          <h2 class="pm-static__h2">Direct authorized resellers</h2>
+          <p>Platinum Micro holds direct manufacturer authorization for the brands below — pricing, warranty escalations, and product roadmaps come straight from the source.</p>
+          <ul class="pm-brand-cards">
+            {%- assign _direct = 'HPE:hpe|Dell:dell|Lenovo:lenovo|Cisco:cisco|Intel:intel|Microsoft:microsoft' | split: '|' -%}
+            {%- for _pair in _direct -%}
+              {%- assign _kv = _pair | split: ':' -%}
+              {%- assign _label = _kv[0] -%}
+              {%- assign _key = _kv[1] -%}
+              {%- assign _logo = '' -%}
+              {%- assign _pairs2 = _brand_logos | split: '|' -%}
+              {%- for _p in _pairs2 -%}
+                {%- assign _kv2 = _p | split: ':' -%}
+                {%- if _kv2[0] == _key -%}{%- assign _logo = _cdn | append: _kv2[1] -%}{%- endif -%}
+              {%- endfor -%}
+              <li class="pm-brand-card">
+                {%- if _logo != '' -%}
+                  <img src="{{ _logo }}" alt="{{ _label }}" loading="lazy">
+                {%- else -%}
+                  <span class="pm-brand-card__text">{{ _label | upcase }}</span>
+                {%- endif -%}
+              </li>
+            {%- endfor -%}
+          </ul>
+        </article>
+
+        <article class="pm-brands__block">
+          <h2 class="pm-static__h2">Sourced through authorized distributors</h2>
+          <p>Available through Platinum Micro's authorized distribution agreements. Lead times, channel pricing, and warranty handling are identical to direct purchases.</p>
+          <ul class="pm-brand-cards">
+            {%- assign _dist = 'AMD:amd|NVIDIA:nvidia|Samsung:samsung|Seagate:seagate|Western Digital:wd|Crucial (Micron):micron|Arctic:arctic|ASUS:asus|Acer:acer|Logitech:logitech|APC:apc|Tripp Lite:tripp-lite|NETGEAR:netgear|Kingston:kingston|Corsair:corsair' | split: '|' -%}
+            {%- for _pair in _dist -%}
+              {%- assign _kv = _pair | split: ':' -%}
+              {%- assign _label = _kv[0] -%}
+              {%- assign _key = _kv[1] -%}
+              {%- assign _logo = '' -%}
+              {%- assign _pairs2 = _brand_logos | split: '|' -%}
+              {%- for _p in _pairs2 -%}
+                {%- assign _kv2 = _p | split: ':' -%}
+                {%- if _kv2[0] == _key -%}{%- assign _logo = _cdn | append: _kv2[1] -%}{%- endif -%}
+              {%- endfor -%}
+              <li class="pm-brand-card">
+                {%- if _logo != '' -%}
+                  <img src="{{ _logo }}" alt="{{ _label }}" loading="lazy">
+                {%- else -%}
+                  <span class="pm-brand-card__text">{{ _label | upcase }}</span>
+                {%- endif -%}
+              </li>
+            {%- endfor -%}
+          </ul>
+        </article>
+
+        <article class="pm-static__cta">
+          <h3>Don't see your brand?</h3>
+          <p>Distribution agreements cover more than 40 manufacturers — many outside this list. Most major enterprise lines can be sourced on request. Call <a href="tel:18777644968">(877) PMG-4YOU</a> or email <a href="mailto:admin@platinummicro.com">admin@platinummicro.com</a> with the manufacturer name and a rough quantity, and Business Development will quote within one business day.</p>
+        </article>
+      </div>
+    </div>
+
+  {%- comment -%} ─────────────────────────────  SITE MAP (link list)  ──── {%- endcomment -%}
+  {%- when 'site-map' -%}
+    <div class="pm-static__body">
+      <div class="pm-static__body__inner">
+        <p class="pm-static__intro">Every working route on platinummicro.com, grouped by section. If you can't find what you're looking for, the search bar at the top of every page covers the full product catalog. The contact page lists direct phone and email for sales, support, and billing.</p>
+
+        <section class="pm-sitemap__group">
+          <h2 class="pm-static__h2">Catalog</h2>
+          <p>Browse the product catalog by category.</p>
+          <ul class="pm-sitemap__list">
+            <li><a href="/">Home</a></li>
+            <li><a href="/collections/components">Components</a></li>
+            <li><a href="/collections/computers">Computers</a></li>
+            <li><a href="/collections/networking">Networking</a></li>
+            <li><a href="/collections/peripherals">Peripherals</a></li>
+            <li><a href="/collections/servers">Servers</a></li>
+            <li><a href="/collections/software">Software</a></li>
+            <li><a href="/collections/bundles">Bulk Options</a></li>
+            <li><a href="/collections/bundles">Bundles</a></li>
+          </ul>
+        </section>
+
+        <section class="pm-sitemap__group">
+          <h2 class="pm-static__h2">About</h2>
+          <p>Company background, partner brands, and policies.</p>
+          <ul class="pm-sitemap__list">
+            <li><a href="/pages/about">About Us</a></li>
+            <li><a href="/pages/brands">Authorized Brands</a></li>
+            <li><a href="/pages/contact">Contact Us</a></li>
+            <li><a href="/pages/shipping-returns">Shipping &amp; Returns</a></li>
+            <li><a href="/pages/site-map">Site Map</a></li>
+            <li><a href="/pages/social-responsibility">Social Responsibility</a></li>
+          </ul>
+        </section>
+
+        <section class="pm-sitemap__group">
+          <h2 class="pm-static__h2">Account</h2>
+          <p>Sign in, register, or recover account access.</p>
+          <ul class="pm-sitemap__list">
+            <li><a href="/account/login">Sign in</a></li>
+            <li><a href="/account/register">Register</a></li>
+            <li><a href="/account/login#recover">Forgot password</a></li>
+            <li><a href="/account/login#recover">Reset password</a></li>
+            <li><a href="/account">Profile</a></li>
+          </ul>
+        </section>
+
+        <section class="pm-sitemap__group">
+          <h2 class="pm-static__h2">Legal</h2>
+          <ul class="pm-sitemap__list">
+            {%- if shop.policies.privacy_policy.url != blank -%}
+              <li><a href="{{ shop.policies.privacy_policy.url }}">Privacy Policy</a></li>
+            {%- endif -%}
+            {%- if shop.policies.terms_of_service.url != blank -%}
+              <li><a href="{{ shop.policies.terms_of_service.url }}">Terms &amp; Conditions</a></li>
+            {%- endif -%}
+            <li><a href="/pages/order-verification">Order Verification</a></li>
+          </ul>
+        </section>
+      </div>
+    </div>
+
+  {%- comment -%} ────────────────────────────────────  CONTACT  ──── {%- endcomment -%}
+  {%- when 'contact' -%}
+    <div class="pm-static__body">
+      <div class="pm-static__body__inner">
+        <article class="pm-static__block">
+          <p>Questions about an order, a quote, or anything else? Reach the Platinum Micro team directly. The fastest path is the toll-free line during business hours; email is checked all day.</p>
+        </article>
+        <article class="pm-static__block">
+          <h2 class="pm-static__h2">By phone</h2>
+          <p><a href="tel:18777644968"><strong>(877) PMG-4YOU</strong></a> — toll free, Monday–Friday, 7:00am – 5:00pm Pacific. Calls go to a real person; cancellations and time-sensitive order changes should be made by phone (email may not be received in time).</p>
+        </article>
+        <article class="pm-static__block">
+          <h2 class="pm-static__h2">By email</h2>
+          <p><a href="mailto:admin@platinummicro.com"><strong>admin@platinummicro.com</strong></a> — for general inquiries, quote requests, account questions, and return-related help.</p>
+          <p>For tax-exempt certification, send documentation to <a href="mailto:tax-exempt@platinummicro.com"><strong>tax-exempt@platinummicro.com</strong></a>.</p>
+        </article>
+        <article class="pm-static__block">
+          <h2 class="pm-static__h2">Mailing address</h2>
+          <p>Platinum Micro, Inc.<br>15815 Monte Street, Suite 103<br>Sylmar, CA 91342<br>United States</p>
+        </article>
+        <article class="pm-static__block">
+          <h2 class="pm-static__h2">What you might want instead</h2>
+          <ul class="pm-static__list">
+            <li>Order tracking, return windows, RMA process → <a href="/pages/shipping-returns">Shipping &amp; returns</a></li>
+            <li>Verification call about your order → <a href="/pages/order-verification">Order verification</a></li>
+            <li>Account sign-in / password reset → <a href="/account/login">Sign in</a></li>
+            <li>Cooperative contracts (OMNIA / NASPO) → <a href="/pages/about">About</a></li>
+          </ul>
+        </article>
+      </div>
+    </div>
+
+  {%- comment -%} ───────────────────────────  SHIPPING & RETURNS  ──── {%- endcomment -%}
+  {%- when 'shipping-returns' -%}
+    <div class="pm-static__body">
+      <div class="pm-static__body__inner">
+        <article class="pm-static__block">
+          <p>Platinum Micro ships from Sylmar, California, partners with multiple carriers, and processes orders Monday through Friday. The policies below are the ones written into every order and invoice.</p>
+        </article>
+        <article class="pm-static__block">
+          <h2 class="pm-static__h2">Free shipping</h2>
+          <p>Free shipping on all items to the continental United States. Alaska, Hawaii, and U.S. territories require expedited shipping with additional charges. Orders may arrive in multiple shipments.</p>
+        </article>
+        <article class="pm-static__block">
+          <h2 class="pm-static__h2">Service area</h2>
+          <p>Platinum Micro ships to the 48 continental U.S. states, Alaska, Hawaii, and U.S. territories only. International shipping is not available at this time — non-U.S. buyers should contact Business Development for partner-channel options.</p>
+        </article>
+        <article class="pm-static__block">
+          <h2 class="pm-static__h2">Shipment timeline</h2>
+          <p>Orders are shipped as soon as possible, typically within 1–2 business days after payment is confirmed. Processing happens Monday–Friday only. Once a package is handed off, transit time is out of Platinum Micro's hands.</p>
+          <div class="pm-static__cards pm-static__cards--2col">
+            <div class="pm-static__card"><h3>Free Budget Shipping</h3><p>8–14 business days transit, plus 1–2 business days processing.</p></div>
+            <div class="pm-static__card"><h3>USPS Priority</h3><p>3–7 business days transit, plus 1–2 business days processing.</p></div>
+          </div>
+        </article>
+        <article class="pm-static__block">
+          <h2 class="pm-static__h2">Tracking</h2>
+          <p>Track packages directly with the carrier: <a href="https://www.ups.com/track" target="_blank" rel="noopener noreferrer">UPS tracking</a> · <a href="https://tools.usps.com/go/TrackConfirmAction_input" target="_blank" rel="noopener noreferrer">USPS tracking</a>.</p>
+        </article>
+        <article class="pm-static__block">
+          <h2 class="pm-static__h2">Returns</h2>
+          <p>All items ship brand new with manufacturer warranty. Bulk and OEM products lack retail packaging and accessories but carry full warranties. Platinum Micro is not responsible for physical damage, misuse, or anything that voids the manufacturer warranty.</p>
+          <p><strong>Non-returnable items:</strong> open software, digital downloads, software keycards, online subscriptions, and products from LG, GIGABYTE, and FORTINET.</p>
+          <h3>Window &amp; timeline</h3>
+          <ul class="pm-static__list">
+            <li>30-day return / exchange policy from purchase date.</li>
+            <li>RMA numbers are valid for 10 business days from issue.</li>
+            <li>RMA processing takes 5–7 business days after receipt.</li>
+            <li>Refunds issued within 7 business days of receiving the returned merchandise.</li>
+          </ul>
+          <h3>Fees &amp; costs</h3>
+          <ul class="pm-static__list">
+            <li>15% restocking fee on all returns for refund.</li>
+            <li>No restocking fee on RMA replacements of defective items.</li>
+            <li>Original shipping costs are non-refundable.</li>
+            <li>Platinum Micro covers return shipping only on defective-merchandise exchanges.</li>
+          </ul>
+          <h3>How to return</h3>
+          <p>Contact Platinum Micro for an RMA number before shipping anything back. Every return must have a valid carrier tracking number — UPS, FedEx, or USPS. No advance replacements are offered.</p>
+          <h3>Return address</h3>
+          <p>Platinum Micro, Inc.<br>15815 Monte Street, Suite 103<br>Sylmar, CA 91342<br>United States<br>Toll Free: <a href="tel:18777644968">(877) PMG-4YOU</a></p>
+        </article>
+      </div>
+    </div>
+
+  {%- comment -%} ──────────────────────────  SOCIAL RESPONSIBILITY  ──── {%- endcomment -%}
+  {%- when 'social-responsibility' -%}
+    <div class="pm-static__body">
+      <div class="pm-static__body__inner">
+        <article class="pm-static__block">
+          <p>Platinum Micro is based in Sylmar, California, and the company's giving reflects that — local-first community partnerships paired with national health, humanitarian, and youth-focused programs. Direct contributions and volunteer time are split across the following organizations.</p>
+        </article>
+        <article class="pm-static__block">
+          <h2 class="pm-static__h2">Partner organizations</h2>
+          <ul class="pm-static__list">
+            <li><strong>American Red Cross</strong> — Emergency response, blood services, disaster relief.</li>
+            <li><strong>Children's Hospital Los Angeles</strong> — Pediatric care and research.</li>
+            <li><strong>World Harvest</strong> — Food rescue and distribution.</li>
+            <li><strong>Ronald McDonald House</strong> — Housing for families of children in treatment.</li>
+            <li><strong>Feeding America</strong> — Nationwide hunger-relief network.</li>
+            <li><strong>Wat Thai</strong> — Community programs in the Los Angeles Thai diaspora.</li>
+            <li><strong>UCLA Health</strong> — Academic medical research and patient care.</li>
+            <li><strong>New Direction for Youth (NDFY)</strong> — Mentorship and education for at-risk youth.</li>
+            <li><strong>St. Jude Children's Research Hospital</strong> — Pediatric cancer research and care.</li>
+          </ul>
+        </article>
+        <article class="pm-static__block">
+          <h2 class="pm-static__h2">Environmental compliance</h2>
+          <p>On the operational side, Platinum Micro complies with California's Electronic Waste Recycling Act, collecting state-mandated fees on covered display devices at purchase and routing them to certified recyclers. Customers with end-of-life equipment are encouraged to use a state-licensed e-waste handler — staff can recommend partners on request.</p>
+        </article>
+        <article class="pm-static__cta">
+          <h3>Get involved</h3>
+          <p>Resellers, manufacturers, and customers who want to align a purchase or program with one of the partner organizations above can reach Business Development at <a href="tel:18777644968">(877) PMG-4YOU</a> Monday–Friday, 7am–5pm PT, or <a href="mailto:admin@platinummicro.com">admin@platinummicro.com</a>.</p>
+        </article>
+      </div>
+    </div>
+
+  {%- comment -%} ───────────────────────────────────  REGISTER  ──── {%- endcomment -%}
+  {%- when 'register' -%}
+    <div class="pm-reg">
+      <div class="pm-reg__inner">
+
+        <header class="pm-reg__head">
+          <div class="pm-static__kicker">Create Account</div>
+          <h1 class="pm-reg__title">Open a business account.</h1>
+          <p class="pm-reg__lead">For system integrators, IT teams, education, healthcare, and public-sector buyers. Trade credit available with approved application.</p>
+        </header>
+
+        {%- comment -%}
+          With New Customer Accounts enabled, neither /account/register
+          nor /account/login accept POST. Submission redirects to /account
+          (Shopify-hosted flow) — see the pm-auth-redirect script below.
+        {%- endcomment -%}
+        <form action="/account" method="get" class="pm-reg__form" data-pm-auth-redirect>
+          <div class="pm-reg__grid">
+
+            <div class="pm-reg__field">
+              <div class="pm-reg__label-row">
+                <label for="pm-reg-email" class="pm-reg__label">Email address</label>
+                <span class="pm-reg__req">Required</span>
+              </div>
+              <input id="pm-reg-email" name="customer[email]" type="email" autocomplete="email" placeholder="you@company.com" required>
+            </div>
+
+            <div class="pm-reg__field">
+              <div class="pm-reg__label-row">
+                <label for="pm-reg-phone" class="pm-reg__label">Phone number</label>
+                <span class="pm-reg__req">Required</span>
+              </div>
+              <input id="pm-reg-phone" name="customer[phone]" type="tel" autocomplete="tel" placeholder="(555) 123-4567" required>
+            </div>
+
+            <div class="pm-reg__field">
+              <div class="pm-reg__label-row">
+                <label for="pm-reg-pass" class="pm-reg__label">Password</label>
+                <span class="pm-reg__req">Required</span>
+              </div>
+              <input id="pm-reg-pass" name="customer[password]" type="password" autocomplete="new-password" minlength="8" required>
+              <p class="pm-reg__hint">At least 8 characters, with a letter and a number.</p>
+            </div>
+
+            <div class="pm-reg__field">
+              <div class="pm-reg__label-row">
+                <label for="pm-reg-pass2" class="pm-reg__label">Confirm password</label>
+                <span class="pm-reg__req">Required</span>
+              </div>
+              <input id="pm-reg-pass2" name="customer[password_confirmation]" type="password" autocomplete="new-password" minlength="8" required>
+            </div>
+
+            <div class="pm-reg__field">
+              <div class="pm-reg__label-row">
+                <label for="pm-reg-first" class="pm-reg__label">First name</label>
+                <span class="pm-reg__req">Required</span>
+              </div>
+              <input id="pm-reg-first" name="customer[first_name]" type="text" autocomplete="given-name" required>
+            </div>
+
+            <div class="pm-reg__field">
+              <div class="pm-reg__label-row">
+                <label for="pm-reg-last" class="pm-reg__label">Last name</label>
+                <span class="pm-reg__req">Required</span>
+              </div>
+              <input id="pm-reg-last" name="customer[last_name]" type="text" autocomplete="family-name" required>
+            </div>
+
+            <div class="pm-reg__field pm-reg__field--full">
+              <div class="pm-reg__label-row">
+                <label for="pm-reg-company" class="pm-reg__label">Company name</label>
+              </div>
+              <input id="pm-reg-company" name="customer[note][company]" type="text" autocomplete="organization" placeholder="Optional">
+            </div>
+
+            <div class="pm-reg__field pm-reg__field--full">
+              <div class="pm-reg__label-row">
+                <label for="pm-reg-addr1" class="pm-reg__label">Address line 1</label>
+                <span class="pm-reg__req">Required</span>
+              </div>
+              <input id="pm-reg-addr1" name="customer[note][address1]" type="text" autocomplete="address-line1" required>
+            </div>
+
+            <div class="pm-reg__field pm-reg__field--full">
+              <div class="pm-reg__label-row">
+                <label for="pm-reg-addr2" class="pm-reg__label">Address line 2</label>
+              </div>
+              <input id="pm-reg-addr2" name="customer[note][address2]" type="text" autocomplete="address-line2" placeholder="Apt, suite, floor (optional)">
+            </div>
+
+            <div class="pm-reg__field">
+              <div class="pm-reg__label-row">
+                <label for="pm-reg-country" class="pm-reg__label">Country</label>
+                <span class="pm-reg__req">Required</span>
+              </div>
+              <select id="pm-reg-country" name="customer[note][country]" autocomplete="country-name" required>
+                <option value="United States" selected>United States</option>
+                <option>Canada</option>
+                <option>United Kingdom</option>
+                <option>Australia</option>
+                <option>Germany</option>
+                <option>France</option>
+                <option>Japan</option>
+                <option>Other</option>
+              </select>
+            </div>
+
+            <div class="pm-reg__field">
+              <div class="pm-reg__label-row">
+                <label for="pm-reg-state" class="pm-reg__label">State / Province</label>
+                <span class="pm-reg__req">Required</span>
+              </div>
+              <select id="pm-reg-state" name="customer[note][state]" autocomplete="address-level1" required>
+                <option value="">Select…</option>
+                <option>Alabama</option><option>Alaska</option><option>Arizona</option><option>Arkansas</option>
+                <option>California</option><option>Colorado</option><option>Connecticut</option><option>Delaware</option>
+                <option>Florida</option><option>Georgia</option><option>Hawaii</option><option>Idaho</option>
+                <option>Illinois</option><option>Indiana</option><option>Iowa</option><option>Kansas</option>
+                <option>Kentucky</option><option>Louisiana</option><option>Maine</option><option>Maryland</option>
+                <option>Massachusetts</option><option>Michigan</option><option>Minnesota</option><option>Mississippi</option>
+                <option>Missouri</option><option>Montana</option><option>Nebraska</option><option>Nevada</option>
+                <option>New Hampshire</option><option>New Jersey</option><option>New Mexico</option><option>New York</option>
+                <option>North Carolina</option><option>North Dakota</option><option>Ohio</option><option>Oklahoma</option>
+                <option>Oregon</option><option>Pennsylvania</option><option>Rhode Island</option><option>South Carolina</option>
+                <option>South Dakota</option><option>Tennessee</option><option>Texas</option><option>Utah</option>
+                <option>Vermont</option><option>Virginia</option><option>Washington</option><option>West Virginia</option>
+                <option>Wisconsin</option><option>Wyoming</option><option>District of Columbia</option>
+              </select>
+            </div>
+
+            <div class="pm-reg__field">
+              <div class="pm-reg__label-row">
+                <label for="pm-reg-city" class="pm-reg__label">Suburb / City</label>
+                <span class="pm-reg__req">Required</span>
+              </div>
+              <input id="pm-reg-city" name="customer[note][city]" type="text" autocomplete="address-level2" required>
+            </div>
+
+            <div class="pm-reg__field">
+              <div class="pm-reg__label-row">
+                <label for="pm-reg-zip" class="pm-reg__label">Zip / Postcode</label>
+                <span class="pm-reg__req">Required</span>
+              </div>
+              <input id="pm-reg-zip" name="customer[note][zip]" type="text" autocomplete="postal-code" required>
+            </div>
+
+          </div>
+
+          <div class="pm-reg__checks">
+            <label class="pm-reg__check">
+              <input type="checkbox" name="customer[accepts_marketing]" value="1">
+              <span>Send me exclusive offers, new product alerts, and curated public-sector deal sheets.</span>
+            </label>
+            <label class="pm-reg__check">
+              <input type="checkbox" name="customer[note][terms_accepted]" value="1" required>
+              <span>I agree to Platinum Micro's
+                {%- if shop.policies.terms_of_service.url != blank %} <a href="{{ shop.policies.terms_of_service.url }}">Terms</a> and{% else %} Terms and{% endif %}
+                {%- if shop.policies.privacy_policy.url != blank %} <a href="{{ shop.policies.privacy_policy.url }}">Privacy Policy</a>{% else %} Privacy Policy{% endif %}.
+                <span class="pm-reg__star">*</span>
+              </span>
+            </label>
+          </div>
+
+          <p class="pm-reg__note">
+            Next step: we'll hand you off to Shopify's secure sign-in page where you'll receive an email with a sign-in link. After signing in, you'll be returned to <strong>Platinum Micro</strong>.
+          </p>
+
+          <button type="submit" class="pm-btn pm-btn--primary pm-btn--block pm-reg__submit">
+            Create account
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+
+          <p class="pm-reg__foot">Approval typically within one business day. Confirmation will arrive by email when your account is active.</p>
+        </form>
+
+        <p class="pm-reg__signin">Already have an account? <a href="/pages/sign-in">Sign in</a></p>
+      </div>
+    </div>
+
+  {%- comment -%} ───────────────────────────────────  SIGN-IN  ──── {%- endcomment -%}
+  {%- when 'sign-in' -%}
+    <div class="pm-signin">
+      <div class="pm-signin__inner">
+        <div class="pm-signin__pane">
+          <div class="pm-static__kicker">New customer?</div>
+          <h2 class="pm-signin__title">Open a business<br>account.</h2>
+          <p class="pm-signin__lead">Open an account and you'll be able to:</p>
+          <ul class="pm-signin__list">
+            <li>Check out faster</li>
+            <li>Save multiple shipping addresses</li>
+            <li>Access your order history</li>
+            <li>Track new orders</li>
+            <li>Save items to your lists</li>
+          </ul>
+          <a href="/pages/register" class="pm-btn pm-btn--primary pm-btn--block">
+            Create Account
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </a>
+          <p class="pm-signin__fine">
+            By signing up, you agree to Platinum Micro's
+            {%- if shop.policies.terms_of_service.url != blank %} <a href="{{ shop.policies.terms_of_service.url }}">Terms</a> and{% else %} Terms and{% endif %}
+            {%- if shop.policies.privacy_policy.url != blank %} <a href="{{ shop.policies.privacy_policy.url }}">Privacy Policy</a>{% else %} Privacy Policy{% endif %}.
+          </p>
+        </div>
+
+        <div class="pm-signin__divider"></div>
+
+        <div class="pm-signin__pane">
+          <div class="pm-static__kicker">Returning customer</div>
+          <h2 class="pm-signin__title">Sign in to your<br>account.</h2>
+
+          <form action="/account" method="get" class="pm-signin__form" data-pm-auth-redirect>
+            <div class="pm-signin__field">
+              <div class="pm-signin__label-row">
+                <label for="pm-signin-email" class="pm-signin__label">Email address</label>
+                <span class="pm-signin__req">Required</span>
+              </div>
+              <input
+                type="email"
+                id="pm-signin-email"
+                name="customer[email]"
+                autocomplete="email"
+                placeholder="you@company.com"
+                required
+              >
+            </div>
+
+            <div class="pm-signin__field">
+              <div class="pm-signin__label-row">
+                <label for="pm-signin-pass" class="pm-signin__label">Password</label>
+                <span class="pm-signin__req">Required</span>
+              </div>
+              <input
+                type="password"
+                id="pm-signin-pass"
+                name="customer[password]"
+                autocomplete="current-password"
+                placeholder="••••••••"
+                required
+              >
+            </div>
+
+            <a href="/account" class="pm-signin__forgot">Forgot password?</a>
+
+            <button type="submit" class="pm-btn pm-btn--primary pm-btn--block">
+              Sign in
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+
+            <p class="pm-signin__note">
+              Sign-in is handled by Shopify's secure email link. You'll be returned to <strong>Platinum Micro</strong> after signing in.
+            </p>
+          </form>
+
+          <p class="pm-signin__fine">
+            By signing up, you agree to Platinum Micro's
+            {%- if shop.policies.terms_of_service.url != blank %} <a href="{{ shop.policies.terms_of_service.url }}">Terms</a> and{% else %} Terms and{% endif %}
+            {%- if shop.policies.privacy_policy.url != blank %} <a href="{{ shop.policies.privacy_policy.url }}">Privacy Policy</a>{% else %} Privacy Policy{% endif %}.
+          </p>
+        </div>
+      </div>
+    </div>
+
+  {%- comment -%} ───────────────────────────────────  COMPARE  ──── {%- endcomment -%}
+  {%- when 'compare' -%}
+    <div class="pm-static__body">
+      <div class="pm-static__body__inner pm-static__body__inner--wide">
+        <header class="pm-cmp__head">
+          <div>
+            <div class="pm-static__eyebrow" style="margin-bottom:6px;">Product Comparison</div>
+            <h1 class="pm-cmp__title" id="pm-cmp-title">Compare products</h1>
+          </div>
+          <label class="pm-cmp__toggle" data-pm-cmp-toggle>
+            <span>Highlight Differences</span>
+            <input type="checkbox" id="pm-cmp-highlight" checked>
+            <span class="pm-cmp__switch" aria-hidden="true"></span>
+          </label>
+        </header>
+
+        <div class="pm-cmp" id="pm-cmp">
+          <div class="pm-cmp__empty" id="pm-cmp-empty" hidden>
+            <p class="pm-cmp__empty-title">Nothing here to compare yet.</p>
+            <p class="pm-cmp__empty-lead">Tick the <strong>Compare</strong> box on any product card to add it. You can compare up to 4 at once.</p>
+            <a href="/collections/all" class="pm-btn pm-btn--primary">Browse catalog</a>
+          </div>
+          <div class="pm-cmp__table" id="pm-cmp-grid"></div>
+        </div>
+      </div>
+    </div>
+
+  {%- comment -%} ──────────────────────────  ORDER VERIFICATION  ──── {%- endcomment -%}
+  {%- when 'order-verification' -%}
+    <div class="pm-static__body">
+      <div class="pm-static__body__inner">
+        <article class="pm-static__block">
+          <h2 class="pm-static__h2">Why we verify</h2>
+          <p>To protect you and our manufacturer partners, every order is reviewed before fulfillment. Verification typically takes under one business day and only involves contacting the buyer to confirm the order details.</p>
+        </article>
+        <article class="pm-static__block">
+          <h2 class="pm-static__h2">What to expect</h2>
+          <p>A Platinum Micro representative may call or email the phone number / email associated with the PO to confirm shipping address, payment method, and quantities. No additional documentation is required for most orders.</p>
+          <ul class="pm-static__list">
+            <li>First-time buyers may be asked to confirm payment method.</li>
+            <li>High-value orders may require a signed acknowledgement of the quote.</li>
+            <li>International shipments may require export-control documentation.</li>
+          </ul>
+        </article>
+      </div>
+    </div>
+
+  {%- else -%}
+    <div class="pm-static__body">
+      <div class="pm-static__body__inner">
+        <article class="pm-static__block rte">{{ fallback }}</article>
+      </div>
+    </div>
+
+  {%- endcase -%}
+
+</section>

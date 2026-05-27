@@ -1,0 +1,181 @@
+{%- comment -%}
+  PM — Search results
+  Same 2-column PLP layout as pm-collection (facets rail + grid).
+  Uses Shopify's `search` object — `search.filters` exposes the same
+  facets API as `collection.filters` when filters are enabled in admin.
+{%- endcomment -%}
+
+{%- assign per_page  = section.settings.products_per_page | default: 24 -%}
+{%- assign columns_d = section.settings.columns_desktop   | default: 3 -%}
+
+<section class="pm-plp pm-plp--search">
+  <div class="pm-container pm-plp__inner">
+
+    {%- if search.performed == false -%}
+      <div class="pm-plp__empty">
+        <p class="pm-plp__empty-title">Search the catalog by keyword, brand, or SKU.</p>
+      </div>
+
+    {%- elsif search.results_count == 0 -%}
+      <div class="pm-plp__empty">
+        <p class="pm-plp__empty-title">No results for &ldquo;{{ search.terms | escape }}&rdquo;.</p>
+        <a href="/collections/all" class="pm-btn pm-btn--primary">Browse catalog</a>
+      </div>
+
+    {%- else -%}
+
+      {%- paginate search.results by per_page -%}
+
+      <header class="pm-plp__head" id="pm-plp-header">
+        <div class="pm-plp__head-left">
+          <nav class="pm-breadcrumb" aria-label="Breadcrumb">
+            <a href="/">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              Home
+            </a>
+            <span class="pm-breadcrumb__sep">›</span>
+            <a href="/search">Search</a>
+            <span class="pm-breadcrumb__sep">›</span>
+            <span aria-current="page" class="pm-breadcrumb__current">{{ search.terms | escape }}</span>
+          </nav>
+          {%- assign _page_size_real = search.results | size -%}
+          {%- assign _start = paginate.current_offset | plus: 1 -%}
+          {%- assign _end   = paginate.current_offset | plus: _page_size_real -%}
+          <p class="pm-plp__count">Showing <strong>{{ _start }}–{{ _end }}</strong> of <strong>{{ search.results_count }}</strong> results</p>
+        </div>
+
+        <div class="pm-plp__toolbar">
+          <div class="pm-plp__view-toggle" role="group" aria-label="View">
+            <button type="button" class="pm-plp__view-btn is-active" data-pm-view="grid" aria-pressed="true" aria-label="Grid view">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            </button>
+            <button type="button" class="pm-plp__view-btn" data-pm-view="list" aria-pressed="false" aria-label="List view">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+            </button>
+          </div>
+
+          <div class="pm-plp__control">
+            <label for="pm-plp-pagesize" class="pm-plp__control-label">Show</label>
+            {%- assign _page_sizes = '12,24,36,48' | split: ',' -%}
+            <select id="pm-plp-pagesize" name="page_size" data-pm-plp-control onchange="window.location.href = updateQueryStringParameter(window.location.href, 'page_size', this.value)">
+              {%- for n in _page_sizes -%}
+                {%- assign _n_int = n | times: 1 -%}
+                <option value="{{ n }}"{% if per_page == _n_int %} selected{% endif %}>{{ n }}</option>
+              {%- endfor -%}
+            </select>
+          </div>
+
+          {%- assign current_sort = search.sort_by | default: 'relevance' -%}
+          {%- render 'pm-sort-menu', current: current_sort, context: 'search' -%}
+        </div>
+      </header>
+
+      <div class="pm-plp__body">
+
+        <aside class="pm-plp__rail" aria-label="Filters">
+          {%- render 'pm-facets', results: search -%}
+        </aside>
+
+        <div class="pm-plp__main">
+
+          <div id="pm-plp-grid-wrap" class="pm-plp__grid-wrap" data-pm-cols="{{ columns_d }}">
+            <ul class="pm-plp__grid" data-pm-view-mode="grid">
+              {%- for item in search.results -%}
+                <li>
+                  {%- if item.object_type == 'product' -%}
+                    {%- render 'pm-product-card', product: item -%}
+                  {%- else -%}
+                    <a href="{{ item.url }}" class="pm-pcard">
+                      <div class="pm-pcard__body">
+                        <div class="pm-pcard__brand">{{ item.object_type | capitalize }}</div>
+                        <div class="pm-pcard__title">{{ item.title }}</div>
+                        {%- if item.body != blank -%}
+                          <p class="pm-pcard__sku" style="white-space:normal;letter-spacing:0;font-family:inherit;">{{ item.body | strip_html | truncatewords: 16 }}</p>
+                        {%- endif -%}
+                      </div>
+                    </a>
+                  {%- endif -%}
+                </li>
+              {%- endfor -%}
+            </ul>
+
+            {%- if paginate.pages > 1 -%}
+              <nav class="pm-pagination" aria-label="Pagination">
+                {%- if paginate.previous -%}
+                  <a href="{{ paginate.previous.url }}" class="pm-pagination__nav">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+                    Previous
+                  </a>
+                {%- endif -%}
+                <ul class="pm-pagination__pages">
+                  {%- for part in paginate.parts -%}
+                    <li>
+                      {%- if part.is_link -%}
+                        <a href="{{ part.url }}">{{ part.title }}</a>
+                      {%- elsif part.title == paginate.current_page -%}
+                        <span class="is-current" aria-current="page">{{ part.title }}</span>
+                      {%- else -%}
+                        <span class="is-ellipsis">{{ part.title }}</span>
+                      {%- endif -%}
+                    </li>
+                  {%- endfor -%}
+                </ul>
+                {%- if paginate.next -%}
+                  <a href="{{ paginate.next.url }}" class="pm-pagination__nav">
+                    Next
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+                  </a>
+                {%- endif -%}
+              </nav>
+            {%- endif -%}
+          </div>
+        </div>
+      </div>
+
+      {%- endpaginate -%}
+    {%- endif -%}
+  </div>
+</section>
+
+<script>
+  // updateQueryStringParameter is referenced by the Show-N <select>
+  // (inline onchange). View-toggle + sort handlers are in pm-plp.js.
+  function updateQueryStringParameter(uri, key, value) {
+    var re = new RegExp("([?&])" + key + "=.*?(&|$)", "i");
+    var sep = uri.indexOf('?') !== -1 ? '&' : '?';
+    if (uri.match(re)) return uri.replace(re, '$1' + key + '=' + value + '$2');
+    return uri + sep + key + '=' + value;
+  }
+</script>
+
+{% schema %}
+{
+  "name": "PM — Search",
+  "settings": [
+    {
+      "type": "text",
+      "id": "placeholder",
+      "label": "Search input placeholder",
+      "default": "Search by keyword, brand, or SKU…"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "label": "Products per row (desktop)",
+      "min": 2,
+      "max": 5,
+      "step": 1,
+      "default": 3
+    },
+    {
+      "type": "range",
+      "id": "products_per_page",
+      "label": "Products per page",
+      "min": 12,
+      "max": 48,
+      "step": 4,
+      "default": 24
+    }
+  ]
+}
+{% endschema %}

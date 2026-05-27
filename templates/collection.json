@@ -1,0 +1,12 @@
+{
+  "sections": {
+    "pm-collection": {
+      "type": "pm-collection",
+      "settings": {
+        "products_per_page": 24,
+        "columns_desktop": 3
+      }
+    }
+  },
+  "order": ["pm-collection"]
+}

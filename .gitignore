@@ -1,0 +1,26 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Editors / IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs / OS junk
+*.log
+*.tmp
+
+# Shopify CLI
+.shopifyignore
+.shopify-cli.yml
+node_modules/
+
+# Local theme dev artifacts
+config/settings_data.local.json

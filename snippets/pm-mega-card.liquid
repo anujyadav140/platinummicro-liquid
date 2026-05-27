@@ -1,0 +1,67 @@
+{%- comment -%}
+  PM — Mega menu card
+  Renders one collection card for the mega menu card-grid.
+
+  Params (all optional except col_handle + col_title):
+    col_handle    — Shopify collection handle
+    col_title     — display title
+    col_image_url — explicit image URL (wins over collection lookup)
+    col_blurb     — explicit blurb text (wins over collection lookup)
+
+  When `col_image_url` / `col_blurb` aren't passed, we fall back to the
+  live Shopify collection data (collection.image / first product / count).
+{%- endcomment -%}
+
+{%- assign _col = collections[col_handle] -%}
+{%- assign _badge = col_title | upcase | slice: 0, 3 -%}
+
+{%- comment -%} Blurb: explicit > live collection count+name > default {%- endcomment -%}
+{%- assign _blurb = '' -%}
+{%- if col_blurb != blank -%}
+  {%- assign _blurb = col_blurb -%}
+{%- elsif _col != blank and _col.products_count != blank and _col.products_count > 0 -%}
+  {%- assign _blurb = _col.products_count | append: ' products' -%}
+  {%- assign _first_title = _col.products.first.title -%}
+  {%- if _first_title != blank -%}
+    {%- assign _first_short = _first_title | strip_html | truncatewords: 9, '…' -%}
+    {%- assign _blurb = _blurb | append: '. ' | append: _first_short -%}
+  {%- elsif _col.description != blank -%}
+    {%- assign _desc_short = _col.description | strip_html | truncatewords: 9, '…' -%}
+    {%- assign _blurb = _blurb | append: '. ' | append: _desc_short -%}
+  {%- endif -%}
+{%- else -%}
+  {%- assign _blurb = 'Browse the catalog' -%}
+{%- endif -%}
+
+{%- comment -%} Image: explicit URL > collection image > first product image {%- endcomment -%}
+{%- assign _img = nil -%}
+{%- assign _img_alt = col_title -%}
+{%- if col_image_url != blank -%}
+  {%- assign _img = col_image_url -%}
+{%- elsif _col.image -%}
+  {%- assign _img = _col.image | image_url: width: 200 -%}
+  {%- assign _img_alt = _col.image.alt | default: col_title -%}
+{%- elsif _col.products.first.featured_image -%}
+  {%- assign _img = _col.products.first.featured_image | image_url: width: 200 -%}
+  {%- assign _img_alt = _col.products.first.featured_image.alt | default: col_title -%}
+{%- endif -%}
+
+<a href="/collections/{{ col_handle }}" class="pm-mega__card">
+  <div class="pm-mega__card-head">
+    <span class="pm-mega__card-badge">{{ _badge }}</span>
+    <span class="pm-mega__card-title">{{ col_title }}</span>
+  </div>
+  <div class="pm-mega__card-body">
+    <p class="pm-mega__card-blurb">{{ _blurb }}</p>
+    {%- if _img -%}
+      <img
+        src="{{ _img }}"
+        alt="{{ _img_alt | escape }}"
+        width="96"
+        height="64"
+        loading="lazy"
+        class="pm-mega__card-img"
+      >
+    {%- endif -%}
+  </div>
+</a>

@@ -1,0 +1,92 @@
+[
+  {
+    "name": "theme_info",
+    "theme_name": "Platinum Micro",
+    "theme_version": "1.0.0",
+    "theme_author": "Platinum Micro",
+    "theme_documentation_url": "https://github.com/anujyadav140/platinummicro-liquid",
+    "theme_support_url": "https://github.com/anujyadav140/platinummicro-liquid"
+  },
+  {
+    "name": "Brand",
+    "settings": [
+      {
+        "type": "image_picker",
+        "id": "logo",
+        "label": "Store logo"
+      },
+      {
+        "type": "image_picker",
+        "id": "favicon",
+        "label": "Favicon"
+      }
+    ]
+  },
+  {
+    "name": "Brand Colors",
+    "settings": [
+      {
+        "type": "color",
+        "id": "color_navy_deep",
+        "label": "Navy (deep) — header, nav background",
+        "default": "#0D2340"
+      },
+      {
+        "type": "color",
+        "id": "color_navy_deepest",
+        "label": "Navy (deepest) — top bar, footer, about section",
+        "default": "#071525"
+      },
+      {
+        "type": "color",
+        "id": "color_terracotta",
+        "label": "Terracotta — primary CTA, badges",
+        "default": "#A63D2F"
+      },
+      {
+        "type": "color",
+        "id": "color_brand_primary",
+        "label": "Brand primary (theme-color meta tag)",
+        "default": "#0D2340"
+      },
+      {
+        "type": "color",
+        "id": "color_paper",
+        "label": "Page background",
+        "default": "#FBFAF7"
+      }
+    ]
+  },
+  {
+    "name": "Typography",
+    "settings": [
+      {
+        "type": "font_picker",
+        "id": "font_heading",
+        "label": "Heading font",
+        "default": "inter_n7"
+      },
+      {
+        "type": "font_picker",
+        "id": "font_body",
+        "label": "Body font",
+        "default": "inter_n4"
+      }
+    ]
+  },
+  {
+    "name": "Layout",
+    "settings": [
+      {
+        "type": "range",
+        "id": "page_width",
+        "label": "Max content width (px)",
+        "min": 960,
+        "max": 1600,
+        "step": 40,
+        "default": 1280,
+        "unit": "px"
+      }
+    ]
+  }
+]

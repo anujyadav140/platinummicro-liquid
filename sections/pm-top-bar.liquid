@@ -1,0 +1,111 @@
+{%- assign top_bar_enabled = section.settings.enabled -%}
+
+{%- if top_bar_enabled -%}
+<div class="pm-top-bar" id="pm-top-bar" role="banner">
+  <div class="pm-top-bar__inner">
+    <div class="pm-top-bar__trust">
+      {%- if section.settings.lead_text != blank -%}
+        {{ section.settings.lead_text }}
+      {%- else -%}
+        <strong>MBE-certified</strong>
+        <span class="pm-dot">&middot;</span>
+        Authorized HPE &amp; Intel partner
+        <span class="pm-dot">&middot;</span>
+        {%- comment -%}
+          Note: do NOT pipe through `money_without_currency` — that filter assumes
+          the input is in cents, so 5000 → "$50.00". We just want the literal number.
+        {%- endcomment -%}
+        {%- assign _fsm = section.settings.free_ship_min | default: 5000 -%}
+        {%- assign _fsm_str = _fsm | round | append: '' -%}
+        {%- assign _fsm_len = _fsm_str | size -%}
+        {%- if _fsm_len == 4 -%}
+          {%- assign _fsm_hd = _fsm_str | slice: 0, 1 -%}
+          {%- assign _fsm_tl = _fsm_str | slice: 1, 3 -%}
+          {%- assign _fsm_fmt = _fsm_hd | append: ',' | append: _fsm_tl -%}
+        {%- elsif _fsm_len == 5 -%}
+          {%- assign _fsm_hd = _fsm_str | slice: 0, 2 -%}
+          {%- assign _fsm_tl = _fsm_str | slice: 2, 3 -%}
+          {%- assign _fsm_fmt = _fsm_hd | append: ',' | append: _fsm_tl -%}
+        {%- elsif _fsm_len == 6 -%}
+          {%- assign _fsm_hd = _fsm_str | slice: 0, 3 -%}
+          {%- assign _fsm_tl = _fsm_str | slice: 3, 3 -%}
+          {%- assign _fsm_fmt = _fsm_hd | append: ',' | append: _fsm_tl -%}
+        {%- else -%}
+          {%- assign _fsm_fmt = _fsm_str -%}
+        {%- endif -%}
+        Free freight on orders over ${{ _fsm_fmt }}
+        <span class="pm-dot">&middot;</span>
+        Ships from Southern California
+      {%- endif -%}
+    </div>
+
+    <div class="pm-top-bar__right">
+      <a href="#quick-order" data-qo-open>Quick order</a>
+      <span class="pm-dot">&middot;</span>
+      {%- if customer -%}
+        <a href="/account">Hi, {{ customer.first_name }}</a>
+      {%- else -%}
+        <a href="/pages/sign-in">Sign in</a>
+      {%- endif -%}
+      <span class="pm-dot">&middot;</span>
+      <a href="tel:{{ section.settings.phone | default: '8776764986' }}">
+        {{ section.settings.phone | default: '(877)-PMG4YOU' }}
+      </a>
+      <button
+        class="pm-top-bar__dismiss"
+        id="pm-top-bar-dismiss"
+        aria-label="Dismiss"
+        onclick="document.getElementById('pm-top-bar').style.display='none'; document.cookie='pm-top-bar-dismissed=1;path=/;max-age=86400';"
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Restore dismissed state from cookie on page load
+  if (document.cookie.indexOf('pm-top-bar-dismissed=1') !== -1) {
+    var bar = document.getElementById('pm-top-bar');
+    if (bar) bar.style.display = 'none';
+  }
+</script>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "PM — Top Bar",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "enabled",
+      "label": "Show top bar",
+      "default": true
+    },
+    {
+      "type": "textarea",
+      "id": "lead_text",
+      "label": "Trust line (HTML supported)",
+      "info": "Leave blank to use the default trust signals. Use <strong> for bold text.",
+      "placeholder": "<strong>MBE-certified</strong> · Authorized HPE &amp; Intel partner · Free freight on orders over $5,000"
+    },
+    {
+      "type": "text",
+      "id": "phone",
+      "label": "Phone number (display)",
+      "default": "(877)-PMG4YOU"
+    },
+    {
+      "type": "number",
+      "id": "free_ship_min",
+      "label": "Free shipping minimum ($)",
+      "default": 5000
+    }
+  ],
+  "presets": [
+    { "name": "PM — Top Bar" }
+  ]
+}
+{% endschema %}

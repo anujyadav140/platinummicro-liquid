@@ -1,0 +1,74 @@
+{%- comment -%}
+  PM — Sort menu
+  Custom dropdown matching the Hydrogen reference (Featured ✓ / Newest /
+  Best selling / A to Z / Z to A / By review / Price: low to high / high to low).
+
+  Params:
+    current — current sort_by value (e.g. "manual", "best-selling")
+    context — "collection" | "search" (search drops the Featured option)
+{%- endcomment -%}
+
+{%- assign _ctx = context | default: 'collection' -%}
+{%- assign _curr = current | default: 'manual' -%}
+
+{%- comment -%}
+  Build the menu (value~label). On search pages we also include Relevance
+  and Newest behaves the same in both contexts.
+{%- endcomment -%}
+{%- if _ctx == 'search' -%}
+  {%- assign _opts = 'relevance~Relevance|created-descending~Newest|best-selling~Best selling|title-ascending~A to Z|title-descending~Z to A|reviews~By review|price-ascending~Price: low to high|price-descending~Price: high to low' -%}
+{%- else -%}
+  {%- assign _opts = 'manual~Featured|created-descending~Newest|best-selling~Best selling|title-ascending~A to Z|title-descending~Z to A|reviews~By review|price-ascending~Price: low to high|price-descending~Price: high to low' -%}
+{%- endif -%}
+
+{%- assign _pairs = _opts | split: '|' -%}
+{%- comment -%} Resolve current label {%- endcomment -%}
+{%- assign _curr_label = 'Featured' -%}
+{%- if _ctx == 'search' -%}{%- assign _curr_label = 'Relevance' -%}{%- endif -%}
+{%- for _p in _pairs -%}
+  {%- assign _kv = _p | split: '~' -%}
+  {%- if _kv[0] == _curr -%}{%- assign _curr_label = _kv[1] -%}{%- endif -%}
+{%- endfor -%}
+
+<div class="pm-plp__control pm-sort" data-pm-sort>
+  <span class="pm-plp__control-label" id="pm-sort-label">Sort</span>
+  <button
+    type="button"
+    class="pm-sort__trigger"
+    aria-haspopup="listbox"
+    aria-expanded="false"
+    aria-labelledby="pm-sort-label pm-sort-current"
+    data-pm-sort-trigger
+  >
+    <span id="pm-sort-current" class="pm-sort__current">{{ _curr_label }}</span>
+    <svg class="pm-sort__chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+  </button>
+  <ul class="pm-sort__menu" role="listbox" aria-labelledby="pm-sort-label" data-pm-sort-menu hidden>
+    {%- for _p in _pairs -%}
+      {%- assign _kv = _p | split: '~' -%}
+      {%- assign _v = _kv[0] -%}
+      {%- assign _l = _kv[1] -%}
+      {%- assign _active = false -%}
+      {%- if _v == _curr -%}{%- assign _active = true -%}{%- endif -%}
+      <li
+        role="option"
+        class="pm-sort__opt {% if _active %}is-active{% endif %}"
+        data-pm-sort-opt
+        data-value="{{ _v }}"
+        aria-selected="{{ _active }}"
+        tabindex="-1"
+      >
+        <span class="pm-sort__opt-label">{{ _l }}</span>
+        <svg class="pm-sort__check" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+      </li>
+    {%- endfor -%}
+  </ul>
+  {%- comment -%} Hidden input the facets JS picks up as a toolbar control {%- endcomment -%}
+  <input type="hidden" name="sort_by" value="{{ _curr }}" data-pm-plp-control id="pm-plp-sort">
+</div>
+
+{%- comment -%}
+  Handlers for trigger/option/escape are all in assets/pm-plp.js (event
+  delegation at the document level), so they survive AJAX swaps of the
+  toolbar HTML by pm-facets.js.
+{%- endcomment -%}

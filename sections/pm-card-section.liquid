@@ -1,0 +1,286 @@
+{%- liquid
+  assign card_style = section.settings.card_style | default: 'poster'
+  assign columns    = section.settings.columns | default: 6
+-%}
+
+{%- comment -%}
+  Fallback poster images for the Industries section.
+  When a card has no image_picker value set, we look up its title (handleized)
+  against this map so the merchant gets sensible defaults out-of-the-box.
+  All images already exist on the store's Shopify CDN.
+{%- endcomment -%}
+{%- assign _cdn_base = 'https://cdn.shopify.com/s/files/1/0715/8841/3523/files/' -%}
+{%- assign _fallback_imgs = 'system-integrators:system-integrators.jpg|education:education.png|smb:smb.png|public-sector:public-sector.jpg|healthcare:healthcare.jpg|enterprise:enterprise.jpg' -%}
+
+<section
+  class="pm-card-section"
+  style="
+    {%- if section.settings.bg_color != blank %}background-color:{{ section.settings.bg_color }};{% endif -%}
+    {%- if section.settings.padding_top != blank %}padding-top:{{ section.settings.padding_top }}px;{% endif -%}
+    {%- if section.settings.padding_bottom != blank %}padding-bottom:{{ section.settings.padding_bottom }}px;{% endif -%}
+  "
+>
+  <div class="pm-container">
+    {%- if section.settings.eyebrow != blank or section.settings.title != blank -%}
+      <div class="pm-section-header{% if section.settings.align == 'center' %} pm-section-header--center{% endif %}">
+        {%- if section.settings.eyebrow != blank -%}
+          <div class="pm-section-eyebrow">{{ section.settings.eyebrow }}</div>
+        {%- endif -%}
+        {%- if section.settings.title != blank -%}
+          <h2 class="pm-section-title">{{ section.settings.title }}</h2>
+        {%- endif -%}
+        {%- if section.settings.subtitle != blank -%}
+          <p class="pm-section-subtitle{% if section.settings.align == 'center' %}" style="margin-left:auto;margin-right:auto;{% else -%}"{% endif %}>
+            {{ section.settings.subtitle }}
+          </p>
+        {%- endif -%}
+      </div>
+    {%- endif -%}
+
+    {%- if section.blocks.size > 0 -%}
+      <ul
+        class="pm-card-grid{% if columns <= 3 %} pm-card-grid--3col{% endif %}"
+      >
+        {%- for block in section.blocks -%}
+          {%- if card_style == 'poster' -%}
+
+            {%- comment -%} Resolve image: admin upload wins, else fall back via title handle {%- endcomment -%}
+            {%- assign _bg_url = '' -%}
+            {%- if block.settings.image != blank -%}
+              {%- assign _bg_url = block.settings.image | image_url: width: 800 -%}
+            {%- else -%}
+              {%- assign _title_key = block.settings.title | handleize -%}
+              {%- assign _pairs = _fallback_imgs | split: '|' -%}
+              {%- for _p in _pairs -%}
+                {%- assign _kv = _p | split: ':' -%}
+                {%- if _kv[0] == _title_key -%}
+                  {%- assign _bg_url = _cdn_base | append: _kv[1] -%}
+                {%- endif -%}
+              {%- endfor -%}
+            {%- endif -%}
+
+            <li {{ block.shopify_attributes }}>
+              {%- if block.settings.link != blank -%}
+                <a
+                  class="pm-poster-card"
+                  href="{{ block.settings.link }}"
+                  style="
+                    {%- if _bg_url != '' -%}
+                      background-image: url('{{ _bg_url }}');
+                    {%- elsif block.settings.bg_color != blank -%}
+                      background-color: {{ block.settings.bg_color }};
+                    {%- endif -%}
+                  "
+                  aria-label="{{ block.settings.title }}"
+                >
+              {%- else -%}
+                <div
+                  class="pm-poster-card"
+                  style="
+                    {%- if _bg_url != '' -%}
+                      background-image: url('{{ _bg_url }}');
+                    {%- elsif block.settings.bg_color != blank -%}
+                      background-color: {{ block.settings.bg_color }};
+                    {%- endif -%}
+                  "
+                >
+              {%- endif -%}
+                  <div
+                    class="pm-poster-card__ribbon"
+                    style="
+                      {%- if block.settings.ribbon_bg != blank %}background-color:{{ block.settings.ribbon_bg }};{% endif -%}
+                      {%- if block.settings.ribbon_text != blank %}color:{{ block.settings.ribbon_text }};{% endif -%}
+                    "
+                  >
+                    {{ block.settings.title }}
+                  </div>
+              {%- if block.settings.link != blank -%}
+                </a>
+              {%- else -%}
+                </div>
+              {%- endif -%}
+            </li>
+
+          {%- else -%}
+            {%- comment -%} Icon tile card {%- endcomment -%}
+            <li {{ block.shopify_attributes }}>
+              {%- if block.settings.link != blank -%}
+                <a class="pm-icon-card" href="{{ block.settings.link }}" style="display:flex;">
+              {%- else -%}
+                <div class="pm-icon-card">
+              {%- endif -%}
+                {%- if block.settings.image != blank -%}
+                  <img
+                    src="{{ block.settings.image | image_url: width: 96 }}"
+                    alt="{{ block.settings.title }}"
+                    width="48"
+                    height="48"
+                    style="width:48px;height:48px;object-fit:contain;border-radius:6px;"
+                    loading="lazy"
+                  >
+                {%- else -%}
+                  <div class="pm-icon-card__icon">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="2" y="2" width="20" height="8" rx="2"/><rect x="2" y="14" width="20" height="8" rx="2"/><line x1="6" y1="6" x2="6.01" y2="6"/><line x1="6" y1="18" x2="6.01" y2="18"/></svg>
+                  </div>
+                {%- endif -%}
+
+                <h3 class="pm-icon-card__title">{{ block.settings.title }}</h3>
+
+                {%- if block.settings.subtitle != blank -%}
+                  <p class="pm-icon-card__subtitle">{{ block.settings.subtitle }}</p>
+                {%- endif -%}
+
+                {%- if block.settings.link != blank -%}
+                  <svg class="pm-icon-card__arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M7 17L17 7M17 7H7M17 7v10"/></svg>
+                {%- endif -%}
+              {%- if block.settings.link != blank -%}
+                </a>
+              {%- else -%}
+                </div>
+              {%- endif -%}
+            </li>
+          {%- endif -%}
+        {%- endfor -%}
+      </ul>
+    {%- endif -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "PM — Card Section",
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow text",
+      "default": "WHO WE SERVE"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Section title",
+      "default": "Industries we serve"
+    },
+    {
+      "type": "textarea",
+      "id": "subtitle",
+      "label": "Section subtitle",
+      "default": "Vertical-specific configurations and contract alignment."
+    },
+    {
+      "type": "select",
+      "id": "align",
+      "label": "Text alignment",
+      "options": [
+        { "value": "left",   "label": "Left" },
+        { "value": "center", "label": "Center" }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "select",
+      "id": "card_style",
+      "label": "Card style",
+      "options": [
+        { "value": "poster",    "label": "Poster (photo fills card)" },
+        { "value": "icon-tile", "label": "Icon tile (white card with icon)" }
+      ],
+      "default": "poster"
+    },
+    {
+      "type": "range",
+      "id": "columns",
+      "label": "Columns on desktop",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "default": 6
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Section background color"
+    },
+    {
+      "type": "number",
+      "id": "padding_top",
+      "label": "Padding top (px)",
+      "default": 64
+    },
+    {
+      "type": "number",
+      "id": "padding_bottom",
+      "label": "Padding bottom (px)",
+      "default": 64
+    }
+  ],
+  "blocks": [
+    {
+      "type": "card",
+      "name": "Card",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Card image"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Title",
+          "default": "System Integrators"
+        },
+        {
+          "type": "text",
+          "id": "subtitle",
+          "label": "Subtitle / description"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "color",
+          "id": "bg_color",
+          "label": "Card background color (fallback when no image)",
+          "default": "#0D2340"
+        },
+        {
+          "type": "color",
+          "id": "ribbon_bg",
+          "label": "Ribbon badge color (poster style)",
+          "default": "#A63D2F"
+        },
+        {
+          "type": "color",
+          "id": "ribbon_text",
+          "label": "Ribbon text color",
+          "default": "#FFFFFF"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "PM — Card Section",
+      "settings": {
+        "eyebrow": "WHO WE SERVE",
+        "title": "Industries we serve",
+        "subtitle": "Vertical-specific configurations and contract alignment.",
+        "card_style": "poster",
+        "columns": 6
+      },
+      "blocks": [
+        { "type": "card", "settings": { "title": "System Integrators" } },
+        { "type": "card", "settings": { "title": "Education" } },
+        { "type": "card", "settings": { "title": "SMB" } },
+        { "type": "card", "settings": { "title": "Public Sector" } },
+        { "type": "card", "settings": { "title": "Healthcare" } },
+        { "type": "card", "settings": { "title": "Enterprise" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

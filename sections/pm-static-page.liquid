@@ -1,0 +1,12 @@
+{%- comment -%}
+  PM — Static page renderer.
+  Delegates to snippets/pm-static-body.liquid keyed by page.handle.
+{%- endcomment -%}
+{%- render 'pm-static-body', handle: page.handle, fallback: page.content -%}
+
+{% schema %}
+{
+  "name": "PM — Static Page",
+  "settings": []
+}
+{% endschema %}

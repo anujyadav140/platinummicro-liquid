@@ -1,0 +1,111 @@
+{%- comment -%}
+  PM — Footer (1:1 with Hydrogen storefront).
+  Columns: Catalog, Programs, About.
+  Bottom row: copyright + Privacy / Terms / Order verification.
+
+  Page links route to /pages/<handle> — the merchant needs to create
+  empty pages in admin with the matching handles. The theme's
+  `templates/page.json` + `sections/pm-static-page.liquid` render the
+  baked content automatically; no copy needed on the merchant side.
+
+  Privacy / Terms fall back to shop.policies.* (Shopify-managed).
+{%- endcomment -%}
+
+<footer class="pm-footer" role="contentinfo">
+  <div class="pm-footer__inner">
+    <div class="pm-footer__grid">
+
+      {%- comment -%} ── Brand column ─────────────────────────────────── {%- endcomment -%}
+      <div class="pm-footer__brand">
+        {%- if section.settings.logo != blank -%}
+          <img src="{{ section.settings.logo | image_url: height: 112 }}"
+               alt="{{ shop.name }}" height="56"
+               style="height:56px;width:auto;margin-bottom:16px;" loading="lazy">
+        {%- elsif shop.brand.logo != blank -%}
+          <img src="{{ shop.brand.logo | image_url: height: 112 }}"
+               alt="{{ shop.name }}" height="56"
+               style="height:56px;width:auto;margin-bottom:16px;" loading="lazy">
+        {%- else -%}
+          <div style="font-weight:800;font-size:20px;color:white;margin-bottom:16px;letter-spacing:-0.02em;">{{ shop.name }}</div>
+        {%- endif -%}
+        <p class="pm-footer__tagline">
+          {{ section.settings.tagline | default: 'Two decades stocking servers, storage, and networking for system integrators, public sector, and healthcare buyers worldwide.' }}
+        </p>
+      </div>
+
+      {%- comment -%} ── Catalog column ───────────────────────────────── {%- endcomment -%}
+      <div>
+        <div class="pm-footer__col-title">Catalog</div>
+        <ul class="pm-footer__col-links">
+          <li><a class="pm-footer__col-link" href="/collections/servers">Servers</a></li>
+          <li><a class="pm-footer__col-link" href="/collections/storage">Storage</a></li>
+          <li><a class="pm-footer__col-link" href="/collections/networking">Networking</a></li>
+          <li><a class="pm-footer__col-link" href="/collections/components">Components</a></li>
+          <li><a class="pm-footer__col-link" href="/collections/computers">Computers</a></li>
+          <li><a class="pm-footer__col-link" href="/collections/peripherals">Peripherals</a></li>
+          <li><a class="pm-footer__col-link" href="/collections/software">Software</a></li>
+          <li><a class="pm-footer__col-link" href="/collections/bundles">Bundles</a></li>
+        </ul>
+      </div>
+
+      {%- comment -%} ── Programs column ──────────────────────────────── {%- endcomment -%}
+      <div>
+        <div class="pm-footer__col-title">Programs</div>
+        <ul class="pm-footer__col-links">
+          <li><a class="pm-footer__col-link" href="#quick-order" data-qo-open>Bulk pricing</a></li>
+          <li><a class="pm-footer__col-link" href="/collections/bundles">Bundles</a></li>
+          <li><a class="pm-footer__col-link" href="#quick-order" data-qo-open>Request a quote</a></li>
+          <li><a class="pm-footer__col-link" href="https://www.omniapartners.com/" target="_blank" rel="noopener noreferrer">OMNIA Partners</a></li>
+          <li><a class="pm-footer__col-link" href="https://www.naspovaluepoint.org/" target="_blank" rel="noopener noreferrer">NASPO ValuePoint</a></li>
+        </ul>
+      </div>
+
+      {%- comment -%} ── About column ─────────────────────────────────── {%- endcomment -%}
+      <div>
+        <div class="pm-footer__col-title">About</div>
+        <ul class="pm-footer__col-links">
+          <li><a class="pm-footer__col-link" href="/pages/about">About Us</a></li>
+          <li><a class="pm-footer__col-link" href="/pages/brands">Authorized brands</a></li>
+          <li><a class="pm-footer__col-link" href="/pages/contact">Contact Us</a></li>
+          <li><a class="pm-footer__col-link" href="/pages/shipping-returns">Shipping &amp; Returns</a></li>
+          <li><a class="pm-footer__col-link" href="/pages/site-map">Site Map</a></li>
+          <li><a class="pm-footer__col-link" href="/pages/social-responsibility">Social Responsibility</a></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="pm-footer__legal">
+      <p class="pm-footer__copyright">
+        &copy; {{ 'now' | date: '%Y' }} {{ shop.name }}, Inc. — Southern California
+      </p>
+      <nav class="pm-footer__legal-links" aria-label="Legal">
+        {%- if shop.policies.privacy_policy.url != blank -%}
+          <a class="pm-footer__legal-link" href="{{ shop.policies.privacy_policy.url }}">Privacy</a>
+        {%- endif -%}
+        {%- if shop.policies.terms_of_service.url != blank -%}
+          <a class="pm-footer__legal-link" href="{{ shop.policies.terms_of_service.url }}">Terms</a>
+        {%- endif -%}
+        <a class="pm-footer__legal-link" href="/pages/order-verification">Order verification</a>
+      </nav>
+    </div>
+  </div>
+</footer>
+
+{% schema %}
+{
+  "name": "PM — Footer",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Footer logo (leave blank to use shop brand logo)"
+    },
+    {
+      "type": "textarea",
+      "id": "tagline",
+      "label": "Brand tagline",
+      "default": "Two decades stocking servers, storage, and networking for system integrators, public sector, and healthcare buyers worldwide."
+    }
+  ]
+}
+{% endschema %}

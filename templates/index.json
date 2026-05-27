@@ -1,0 +1,153 @@
+{
+  "sections": {
+    "pm-hero-banner": {
+      "type": "pm-hero-banner",
+      "settings": {
+        "eyebrow": "PLATINUM MICRO",
+        "headline": "Go with Platinum Micro for a Platinum Experience.",
+        "body": "Two decades of servers, storage, and networking for system integrators and public sector buyers.",
+        "cta_label": "Browse Catalog",
+        "cta_href": "/collections/all",
+        "text_color": "light",
+        "bg_color": "#0D2340",
+        "accent_color": "#A63D2F",
+        "show_overlay": true,
+        "height_px": 480
+      }
+    },
+    "pm-banner-strip": {
+      "type": "pm-banner-strip",
+      "settings": {
+        "text": "<p>Free freight on orders over $5,000. Quotes valid 14 days.</p>",
+        "bg_color": "#F4EFE8",
+        "text_color": "#344054"
+      }
+    },
+    "pm-card-section": {
+      "type": "pm-card-section",
+      "settings": {
+        "eyebrow": "WHO WE SERVE",
+        "title": "Industries we serve",
+        "subtitle": "Vertical-specific configurations and contract alignment.",
+        "card_style": "poster",
+        "columns": 3,
+        "align": "left",
+        "padding_top": 80,
+        "padding_bottom": 80
+      },
+      "blocks": {
+        "card-1": {
+          "type": "card",
+          "settings": {
+            "title": "SYSTEM INTEGRATORS",
+            "bg_color": "#1B3A6B",
+            "ribbon_bg": "#A63D2F",
+            "ribbon_text": "#FFFFFF"
+          }
+        },
+        "card-2": {
+          "type": "card",
+          "settings": {
+            "title": "EDUCATION",
+            "bg_color": "#0D2340",
+            "ribbon_bg": "#A63D2F",
+            "ribbon_text": "#FFFFFF"
+          }
+        },
+        "card-3": {
+          "type": "card",
+          "settings": {
+            "title": "SMB",
+            "bg_color": "#344054",
+            "ribbon_bg": "#A63D2F",
+            "ribbon_text": "#FFFFFF"
+          }
+        },
+        "card-4": {
+          "type": "card",
+          "settings": {
+            "title": "PUBLIC SECTOR",
+            "bg_color": "#1D2939",
+            "ribbon_bg": "#A63D2F",
+            "ribbon_text": "#FFFFFF"
+          }
+        },
+        "card-5": {
+          "type": "card",
+          "settings": {
+            "title": "HEALTHCARE",
+            "bg_color": "#0D2340",
+            "ribbon_bg": "#A63D2F",
+            "ribbon_text": "#FFFFFF"
+          }
+        },
+        "card-6": {
+          "type": "card",
+          "settings": {
+            "title": "ENTERPRISE",
+            "bg_color": "#1B3A6B",
+            "ribbon_bg": "#A63D2F",
+            "ribbon_text": "#FFFFFF"
+          }
+        }
+      },
+      "block_order": ["card-1", "card-2", "card-3", "card-4", "card-5", "card-6"]
+    },
+    "pm-promotion-card": {
+      "type": "pm-promotion-card",
+      "settings": {
+        "eyebrow": "LIMITED-TIME OFFER",
+        "title": "Cisco refresh window — Q4 pricing locked.",
+        "body": "HPE, Cisco, and Dell lease returns arriving now. Fixed-price bundles, no auction, NASPO-aligned.",
+        "cta_label": "View the deal",
+        "cta_href": "/collections/bundles",
+        "bg_color": "#0D2340",
+        "accent_color": "#A63D2F",
+        "border_radius": 12
+      }
+    },
+    "pm-brand-wall": {
+      "type": "pm-brand-wall",
+      "settings": {
+        "eyebrow": "Authorized partners",
+        "title": "Stocked, supported, sourced direct.",
+        "cta_label": "All manufacturers",
+        "cta_href": "/collections/all"
+      },
+      "blocks": {
+        "brand-hpe":       { "type": "brand", "settings": { "name": "HPE" } },
+        "brand-dell":      { "type": "brand", "settings": { "name": "Dell" } },
+        "brand-cisco":     { "type": "brand", "settings": { "name": "Cisco" } },
+        "brand-lenovo":    { "type": "brand", "settings": { "name": "Lenovo" } },
+        "brand-intel":     { "type": "brand", "settings": { "name": "Intel" } },
+        "brand-amd":       { "type": "brand", "settings": { "name": "AMD" } },
+        "brand-samsung":   { "type": "brand", "settings": { "name": "Samsung" } },
+        "brand-seagate":   { "type": "brand", "settings": { "name": "Seagate" } },
+        "brand-wd":        { "type": "brand", "settings": { "name": "Western Digital" } },
+        "brand-microsoft": { "type": "brand", "settings": { "name": "Microsoft" } },
+        "brand-micron":    { "type": "brand", "settings": { "name": "Micron" } },
+        "brand-arctic":    { "type": "brand", "settings": { "name": "Arctic" } }
+      },
+      "block_order": [
+        "brand-hpe","brand-dell","brand-cisco","brand-lenovo","brand-intel","brand-amd",
+        "brand-samsung","brand-seagate","brand-wd","brand-microsoft","brand-micron","brand-arctic"
+      ]
+    },
+    "pm-about-banner": {
+      "type": "pm-about-banner",
+      "settings": {
+        "eyebrow": "About Platinum Micro",
+        "body": "For two decades, Platinum Micro has distributed enterprise IT from Southern California to system integrators, public-sector buyers, and healthcare networks worldwide. Forty-plus manufacturer partnerships, real lead times, named account managers — sourced direct, with trade credit available on approved application.",
+        "bg_color": "#071525"
+      }
+    }
+  },
+  "order": [
+    "pm-hero-banner",
+    "pm-banner-strip",
+    "pm-card-section",
+    "pm-promotion-card",
+    "pm-brand-wall",
+    "pm-about-banner"
+  ]
+}
