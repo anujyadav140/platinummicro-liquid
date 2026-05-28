@@ -620,12 +620,15 @@ ul, ol { list-style: none; }
 }
 
 /* --- Hero Banner ---------------------------------------------------------- */
+/* PM — Hero Banner
+   All knobs read CSS custom properties set on the section root.
+   Existing instances render identically until any setting is touched. */
 .pm-hero {
   position: relative;
   overflow: hidden;
 }
 .pm-hero--cover {
-  background: var(--pm-navy-deep);
+  background: var(--hb-bg, var(--pm-navy-deep));
 }
 .pm-hero__bg {
   position: absolute;
@@ -638,64 +641,72 @@ ul, ol { list-style: none; }
 .pm-hero__overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to right, rgba(7,21,37,0.72) 0%, rgba(7,21,37,0.45) 45%, rgba(7,21,37,0.05) 100%);
   pointer-events: none;
+  /* Multiplies the overlay color into a left-to-right gradient.
+     Alpha is the admin-set strength (0–1). Inner three stops fade
+     across the band so the right edge of the image stays visible. */
+  background: linear-gradient(to right,
+    rgba(0, 0, 0, calc(var(--hb-overlay-alpha, 1) * 0.72)) 0%,
+    rgba(0, 0, 0, calc(var(--hb-overlay-alpha, 1) * 0.45)) 45%,
+    rgba(0, 0, 0, calc(var(--hb-overlay-alpha, 1) * 0.05)) 100%);
+  background-color: color-mix(in srgb,
+    var(--hb-overlay-color, #071525) calc(var(--hb-overlay-alpha, 1) * 30%),
+    transparent);
 }
 .pm-hero__body {
   position: relative;
   max-width: var(--pm-container);
   margin: 0 auto;
-  padding: 64px 1rem;
+  padding: var(--hb-pt, 64px) 1rem var(--hb-pb, 64px);
   display: flex;
   flex-direction: column;
   justify-content: center;
-  min-height: 420px;
+  min-height: var(--hb-min-h-m, 420px);
 }
 @media (min-width: 640px) {
-  .pm-hero__body { padding: 72px 1.5rem; }
+  .pm-hero__body { padding-left: 1.5rem; padding-right: 1.5rem; }
 }
 @media (min-width: 768px) {
-  .pm-hero__body { padding: 80px 2rem; min-height: 480px; }
+  .pm-hero__body { padding-left: 2rem; padding-right: 2rem; min-height: var(--hb-min-h, 480px); }
 }
+.pm-hero--align-center .pm-hero__body { align-items: center; text-align: center; }
+.pm-hero--align-right  .pm-hero__body { align-items: flex-end;  text-align: right; }
 .pm-hero__eyebrow {
-  font-size: 11px;
+  font-size: var(--hb-eyebrow-size, 11px);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: var(--pm-terracotta-light);
+  color: var(--hb-eyebrow, var(--pm-terracotta-light));
   margin-bottom: 16px;
 }
 .pm-hero__headline {
-  font-size: 28px;
+  font-size: var(--hb-headline-size-m, 28px);
   font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.02em;
-  color: var(--pm-white);
-  max-width: 680px;
-  margin-bottom: 16px;
+  color: var(--hb-headline, var(--pm-white));
+  max-width: var(--hb-content-max, 680px);
+  margin: 0 0 16px;
 }
 @media (min-width: 640px) {
-  .pm-hero__headline { font-size: 34px; }
+  .pm-hero__headline { font-size: var(--hb-headline-size-t, 34px); }
 }
 @media (min-width: 768px) {
-  .pm-hero__headline { font-size: 44px; }
+  .pm-hero__headline { font-size: var(--hb-headline-size, 44px); }
 }
 .pm-hero__body-text {
-  font-size: 15px;
+  font-size: var(--hb-body-size, 17px);
   line-height: 1.6;
-  color: rgba(255,255,255,0.82);
-  max-width: 560px;
-  margin-bottom: 32px;
-}
-@media (min-width: 768px) {
-  .pm-hero__body-text { font-size: 17px; }
+  color: var(--hb-body, rgba(255, 255, 255, 0.82));
+  max-width: calc(var(--hb-content-max, 680px) * 0.82);
+  margin: 0 0 32px;
 }
 .pm-hero__cta {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: var(--pm-terracotta);
-  color: white;
+  background: var(--hb-cta-bg, var(--pm-terracotta));
+  color: var(--hb-cta-text, white);
   font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
@@ -703,36 +714,43 @@ ul, ol { list-style: none; }
   padding: 13px 24px;
   border-radius: 6px;
   box-shadow: var(--pm-shadow-md);
-  transition: background var(--pm-dur-fast);
+  transition: opacity var(--pm-dur-fast);
   width: fit-content;
 }
-.pm-hero__cta:hover { background: var(--pm-terracotta-light); color: white; }
+.pm-hero__cta:hover { opacity: 0.92; color: var(--hb-cta-text, white); }
 .pm-hero__cta svg { flex-shrink: 0; }
 
 /* --- Banner Strip --------------------------------------------------------- */
+/* PM — Banner Strip
+   Slim full-width strip above the header. All knobs read CSS vars
+   from the section root (see sections/pm-banner-strip.liquid). */
 .pm-banner-strip {
-  background: var(--pm-tan-pale);
-  border-bottom: 1px solid rgba(139,115,85,0.2);
+  background: var(--bs-bg, var(--pm-tan-pale));
+  border-bottom: 1px solid rgba(139, 115, 85, 0.2);
+  color: var(--bs-text, var(--pm-ink-700));
 }
 .pm-banner-strip__inner {
   max-width: var(--pm-container);
   margin: 0 auto;
-  padding: 12px 1rem;
+  padding: var(--bs-pt, 12px) 1rem var(--bs-pb, 12px);
   text-align: center;
-  font-size: 14px;
+  font-size: var(--bs-size, 14px);
   font-weight: 500;
-  color: var(--pm-ink-700);
 }
-.pm-banner-strip__inner a { color: var(--pm-terracotta); text-decoration: underline; }
+.pm-banner-strip--align-left   .pm-banner-strip__inner { text-align: left; }
+.pm-banner-strip--align-right  .pm-banner-strip__inner { text-align: right; }
+.pm-banner-strip__inner a { color: var(--bs-link, var(--pm-terracotta)); text-decoration: underline; }
 .pm-banner-strip__inner strong { color: var(--pm-ink-900); }
 
 /* --- Card Section --------------------------------------------------------- */
+/* PM — Card Section
+   Same CSS-var pattern as the other designable sections.
+   Color overrides for shared .pm-section-* classes are scoped to the
+   .pm-card-section root so other sections that reuse those classes
+   aren't affected. */
 .pm-card-section {
-  padding: 64px 0;
-  background: var(--pm-paper);
-}
-@media (min-width: 768px) {
-  .pm-card-section { padding: 80px 0; }
+  padding: var(--cs-pt, 64px) 0 var(--cs-pb, 64px);
+  background: var(--cs-bg, var(--pm-paper));
 }
 .pm-section-header { margin-bottom: 32px; }
 .pm-section-header--center { text-align: center; }
@@ -744,6 +762,7 @@ ul, ol { list-style: none; }
   color: var(--pm-tan);
   margin-bottom: 8px;
 }
+.pm-card-section .pm-section-eyebrow { color: var(--cs-eyebrow, var(--pm-tan)); }
 .pm-section-title {
   font-size: 24px;
   font-weight: 700;
@@ -753,6 +772,13 @@ ul, ol { list-style: none; }
 }
 @media (min-width: 640px) { .pm-section-title { font-size: 28px; } }
 @media (min-width: 768px) { .pm-section-title { font-size: 32px; } }
+.pm-card-section .pm-section-title {
+  font-size: var(--cs-title-size-m, 24px);
+  color: var(--cs-title, var(--pm-ink-900));
+}
+@media (min-width: 768px) {
+  .pm-card-section .pm-section-title { font-size: var(--cs-title-size, 32px); }
+}
 .pm-section-subtitle {
   margin-top: 12px;
   font-size: 15px;
@@ -760,36 +786,40 @@ ul, ol { list-style: none; }
   color: var(--pm-ink-500);
   max-width: 640px;
 }
+.pm-card-section .pm-section-subtitle {
+  font-size: var(--cs-subtitle-size, 15px);
+  color: var(--cs-subtitle, var(--pm-ink-500));
+}
 
 /* Poster card grid */
 .pm-card-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
+  gap: var(--cs-gap-m, 12px);
 }
 @media (min-width: 768px) {
-  .pm-card-grid { grid-template-columns: repeat(3, 1fr); }
+  .pm-card-grid { grid-template-columns: repeat(3, 1fr); gap: var(--cs-gap, 12px); }
 }
 @media (min-width: 1024px) {
   .pm-card-grid { grid-template-columns: repeat(6, 1fr); }
 }
 .pm-card-grid--3col {
   grid-template-columns: repeat(2, 1fr);
-  gap: 18px;
+  gap: var(--cs-gap-m, 18px);
 }
 @media (min-width: 768px) {
   .pm-card-grid--3col {
     grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
+    gap: var(--cs-gap, 24px);
   }
 }
 
 /* Poster card */
 .pm-poster-card {
-  aspect-ratio: 2 / 1.3;
+  aspect-ratio: var(--cs-card-aspect, 2 / 1.3);
   position: relative;
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: var(--cs-card-radius, 8px);
   background-size: cover;
   background-position: center;
   background-color: var(--pm-navy-deep);
@@ -1032,61 +1062,70 @@ ul, ol { list-style: none; }
 }
 
 /* --- Promotion Card ------------------------------------------------------- */
+/* PM — Promotion Card
+   All values read CSS custom properties set on the section root by
+   schema settings (see sections/pm-promotion-card.liquid). Each var
+   has a sane fallback matching the prior hardcoded value, so existing
+   instances render identically before any setting is touched. */
 .pm-promo-section {
-  padding: 64px 0;
-  background: var(--pm-paper);
+  padding: var(--pc-pt, 64px) 0 var(--pc-pb, 64px);
+  background: var(--pc-section-bg, var(--pm-paper));
 }
 .pm-promo-card {
-  border-radius: 12px;
+  border-radius: var(--pc-radius, 12px);
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: var(--pm-navy-deep);
-  min-height: 280px;
+  background: var(--pc-bg, var(--pm-navy-deep));
+  min-height: var(--pc-min-h-m, 280px);
 }
 @media (min-width: 768px) {
-  .pm-promo-card { flex-direction: row; min-height: 320px; }
+  .pm-promo-card { flex-direction: row; min-height: var(--pc-min-h, 320px); }
+  /* "Image left" flips the row so content sits on the right. */
+  .pm-promo-card--img-left { flex-direction: row-reverse; }
 }
 .pm-promo-card__content {
   flex: 1;
-  padding: 40px;
+  padding: var(--pc-content-pad-m, 40px);
   display: flex;
   flex-direction: column;
   justify-content: center;
   gap: 12px;
 }
 @media (min-width: 768px) {
-  .pm-promo-card__content { padding: 48px 56px; }
+  .pm-promo-card__content { padding: var(--pc-content-pad, 56px); }
 }
 .pm-promo-card__eyebrow {
-  font-size: 10px;
+  font-size: var(--pc-eyebrow-size, 10px);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: var(--pm-terracotta-light);
+  color: var(--pc-eyebrow, var(--pm-terracotta-light));
 }
 .pm-promo-card__title {
-  font-size: 26px;
+  font-size: var(--pc-title-size-m, 26px);
   font-weight: 800;
   line-height: 1.2;
   letter-spacing: -0.02em;
-  color: white;
+  color: var(--pc-title, white);
+  margin: 0;
 }
 @media (min-width: 768px) {
-  .pm-promo-card__title { font-size: 32px; }
+  .pm-promo-card__title { font-size: var(--pc-title-size, 32px); }
 }
 .pm-promo-card__body {
-  font-size: 15px;
+  font-size: var(--pc-body-size, 15px);
   line-height: 1.6;
-  color: rgba(255,255,255,0.78);
-  max-width: 480px;
+  color: var(--pc-body, rgba(255, 255, 255, 0.78));
+  max-width: 520px;
+  margin: 0;
 }
 .pm-promo-card__cta {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: var(--pm-terracotta);
-  color: white;
+  background: var(--pc-cta-bg, var(--pm-terracotta));
+  color: var(--pc-cta-text, white);
   font-size: 13px;
   font-weight: 700;
   text-transform: uppercase;
@@ -1095,9 +1134,9 @@ ul, ol { list-style: none; }
   border-radius: 6px;
   width: fit-content;
   margin-top: 8px;
-  transition: background var(--pm-dur-fast);
+  transition: opacity var(--pm-dur-fast);
 }
-.pm-promo-card__cta:hover { background: var(--pm-terracotta-light); color: white; }
+.pm-promo-card__cta:hover { opacity: 0.9; color: var(--pc-cta-text, white); }
 .pm-promo-card__image {
   flex-shrink: 0;
   width: 100%;
@@ -1106,38 +1145,43 @@ ul, ol { list-style: none; }
   background-position: center;
 }
 @media (min-width: 768px) {
-  .pm-promo-card__image { width: 45%; min-height: unset; }
+  .pm-promo-card__image { width: var(--pc-img-w, 45%); min-height: unset; }
 }
 
 /* --- About Banner --------------------------------------------------------- */
+/* PM — About Banner */
 .pm-about-banner {
-  background: var(--pm-navy-deepest);
-  color: white;
-  padding: 56px 0;
+  background: var(--ab-bg, var(--pm-navy-deepest));
+  color: var(--ab-body, white);
+  padding: var(--ab-pt-m, 56px) 0 var(--ab-pb-m, 56px);
 }
-@media (min-width: 640px) { .pm-about-banner { padding: 64px 0; } }
-@media (min-width: 768px) { .pm-about-banner { padding: 80px 0; } }
+@media (min-width: 768px) {
+  .pm-about-banner { padding: var(--ab-pt, 80px) 0 var(--ab-pb, 80px); }
+}
 .pm-about-banner__inner {
-  max-width: 920px;
+  max-width: var(--ab-max-w, 920px);
   margin: 0 auto;
   padding: 0 1rem;
   text-align: center;
 }
+.pm-about-banner--align-left .pm-about-banner__inner { text-align: left; }
 .pm-about-banner__eyebrow {
-  font-size: 11px;
+  font-size: var(--ab-eyebrow-size, 11px);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.14em;
-  color: var(--pm-terracotta-light);
+  color: var(--ab-eyebrow, var(--pm-terracotta-light));
   margin-bottom: 16px;
 }
 .pm-about-banner__body {
-  font-size: 15px;
+  font-size: var(--ab-body-size-m, 15px);
   line-height: 1.7;
-  color: rgba(255,255,255,0.82);
+  color: var(--ab-body, rgba(255, 255, 255, 0.82));
+  margin: 0;
 }
-@media (min-width: 640px) { .pm-about-banner__body { font-size: 16px; } }
-@media (min-width: 768px) { .pm-about-banner__body { font-size: 18px; } }
+@media (min-width: 768px) {
+  .pm-about-banner__body { font-size: var(--ab-body-size, 18px); }
+}
 
 /* --- Footer --------------------------------------------------------------- */
 .pm-footer {

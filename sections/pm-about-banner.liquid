@@ -1,6 +1,23 @@
+{%- comment -%}
+  PM — About Banner
+  Centered dark band with eyebrow + body paragraph. Now fully tunable
+  in the admin via CSS custom properties.
+{%- endcomment -%}
 <section
-  class="pm-about-banner"
-  style="{%- if section.settings.bg_color != blank %}background-color:{{ section.settings.bg_color }};{% endif -%}"
+  class="pm-about-banner pm-about-banner--align-{{ section.settings.text_align | default: 'center' }}"
+  style="
+    --ab-bg:{{ section.settings.bg_color }};
+    --ab-pt:{{ section.settings.padding_top }}px;
+    --ab-pb:{{ section.settings.padding_bottom }}px;
+    --ab-pt-m:{{ section.settings.padding_top_mobile }}px;
+    --ab-pb-m:{{ section.settings.padding_bottom_mobile }}px;
+    --ab-eyebrow:{{ section.settings.eyebrow_color }};
+    --ab-body:{{ section.settings.body_color }};
+    --ab-eyebrow-size:{{ section.settings.eyebrow_size }}px;
+    --ab-body-size:{{ section.settings.body_size }}px;
+    --ab-body-size-m:{{ section.settings.body_size_mobile }}px;
+    --ab-max-w:{{ section.settings.max_width }}px;
+  "
 >
   <div class="pm-about-banner__inner">
     {%- if section.settings.eyebrow != blank -%}
@@ -17,24 +34,36 @@
   "name": "PM — About Banner",
   "tag": "section",
   "settings": [
+    { "type": "header", "content": "Content" },
+    { "type": "text",     "id": "eyebrow", "label": "Eyebrow text", "default": "About Platinum Micro" },
+    { "type": "textarea", "id": "body",    "label": "Body text",    "default": "For two decades, Platinum Micro has distributed enterprise IT from Southern California to system integrators, public-sector buyers, and healthcare networks worldwide. Forty-plus manufacturer partnerships, real lead times, named account managers — sourced direct, with trade credit available on approved application." },
     {
-      "type": "text",
-      "id": "eyebrow",
-      "label": "Eyebrow text",
-      "default": "About Platinum Micro"
+      "type": "select",
+      "id": "text_align",
+      "label": "Text alignment",
+      "options": [
+        { "value": "left",   "label": "Left" },
+        { "value": "center", "label": "Center" }
+      ],
+      "default": "center"
     },
-    {
-      "type": "textarea",
-      "id": "body",
-      "label": "Body text",
-      "default": "For two decades, Platinum Micro has distributed enterprise IT from Southern California to system integrators, public-sector buyers, and healthcare networks worldwide. Forty-plus manufacturer partnerships, real lead times, named account managers — sourced direct, with trade credit available on approved application."
-    },
-    {
-      "type": "color",
-      "id": "bg_color",
-      "label": "Background color",
-      "default": "#071525"
-    }
+
+    { "type": "header", "content": "Colors" },
+    { "type": "color", "id": "bg_color",      "label": "Background",     "default": "#071525" },
+    { "type": "color", "id": "eyebrow_color", "label": "Eyebrow color",  "default": "#C04E3E" },
+    { "type": "color", "id": "body_color",    "label": "Body color",     "default": "#D2D7DE" },
+
+    { "type": "header", "content": "Spacing" },
+    { "type": "range", "id": "padding_top",           "label": "Padding top (desktop)",    "min": 0, "max": 200, "step": 4, "unit": "px", "default": 80 },
+    { "type": "range", "id": "padding_bottom",        "label": "Padding bottom (desktop)", "min": 0, "max": 200, "step": 4, "unit": "px", "default": 80 },
+    { "type": "range", "id": "padding_top_mobile",    "label": "Padding top (mobile)",     "min": 0, "max": 120, "step": 4, "unit": "px", "default": 56 },
+    { "type": "range", "id": "padding_bottom_mobile", "label": "Padding bottom (mobile)",  "min": 0, "max": 120, "step": 4, "unit": "px", "default": 56 },
+    { "type": "range", "id": "max_width",             "label": "Content max width",        "min": 480, "max": 1200, "step": 20, "unit": "px", "default": 920 },
+
+    { "type": "header", "content": "Typography" },
+    { "type": "range", "id": "eyebrow_size",     "label": "Eyebrow size",         "min": 9,  "max": 18, "step": 1, "unit": "px", "default": 11 },
+    { "type": "range", "id": "body_size",        "label": "Body size (desktop)",  "min": 14, "max": 26, "step": 1, "unit": "px", "default": 18 },
+    { "type": "range", "id": "body_size_mobile", "label": "Body size (mobile)",   "min": 12, "max": 22, "step": 1, "unit": "px", "default": 15 }
   ],
   "presets": [
     {

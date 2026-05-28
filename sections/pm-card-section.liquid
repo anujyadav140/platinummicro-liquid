@@ -15,9 +15,19 @@
 <section
   class="pm-card-section"
   style="
-    {%- if section.settings.bg_color != blank %}background-color:{{ section.settings.bg_color }};{% endif -%}
-    {%- if section.settings.padding_top != blank %}padding-top:{{ section.settings.padding_top }}px;{% endif -%}
-    {%- if section.settings.padding_bottom != blank %}padding-bottom:{{ section.settings.padding_bottom }}px;{% endif -%}
+    --cs-bg:{{ section.settings.bg_color }};
+    --cs-pt:{{ section.settings.padding_top }}px;
+    --cs-pb:{{ section.settings.padding_bottom }}px;
+    --cs-eyebrow:{{ section.settings.eyebrow_color }};
+    --cs-title:{{ section.settings.title_color }};
+    --cs-subtitle:{{ section.settings.subtitle_color }};
+    --cs-title-size:{{ section.settings.title_size_desktop }}px;
+    --cs-title-size-m:{{ section.settings.title_size_mobile }}px;
+    --cs-subtitle-size:{{ section.settings.subtitle_size }}px;
+    --cs-card-radius:{{ section.settings.card_radius }}px;
+    --cs-card-aspect:{{ section.settings.card_aspect }};
+    --cs-gap:{{ section.settings.gap_desktop }}px;
+    --cs-gap-m:{{ section.settings.gap_mobile }}px;
   "
 >
   <div class="pm-container">
@@ -150,24 +160,10 @@
 {
   "name": "PM — Card Section",
   "settings": [
-    {
-      "type": "text",
-      "id": "eyebrow",
-      "label": "Eyebrow text",
-      "default": "WHO WE SERVE"
-    },
-    {
-      "type": "text",
-      "id": "title",
-      "label": "Section title",
-      "default": "Industries we serve"
-    },
-    {
-      "type": "textarea",
-      "id": "subtitle",
-      "label": "Section subtitle",
-      "default": "Vertical-specific configurations and contract alignment."
-    },
+    { "type": "header", "content": "Content" },
+    { "type": "text",     "id": "eyebrow",  "label": "Eyebrow text",      "default": "WHO WE SERVE" },
+    { "type": "text",     "id": "title",    "label": "Section title",     "default": "Industries we serve" },
+    { "type": "textarea", "id": "subtitle", "label": "Section subtitle",  "default": "Vertical-specific configurations and contract alignment." },
     {
       "type": "select",
       "id": "align",
@@ -178,6 +174,8 @@
       ],
       "default": "left"
     },
+
+    { "type": "header", "content": "Cards" },
     {
       "type": "select",
       "id": "card_style",
@@ -188,32 +186,36 @@
       ],
       "default": "poster"
     },
+    { "type": "range", "id": "columns",       "label": "Columns on desktop",     "min": 2, "max": 6,  "step": 1, "default": 6 },
+    { "type": "range", "id": "card_radius",   "label": "Card border radius",     "min": 0, "max": 24, "step": 1, "unit": "px",  "default": 8 },
     {
-      "type": "range",
-      "id": "columns",
-      "label": "Columns on desktop",
-      "min": 2,
-      "max": 6,
-      "step": 1,
-      "default": 6
+      "type": "select",
+      "id": "card_aspect",
+      "label": "Card aspect ratio (poster)",
+      "options": [
+        { "value": "2 / 1.3", "label": "Wide (default)" },
+        { "value": "1 / 1",   "label": "Square" },
+        { "value": "3 / 4",   "label": "Portrait" },
+        { "value": "4 / 5",   "label": "Slight portrait" },
+        { "value": "16 / 9",  "label": "Cinematic" }
+      ],
+      "default": "2 / 1.3"
     },
-    {
-      "type": "color",
-      "id": "bg_color",
-      "label": "Section background color"
-    },
-    {
-      "type": "number",
-      "id": "padding_top",
-      "label": "Padding top (px)",
-      "default": 64
-    },
-    {
-      "type": "number",
-      "id": "padding_bottom",
-      "label": "Padding bottom (px)",
-      "default": 64
-    }
+
+    { "type": "header", "content": "Section spacing" },
+    { "type": "color", "id": "bg_color",       "label": "Section background", "default": "#FBFAF7" },
+    { "type": "range", "id": "padding_top",    "label": "Padding top",        "min": 0, "max": 200, "step": 4, "unit": "px", "default": 80 },
+    { "type": "range", "id": "padding_bottom", "label": "Padding bottom",     "min": 0, "max": 200, "step": 4, "unit": "px", "default": 80 },
+    { "type": "range", "id": "gap_desktop",    "label": "Gap between cards (desktop)", "min": 4, "max": 48, "step": 2, "unit": "px", "default": 12 },
+    { "type": "range", "id": "gap_mobile",     "label": "Gap between cards (mobile)",  "min": 4, "max": 32, "step": 2, "unit": "px", "default": 12 },
+
+    { "type": "header", "content": "Typography" },
+    { "type": "color", "id": "eyebrow_color",      "label": "Eyebrow color",        "default": "#8B7355" },
+    { "type": "color", "id": "title_color",        "label": "Title color",          "default": "#101828" },
+    { "type": "color", "id": "subtitle_color",     "label": "Subtitle color",       "default": "#667085" },
+    { "type": "range", "id": "title_size_desktop", "label": "Title size (desktop)", "min": 18, "max": 56, "step": 2, "unit": "px", "default": 32 },
+    { "type": "range", "id": "title_size_mobile",  "label": "Title size (mobile)",  "min": 16, "max": 44, "step": 2, "unit": "px", "default": 24 },
+    { "type": "range", "id": "subtitle_size",      "label": "Subtitle size",        "min": 12, "max": 22, "step": 1, "unit": "px", "default": 15 }
   ],
   "blocks": [
     {
