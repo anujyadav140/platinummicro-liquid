@@ -1,6 +1,6 @@
 {
   "sections": {
-    "pm-product-banner": {
+    "pm-banner-hpe": {
       "type": "pm-product-banner",
       "blocks": {
         "hero": {
@@ -33,14 +33,90 @@
           }
         }
       },
-      "block_order": [
-        "hero",
-        "feature_partner"
-      ],
+      "block_order": ["hero", "feature_partner"],
       "settings": {
         "show_on_search_terms": "HEWLETT PACKARD ENTERPRISE"
       }
     },
+
+    "pm-banner-intel": {
+      "type": "pm-product-banner",
+      "blocks": {
+        "hero": {
+          "type": "hero",
+          "settings": {
+            "bg_color": "#0D2340",
+            "bg_position": "center",
+            "show_overlay": true,
+            "text_color": "light",
+            "accent_color": "#0071C5",
+            "background_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Server_room_at_CERN.jpg/2560px-Server_room_at_CERN.jpg",
+            "eyebrow": "INTEL × PLATINUM MICRO",
+            "headline": "Intel inside. Every socket, every generation, on the shelf.",
+            "body": "228 Intel-side SKUs in stock — Core desktop CPUs, NUC barebones and chassis, Xeon-compatible thermal kits spanning LGA 1150 / 1155 / 1156 / 1366 / 2011-3 / 1700 / 4677. From legacy refresh builds to current platforms, the parts ship the day you order.",
+            "cta_label": "Shop Intel",
+            "cta_href": "/search?q=tag%3A%22INTEL%22",
+            "height_px": 460
+          }
+        },
+        "feature_partner": {
+          "type": "feature",
+          "settings": {
+            "bg_color": "#F0F6FC",
+            "text_color": "#101828",
+            "accent_color": "#0071C5",
+            "eyebrow": "WHAT WE CARRY",
+            "title": "Components, coolers, complete builds — Intel-side, both sides of the rack.",
+            "body": "Intel Core retail processors, NUC chassis from Streacom, and a deep cooler bench from Arctic, Dynatron, Noctua, Scythe, and GELID — every socket Intel has shipped in the last decade. If your spec calls it out, we probably stock it.",
+            "brand_logo_url": "https://logo.clearbit.com/intel.com?size=320"
+          }
+        }
+      },
+      "block_order": ["hero", "feature_partner"],
+      "settings": {
+        "show_on_search_terms": "INTEL"
+      }
+    },
+
+    "pm-banner-amd": {
+      "type": "pm-product-banner",
+      "blocks": {
+        "hero": {
+          "type": "hero",
+          "settings": {
+            "bg_color": "#0D2340",
+            "bg_position": "center",
+            "show_overlay": true,
+            "text_color": "light",
+            "accent_color": "#ED1C24",
+            "background_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Server_room_at_CERN.jpg/2560px-Server_room_at_CERN.jpg",
+            "eyebrow": "AMD × PLATINUM MICRO",
+            "headline": "Ryzen. Radeon. AM4 to SP6. Real availability.",
+            "body": "86 AMD-side SKUs across processors, graphics-grade storage, and the thermal solutions that keep them quiet — Ryzen retail CPUs, Radeon-branded SSDs, plus coolers covering AM2 / AM3 / AM4 / AM5 sockets from Arctic, Dynatron, and Scythe.",
+            "cta_label": "Shop AMD",
+            "cta_href": "/search?q=tag%3A%22AMD%22",
+            "height_px": 460
+          }
+        },
+        "feature_partner": {
+          "type": "feature",
+          "settings": {
+            "bg_color": "#FBF1F1",
+            "text_color": "#101828",
+            "accent_color": "#ED1C24",
+            "eyebrow": "WHAT WE CARRY",
+            "title": "AMD silicon plus the supporting cast.",
+            "body": "From Ryzen workstation CPUs to Radeon-branded SSDs to AM4/AM5-compatible thermal kits — the parts that turn a spec sheet into a working machine. Quote it, configure it, or buy off-the-shelf.",
+            "brand_logo_url": "https://logo.clearbit.com/amd.com?size=320"
+          }
+        }
+      },
+      "block_order": ["hero", "feature_partner"],
+      "settings": {
+        "show_on_search_terms": "AMD"
+      }
+    },
+
     "pm-search": {
       "type": "pm-search",
       "settings": {
@@ -48,5 +124,10 @@
       }
     }
   },
-  "order": ["pm-product-banner", "pm-search"]
+  "order": [
+    "pm-banner-hpe",
+    "pm-banner-intel",
+    "pm-banner-amd",
+    "pm-search"
+  ]
 }
