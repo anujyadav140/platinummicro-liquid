@@ -1,6 +1,6 @@
 {
   "sections": {
-    "pm-banner-hpe": {
+    "pm-banner-partners": {
       "type": "pm-product-banner",
       "blocks": {
         "hero": {
@@ -10,111 +10,41 @@
             "bg_position": "center",
             "show_overlay": true,
             "text_color": "light",
-            "accent_color": "#00B388",
+            "accent_color": "#A63D2F",
             "background_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Server_room_at_CERN.jpg/2560px-Server_room_at_CERN.jpg",
-            "eyebrow": "AUTHORIZED HPE PARTNER × AMD EPYC™",
-            "headline": "Built on AMD EPYC. Backed by HPE. Stocked by Platinum Micro.",
-            "body": "HPE ProLiant Gen11 servers with 5th Gen AMD EPYC™ 9005 processors — up to 192 \"Zen 5\" cores per socket, 3 TB of DDR5-6400, PCIe Gen5 across the board, AMD Secure Processor at the silicon root of trust.",
-            "cta_label": "Shop HPE Servers",
-            "cta_href": "/search?q=tag%3A%22HEWLETT+PACKARD+ENTERPRISE%22",
+            "eyebrow": "AUTHORIZED DISTRIBUTOR · HPE · INTEL · AMD",
+            "headline": "Three silicon vendors. One trusted source.",
+            "body": "Two decades stocking HPE ProLiant, Intel Core and Xeon, AMD Ryzen and EPYC — from public-sector contracts to enterprise refresh cycles. Real inventory. Written quotes. Named account managers. NASPO-aligned pricing.",
+            "cta_label": "Browse the catalog",
+            "cta_href": "/collections/all",
             "height_px": 460
           }
         },
-        "feature_partner": {
-          "type": "feature",
+        "brand_strip": {
+          "type": "category_tiles",
           "settings": {
             "bg_color": "#FBFAF7",
             "text_color": "#101828",
-            "accent_color": "#8B7355",
-            "eyebrow": "WHY US",
-            "title": "Authorized HPE distribution. Direct from Sylmar, CA.",
-            "body": "Two decades stocking HPE. NASPO-aligned pricing, Net-30 terms on approved application, named account managers — no auction-house pricing theater. Real inventory, real lead times, written quotes.",
-            "brand_logo_url": "https://logo.clearbit.com/hpe.com?size=320"
+            "title": "The partnerships we stock",
+            "subtitle": "Authorized lines from three silicon vendors. Click a logo to dive in.",
+            "columns": "3",
+            "tile1_image_url": "https://logo.clearbit.com/hpe.com?size=400",
+            "tile1_title": "HPE",
+            "tile1_subtitle": "ProLiant Gen11 servers · NASPO-aligned",
+            "tile1_link": "/search?q=tag%3A%22HEWLETT+PACKARD+ENTERPRISE%22&type=product",
+            "tile2_image_url": "https://logo.clearbit.com/intel.com?size=400",
+            "tile2_title": "Intel",
+            "tile2_subtitle": "Core CPUs · NUC chassis · 228 SKUs",
+            "tile2_link": "/search?q=tag%3A%22INTEL%22&type=product",
+            "tile3_image_url": "https://logo.clearbit.com/amd.com?size=400",
+            "tile3_title": "AMD",
+            "tile3_subtitle": "Ryzen · Radeon · AM4–AM5 · 86 SKUs",
+            "tile3_link": "/search?q=tag%3A%22AMD%22&type=product"
           }
         }
       },
-      "block_order": ["hero", "feature_partner"],
-      "settings": {
-        "show_on_search_terms": "HEWLETT PACKARD ENTERPRISE"
-      }
-    },
-
-    "pm-banner-intel": {
-      "type": "pm-product-banner",
-      "blocks": {
-        "hero": {
-          "type": "hero",
-          "settings": {
-            "bg_color": "#0D2340",
-            "bg_position": "center",
-            "show_overlay": true,
-            "text_color": "light",
-            "accent_color": "#0071C5",
-            "background_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Server_room_at_CERN.jpg/2560px-Server_room_at_CERN.jpg",
-            "eyebrow": "INTEL × PLATINUM MICRO",
-            "headline": "Intel inside. Every socket, every generation, on the shelf.",
-            "body": "228 Intel-side SKUs in stock — Core desktop CPUs, NUC barebones and chassis, Xeon-compatible thermal kits spanning LGA 1150 / 1155 / 1156 / 1366 / 2011-3 / 1700 / 4677. From legacy refresh builds to current platforms, the parts ship the day you order.",
-            "cta_label": "Shop Intel",
-            "cta_href": "/search?q=tag%3A%22INTEL%22",
-            "height_px": 460
-          }
-        },
-        "feature_partner": {
-          "type": "feature",
-          "settings": {
-            "bg_color": "#F0F6FC",
-            "text_color": "#101828",
-            "accent_color": "#0071C5",
-            "eyebrow": "WHAT WE CARRY",
-            "title": "Components, coolers, complete builds — Intel-side, both sides of the rack.",
-            "body": "Intel Core retail processors, NUC chassis from Streacom, and a deep cooler bench from Arctic, Dynatron, Noctua, Scythe, and GELID — every socket Intel has shipped in the last decade. If your spec calls it out, we probably stock it.",
-            "brand_logo_url": "https://logo.clearbit.com/intel.com?size=320"
-          }
-        }
-      },
-      "block_order": ["hero", "feature_partner"],
-      "settings": {
-        "show_on_search_terms": "INTEL"
-      }
-    },
-
-    "pm-banner-amd": {
-      "type": "pm-product-banner",
-      "blocks": {
-        "hero": {
-          "type": "hero",
-          "settings": {
-            "bg_color": "#0D2340",
-            "bg_position": "center",
-            "show_overlay": true,
-            "text_color": "light",
-            "accent_color": "#ED1C24",
-            "background_image_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/Server_room_at_CERN.jpg/2560px-Server_room_at_CERN.jpg",
-            "eyebrow": "AMD × PLATINUM MICRO",
-            "headline": "Ryzen. Radeon. AM4 to SP6. Real availability.",
-            "body": "86 AMD-side SKUs across processors, graphics-grade storage, and the thermal solutions that keep them quiet — Ryzen retail CPUs, Radeon-branded SSDs, plus coolers covering AM2 / AM3 / AM4 / AM5 sockets from Arctic, Dynatron, and Scythe.",
-            "cta_label": "Shop AMD",
-            "cta_href": "/search?q=tag%3A%22AMD%22",
-            "height_px": 460
-          }
-        },
-        "feature_partner": {
-          "type": "feature",
-          "settings": {
-            "bg_color": "#FBF1F1",
-            "text_color": "#101828",
-            "accent_color": "#ED1C24",
-            "eyebrow": "WHAT WE CARRY",
-            "title": "AMD silicon plus the supporting cast.",
-            "body": "From Ryzen workstation CPUs to Radeon-branded SSDs to AM4/AM5-compatible thermal kits — the parts that turn a spec sheet into a working machine. Quote it, configure it, or buy off-the-shelf.",
-            "brand_logo_url": "https://logo.clearbit.com/amd.com?size=320"
-          }
-        }
-      },
-      "block_order": ["hero", "feature_partner"],
-      "settings": {
-        "show_on_search_terms": "AMD"
-      }
+      "block_order": ["hero", "brand_strip"],
+      "settings": {}
     },
 
     "pm-search": {
@@ -124,10 +54,5 @@
       }
     }
   },
-  "order": [
-    "pm-banner-hpe",
-    "pm-banner-intel",
-    "pm-banner-amd",
-    "pm-search"
-  ]
+  "order": ["pm-banner-partners", "pm-search"]
 }
