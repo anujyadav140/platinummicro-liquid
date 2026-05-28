@@ -681,7 +681,111 @@
     {%- assign _doc_count  = _doc_count  | plus: 1 -%}
   {%- endfor -%}
 
-  {%- if _doc_count > 0 -%}
+  {%- comment -%}
+    ── Vendor doc-search fallback ──
+    Always-on card so every PDP gets at least one Documentation button,
+    even when the description copy is link-free. Deep-links into the
+    vendor's official doc portal with the SKU as the query string —
+    HPE PSNow, Dell Support, Lenovo PSREF, Cisco docs, Intel ARK, etc.
+    Unknown vendors fall through to a `filetype:pdf` Google search
+    scoped to the vendor name. Zero admin overhead.
+  {%- endcomment -%}
+  {%- assign _vendor_lc    = product.vendor | downcase -%}
+  {%- assign _vendor_url   = '' -%}
+  {%- assign _vendor_label = '' -%}
+  {%- assign _vendor_meta  = 'Search by SKU' -%}
+
+  {%- assign _q = _sku -%}
+  {%- if _q == blank -%}{%- assign _q = product.title -%}{%- endif -%}
+  {%- assign _q = _q | url_encode -%}
+
+  {%- if _vendor_lc contains 'hpe' or _vendor_lc contains 'hewlett packard enterprise' -%}
+    {%- assign _vendor_url   = 'https://www.hpe.com/psnow/search?keyword=' | append: _q -%}
+    {%- assign _vendor_label = 'HPE PSNow — QuickSpecs library' -%}
+  {%- elsif _vendor_lc contains 'aruba' -%}
+    {%- assign _vendor_url   = 'https://www.arubanetworks.com/resource?_type=document&search=' | append: _q -%}
+    {%- assign _vendor_label = 'Aruba Networks document library' -%}
+  {%- elsif _vendor_lc contains 'dell' -%}
+    {%- assign _vendor_url   = 'https://www.dell.com/support/home/en-us?app=products&query=' | append: _q -%}
+    {%- assign _vendor_label = 'Dell Support — product manuals' -%}
+  {%- elsif _vendor_lc contains 'lenovo' -%}
+    {%- assign _vendor_url   = 'https://psref.lenovo.com/Search?searchKey=' | append: _q -%}
+    {%- assign _vendor_label = 'Lenovo PSREF — product reference' -%}
+  {%- elsif _vendor_lc contains 'cisco' -%}
+    {%- assign _vendor_url   = 'https://search.cisco.com/search?query=' | append: _q | append: '&locale=enUS&category=docs' -%}
+    {%- assign _vendor_label = 'Cisco — product docs &amp; datasheets' -%}
+  {%- elsif _vendor_lc contains 'intel' -%}
+    {%- assign _vendor_url   = 'https://ark.intel.com/content/www/us/en/ark/search.html?_charset_=UTF-8&q=' | append: _q -%}
+    {%- assign _vendor_label = 'Intel ARK — product specifications' -%}
+  {%- elsif _vendor_lc contains 'microsoft' -%}
+    {%- assign _vendor_url   = 'https://www.microsoft.com/en-us/search?q=' | append: _q -%}
+    {%- assign _vendor_label = 'Microsoft — product documentation' -%}
+  {%- elsif _vendor_lc contains 'apple' -%}
+    {%- assign _vendor_url   = 'https://support.apple.com/kb/index?page=search&fac=all&query=' | append: _q -%}
+    {%- assign _vendor_label = 'Apple Support library' -%}
+  {%- elsif _vendor_lc contains 'samsung' -%}
+    {%- assign _vendor_url   = 'https://www.samsung.com/us/business/search/?searchTerm=' | append: _q -%}
+    {%- assign _vendor_label = 'Samsung Business documentation' -%}
+  {%- elsif _vendor_lc contains 'netgear' -%}
+    {%- assign _vendor_url   = 'https://www.netgear.com/support/search/?q=' | append: _q -%}
+    {%- assign _vendor_label = 'NETGEAR Support — manuals &amp; datasheets' -%}
+  {%- elsif _vendor_lc contains 'apc' or _vendor_lc contains 'schneider' -%}
+    {%- assign _vendor_url   = 'https://www.apc.com/us/en/search.jsp?text=' | append: _q -%}
+    {%- assign _vendor_label = 'APC by Schneider — product docs' -%}
+  {%- elsif _vendor_lc contains 'eaton' -%}
+    {%- assign _vendor_url   = 'https://www.eaton.com/us/en-us/search.html?text=' | append: _q -%}
+    {%- assign _vendor_label = 'Eaton — product documentation' -%}
+  {%- elsif _vendor_lc contains 'tripp' -%}
+    {%- assign _vendor_url   = 'https://www.tripplite.com/products?search=' | append: _q -%}
+    {%- assign _vendor_label = 'Tripp Lite — product info &amp; manuals' -%}
+  {%- elsif _vendor_lc contains 'logitech' -%}
+    {%- assign _vendor_url   = 'https://www.logitech.com/en-us/search.html?searchTerm=' | append: _q -%}
+    {%- assign _vendor_label = 'Logitech — support &amp; downloads' -%}
+  {%- elsif _vendor_lc contains 'poly' or _vendor_lc contains 'polycom' -%}
+    {%- assign _vendor_url   = 'https://www.poly.com/us/en/search.results.html?keyword=' | append: _q -%}
+    {%- assign _vendor_label = 'Poly — product documentation' -%}
+  {%- elsif _vendor_lc contains 'jabra' -%}
+    {%- assign _vendor_url   = 'https://www.jabra.com/Support/searchresult?textSearch=' | append: _q -%}
+    {%- assign _vendor_label = 'Jabra Support — manuals' -%}
+  {%- elsif _vendor_lc contains 'fortinet' -%}
+    {%- assign _vendor_url   = 'https://docs.fortinet.com/search?keyword=' | append: _q -%}
+    {%- assign _vendor_label = 'Fortinet Docs Library' -%}
+  {%- elsif _vendor_lc contains 'palo alto' -%}
+    {%- assign _vendor_url   = 'https://docs.paloaltonetworks.com/search.html?q=' | append: _q -%}
+    {%- assign _vendor_label = 'Palo Alto Networks — TechDocs' -%}
+  {%- elsif _vendor_lc contains 'sonicwall' -%}
+    {%- assign _vendor_url   = 'https://www.sonicwall.com/search/?q=' | append: _q -%}
+    {%- assign _vendor_label = 'SonicWall — product docs' -%}
+  {%- elsif _vendor_lc contains 'juniper' -%}
+    {%- assign _vendor_url   = 'https://www.juniper.net/documentation/search/' | append: _q -%}
+    {%- assign _vendor_label = 'Juniper Networks — TechLibrary' -%}
+  {%- elsif _vendor_lc contains 'supermicro' -%}
+    {%- assign _vendor_url   = 'https://www.supermicro.com/en/search?q=' | append: _q -%}
+    {%- assign _vendor_label = 'Supermicro — product manuals' -%}
+  {%- elsif _vendor_lc contains 'seagate' -%}
+    {%- assign _vendor_url   = 'https://www.seagate.com/search/?q=' | append: _q -%}
+    {%- assign _vendor_label = 'Seagate — datasheets &amp; manuals' -%}
+  {%- elsif _vendor_lc contains 'wd' or _vendor_lc contains 'western digital' -%}
+    {%- assign _vendor_url   = 'https://www.westerndigital.com/search?q=' | append: _q -%}
+    {%- assign _vendor_label = 'Western Digital — product docs' -%}
+  {%- elsif _vendor_lc contains 'crucial' or _vendor_lc contains 'micron' -%}
+    {%- assign _vendor_url   = 'https://www.crucial.com/search?q=' | append: _q -%}
+    {%- assign _vendor_label = 'Crucial / Micron — product specs' -%}
+  {%- elsif _vendor_lc contains 'kingston' -%}
+    {%- assign _vendor_url   = 'https://www.kingston.com/en/search?searchstring=' | append: _q -%}
+    {%- assign _vendor_label = 'Kingston — product datasheets' -%}
+  {%- elsif product.vendor != blank -%}
+    {%- comment -%} Generic Google `filetype:pdf` search scoped to the vendor name. {%- endcomment -%}
+    {%- assign _vsafe = product.vendor | url_encode -%}
+    {%- assign _vendor_url   = 'https://www.google.com/search?q=' | append: _q | append: '+' | append: _vsafe | append: '+datasheet+filetype%3Apdf' -%}
+    {%- assign _vendor_label = product.vendor | append: ' — datasheets on the web' -%}
+    {%- assign _vendor_meta  = 'Web search · PDFs only' -%}
+  {%- endif -%}
+
+  {%- assign _total_docs = _doc_count -%}
+  {%- if _vendor_url != '' -%}{%- assign _total_docs = _total_docs | plus: 1 -%}{%- endif -%}
+
+  {%- if _total_docs > 0 -%}
     {%- assign _doc_urls_arr   = _doc_urls   | split: '|||' -%}
     {%- assign _doc_labels_arr = _doc_labels | split: '|||' -%}
 
@@ -692,10 +796,34 @@
             <div class="pm-pdp__docs-eyebrow">Documentation</div>
             <h2 class="pm-pdp__docs-title">Datasheets, manuals &amp; downloads</h2>
           </div>
-          <span class="pm-pdp__docs-count">{{ _doc_count }} {% if _doc_count == 1 %}file{% else %}files{% endif %}</span>
+          <span class="pm-pdp__docs-count">{{ _total_docs }} {% if _total_docs == 1 %}source{% else %}sources{% endif %}</span>
         </header>
 
         <ul class="pm-pdp__docs-grid">
+          {%- comment -%} ── Vendor doc-search fallback card ── {%- endcomment -%}
+          {%- if _vendor_url != '' -%}
+            <li class="pm-pdp__doc">
+              <a
+                href="{{ _vendor_url }}"
+                class="pm-pdp__doc-link"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="{{ _vendor_label | strip_html | escape }}"
+              >
+                <span class="pm-pdp__doc-icon pm-pdp__doc-icon--datasheet" aria-hidden="true">
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                </span>
+                <span class="pm-pdp__doc-main">
+                  <span class="pm-pdp__doc-label">{{ _vendor_label }}</span>
+                  <span class="pm-pdp__doc-meta">{{ _vendor_meta }}</span>
+                </span>
+                <span class="pm-pdp__doc-arrow" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                </span>
+              </a>
+            </li>
+          {%- endif -%}
+
           {%- for _doc_url in _doc_urls_arr -%}
             {%- if _doc_url == blank -%}{%- continue -%}{%- endif -%}
             {%- assign _doc_label = _doc_labels_arr[forloop.index0] -%}
