@@ -18,7 +18,30 @@
 {%- endcomment -%}
 {%- assign _brand_map = 'hpe:HPE_BIG.png|hewlett-packard-enterprise:HPE_BIG.png|dell:DELL.png|cisco:CSCO.png|lenovo:0992.HK.png|intel:INTC.png|seagate:STX_BIG.png|western-digital:WDC_BIG.png|wd:WDC_BIG.png|amd:AMD_BIG.png|samsung:005930.KS_BIG.png|microsoft:MSFT_BIG.png|micron:MU_BIG.png|arctic:ARCTIC_logo_white.png' -%}
 
-<section class="pm-brand-wall">
+{%- comment -%}
+  Section root carries CSS custom properties from the schema settings.
+  The CSS reads each var with a fallback, so existing instances (or any
+  setting left blank) keep the original look. Admin can tune any knob
+  in the editor without code changes.
+{%- endcomment -%}
+<section
+  class="pm-brand-wall{% if section.settings.grayscale %} pm-brand-wall--grayscale{% endif %}{% unless section.settings.scale_on_hover %} pm-brand-wall--no-scale{% endunless %}{% if section.settings.center_title %} pm-brand-wall--center{% endif %}"
+  style="
+    --bw-pt:{{ section.settings.padding_top }}px;
+    --bw-pb:{{ section.settings.padding_bottom }}px;
+    --bw-bg:{{ section.settings.bg_color }};
+    --bw-eyebrow:{{ section.settings.eyebrow_color }};
+    --bw-title:{{ section.settings.title_color }};
+    --bw-cta:{{ section.settings.cta_color }};
+    --bw-title-size:{{ section.settings.title_size }}px;
+    --bw-title-size-m:{{ section.settings.title_size_mobile }}px;
+    --bw-logo-h:{{ section.settings.logo_height }}px;
+    --bw-logo-h-m:{{ section.settings.logo_height_mobile }}px;
+    --bw-logo-gap:{{ section.settings.logo_gap }}px;
+    --bw-logo-gap-m:{{ section.settings.logo_gap_mobile }}px;
+    --bw-logo-min:{{ section.settings.logo_min_width }}px;
+  "
+>
   <div class="pm-container">
     <div class="pm-brand-wall__head">
       <div class="pm-brand-wall__heading">
@@ -38,9 +61,11 @@
     </div>
 
     <div class="pm-brand-wall__row">
-      <button type="button" class="pm-brand-wall__nav pm-brand-wall__nav--left" data-brand-scroll="-1" aria-label="Scroll partners left">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
-      </button>
+      {%- if section.settings.show_arrows -%}
+        <button type="button" class="pm-brand-wall__nav pm-brand-wall__nav--left" data-brand-scroll="-1" aria-label="Scroll partners left">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+        </button>
+      {%- endif -%}
 
       <div class="pm-brand-wall__scroll" id="pm-brand-scroll">
         {%- for block in section.blocks -%}
@@ -70,7 +95,6 @@
                 alt="{{ block.settings.name | default: '' }}"
                 width="120"
                 height="56"
-                style="height:56px;width:auto;"
                 loading="lazy"
               >
             {%- elsif block.settings.name != blank -%}
@@ -84,9 +108,11 @@
         {%- endfor -%}
       </div>
 
-      <button type="button" class="pm-brand-wall__nav pm-brand-wall__nav--right" data-brand-scroll="1" aria-label="Scroll partners right">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
-      </button>
+      {%- if section.settings.show_arrows -%}
+        <button type="button" class="pm-brand-wall__nav pm-brand-wall__nav--right" data-brand-scroll="1" aria-label="Scroll partners right">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+        </button>
+      {%- endif -%}
     </div>
   </div>
 </section>
@@ -142,30 +168,39 @@
   "name": "PM — Brand Wall",
   "tag": "section",
   "settings": [
-    {
-      "type": "text",
-      "id": "eyebrow",
-      "label": "Eyebrow",
-      "default": "Authorized partners"
-    },
-    {
-      "type": "text",
-      "id": "title",
-      "label": "Title",
-      "default": "Stocked, supported, sourced direct."
-    },
-    {
-      "type": "text",
-      "id": "cta_label",
-      "label": "Header CTA label",
-      "default": "All manufacturers"
-    },
-    {
-      "type": "url",
-      "id": "cta_href",
-      "label": "Header CTA link",
-      "default": "/collections/all"
-    }
+    { "type": "header", "content": "Content" },
+    { "type": "text", "id": "eyebrow",   "label": "Eyebrow",          "default": "Authorized partners" },
+    { "type": "text", "id": "title",     "label": "Title",            "default": "Stocked, supported, sourced direct." },
+    { "type": "text", "id": "cta_label", "label": "Header CTA label", "default": "All manufacturers" },
+    { "type": "url",  "id": "cta_href",  "label": "Header CTA link",  "default": "/collections/all" },
+    { "type": "checkbox", "id": "center_title", "label": "Center the title block",
+      "info": "When on, the eyebrow/title stack and the header CTA each get their own row, centered.", "default": false },
+
+    { "type": "header", "content": "Section spacing" },
+    { "type": "range", "id": "padding_top",    "label": "Padding top",    "min": 0, "max": 160, "step": 4, "unit": "px", "default": 56 },
+    { "type": "range", "id": "padding_bottom", "label": "Padding bottom", "min": 0, "max": 160, "step": 4, "unit": "px", "default": 64 },
+
+    { "type": "header", "content": "Colors" },
+    { "type": "color", "id": "bg_color",      "label": "Background",     "default": "#FBFAF7" },
+    { "type": "color", "id": "eyebrow_color", "label": "Eyebrow color",  "default": "#8B7355" },
+    { "type": "color", "id": "title_color",   "label": "Title color",    "default": "#101828" },
+    { "type": "color", "id": "cta_color",     "label": "CTA color",      "default": "#1D2939" },
+
+    { "type": "header", "content": "Typography" },
+    { "type": "range", "id": "title_size",        "label": "Title size (desktop)", "min": 16, "max": 48, "step": 2, "unit": "px", "default": 26 },
+    { "type": "range", "id": "title_size_mobile", "label": "Title size (mobile)",  "min": 14, "max": 40, "step": 2, "unit": "px", "default": 22 },
+
+    { "type": "header", "content": "Logo display" },
+    { "type": "range", "id": "logo_height",        "label": "Logo height (desktop)", "min": 24, "max": 100, "step": 2, "unit": "px", "default": 44 },
+    { "type": "range", "id": "logo_height_mobile", "label": "Logo height (mobile)",  "min": 20, "max": 80,  "step": 2, "unit": "px", "default": 32 },
+    { "type": "range", "id": "logo_gap",           "label": "Gap between logos (desktop)", "min": 12, "max": 120, "step": 4, "unit": "px", "default": 56 },
+    { "type": "range", "id": "logo_gap_mobile",    "label": "Gap between logos (mobile)",  "min": 8,  "max": 80,  "step": 4, "unit": "px", "default": 32 },
+    { "type": "range", "id": "logo_min_width",     "label": "Logo min width", "min": 60, "max": 220, "step": 10, "unit": "px", "default": 100 },
+
+    { "type": "header", "content": "Behavior" },
+    { "type": "checkbox", "id": "show_arrows",    "label": "Show navigation arrows", "default": true },
+    { "type": "checkbox", "id": "grayscale",      "label": "Grayscale logos (color on hover)", "default": false },
+    { "type": "checkbox", "id": "scale_on_hover", "label": "Scale logos on hover", "default": true }
   ],
   "blocks": [
     {

@@ -883,9 +883,13 @@ ul, ol { list-style: none; }
 }
 
 /* --- Brand Wall ----------------------------------------------------------- */
+/* All visual knobs read CSS custom properties set on the section root
+   by the schema settings (see pm-brand-wall.liquid). Each has a sane
+   fallback so existing instances (or any setting left blank) render
+   identically to the original hardcoded values. */
 .pm-brand-wall {
-  background: var(--pm-paper);
-  padding: 56px 0 64px;
+  background: var(--bw-bg, var(--pm-paper));
+  padding: var(--bw-pt, 56px) 0 var(--bw-pb, 64px);
 }
 .pm-brand-wall__head {
   display: flex;
@@ -895,23 +899,31 @@ ul, ol { list-style: none; }
   margin-bottom: 28px;
   flex-wrap: wrap;
 }
+.pm-brand-wall--center .pm-brand-wall__head {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
 .pm-brand-wall__heading { display: flex; flex-direction: column; gap: 6px; }
+.pm-brand-wall .pm-section-eyebrow { color: var(--bw-eyebrow, var(--pm-tan)); }
 .pm-brand-wall__title {
   margin: 0;
-  font-size: 22px;
+  font-size: var(--bw-title-size-m, 22px);
   font-weight: 800;
-  color: var(--pm-ink-900);
+  color: var(--bw-title, var(--pm-ink-900));
   letter-spacing: -0.018em;
   line-height: 1.2;
 }
-@media (min-width: 640px) { .pm-brand-wall__title { font-size: 26px; } }
+@media (min-width: 640px) {
+  .pm-brand-wall__title { font-size: var(--bw-title-size, 26px); }
+}
 .pm-brand-wall__cta {
   display: inline-flex;
   align-items: center;
   gap: 8px;
   font-size: 14px;
   font-weight: 600;
-  color: var(--pm-ink-800);
+  color: var(--bw-cta, var(--pm-ink-800));
   border-bottom: 1.5px solid transparent;
   padding-bottom: 2px;
   transition: color var(--pm-dur-fast), border-color var(--pm-dur-fast);
@@ -955,7 +967,7 @@ ul, ol { list-style: none; }
   flex: 1;
   display: flex;
   align-items: center;
-  gap: 56px;
+  gap: var(--bw-logo-gap-m, 32px);
   overflow-x: auto;
   scroll-behavior: smooth;
   padding: 8px 4px;
@@ -965,6 +977,9 @@ ul, ol { list-style: none; }
   scroll-snap-type: x proximity;
   min-width: 0;
 }
+@media (min-width: 640px) {
+  .pm-brand-wall__scroll { gap: var(--bw-logo-gap, 56px); }
+}
 .pm-brand-wall__scroll::-webkit-scrollbar { display: none; }
 .pm-brand-wall__scroll:active { cursor: grabbing; }
 
@@ -973,16 +988,20 @@ ul, ol { list-style: none; }
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 100px;
+  min-width: var(--bw-logo-min, 100px);
   scroll-snap-align: center;
 }
 .pm-brand-logo img {
-  height: 44px;
-  max-height: 56px;
+  height: var(--bw-logo-h-m, 32px);
   width: auto;
-  max-width: 180px;
+  max-width: 220px;
   object-fit: contain;
-  transition: opacity var(--pm-dur-base) var(--pm-ease-standard), transform var(--pm-dur-base) var(--pm-ease-standard);
+  transition: opacity var(--pm-dur-base) var(--pm-ease-standard),
+              transform var(--pm-dur-base) var(--pm-ease-standard),
+              filter var(--pm-dur-base) var(--pm-ease-standard);
+}
+@media (min-width: 640px) {
+  .pm-brand-logo img { height: var(--bw-logo-h, 44px); }
 }
 .pm-brand-logo:hover img {
   transform: scale(1.04);
@@ -997,9 +1016,18 @@ ul, ol { list-style: none; }
 }
 .pm-brand-logo:hover .pm-brand-logo__name { color: var(--pm-ink-900); }
 
+/* ── Behavior modifiers (driven by checkbox settings) ── */
+.pm-brand-wall--grayscale .pm-brand-logo img {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+.pm-brand-wall--grayscale .pm-brand-logo:hover img {
+  filter: grayscale(0);
+  opacity: 1;
+}
+.pm-brand-wall--no-scale .pm-brand-logo:hover img { transform: none; }
+
 @media (max-width: 640px) {
-  .pm-brand-wall__scroll { gap: 32px; }
-  .pm-brand-logo img { height: 32px; max-height: 40px; }
   .pm-brand-wall__nav { width: 36px; height: 36px; }
 }
 
