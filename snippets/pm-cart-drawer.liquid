@@ -27,6 +27,15 @@
         <a href="/collections/all" class="pm-btn pm-btn--primary" data-cart-close>Browse catalog</a>
       </div>
       <ul class="pm-cart__items" id="pm-cart-items"></ul>
+
+      {%- comment -%}
+        ── Recently viewed mini-strip ──
+        Populated client-side by pm-recently-viewed.js. Shows the
+        3 most-recent PDPs as a compact list above the footer so
+        the cart drawer doubles as a re-engagement surface for
+        buyers who're comparison-shopping.
+      {%- endcomment -%}
+      <aside class="pm-rv-mini" data-pm-rv-drawer hidden></aside>
     </div>
 
     <footer class="pm-cart__foot" id="pm-cart-foot" hidden>

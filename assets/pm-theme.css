@@ -5706,3 +5706,173 @@ a.pm-lists__row-name:hover { color: var(--pm-navy-mid); }
   line-height: 1.4;
   color: var(--pm-ink-500);
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Recently viewed — PDP bottom strip + cart-drawer mini-list
+   localStorage-backed (pm:recently-viewed:v1), MRU-ordered by SKU.
+   JS in assets/pm-recently-viewed.js owns rendering; this file owns
+   visual layout.
+   ─────────────────────────────────────────────────────────────────── */
+
+/* ── PDP bottom strip ── */
+.pm-rv {
+  background: var(--pm-paper, #FBFAF7);
+  border-top: 1px solid var(--pm-ink-200, #E4E7EC);
+  padding: 40px 0 56px;
+}
+.pm-rv__inner { padding: 0 16px; }
+@media (min-width: 768px) { .pm-rv__inner { padding: 0 24px; } }
+
+.pm-rv__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+.pm-rv__title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--pm-ink-900, #101828);
+  letter-spacing: -0.012em;
+}
+@media (min-width: 640px) { .pm-rv__title { font-size: 22px; } }
+.pm-rv__clear {
+  background: transparent;
+  border: none;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pm-ink-500, #667085);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background var(--pm-dur-fast), color var(--pm-dur-fast);
+}
+.pm-rv__clear:hover { background: var(--pm-ink-100, #F2F4F7); color: var(--pm-ink-900); }
+
+.pm-rv__list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 4px;
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.pm-rv__list::-webkit-scrollbar { display: none; }
+.pm-rv__card {
+  flex: 0 0 auto;
+  width: 168px;
+  scroll-snap-align: start;
+}
+@media (min-width: 768px) {
+  .pm-rv__card { width: 184px; }
+}
+.pm-rv__link {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid var(--pm-ink-200);
+  border-radius: 10px;
+  text-decoration: none;
+  color: inherit;
+  height: 100%;
+  transition: border-color var(--pm-dur-fast), box-shadow var(--pm-dur-fast), transform var(--pm-dur-fast);
+}
+.pm-rv__link:hover {
+  border-color: var(--pm-ink-300);
+  box-shadow: 0 6px 16px rgba(16, 24, 40, 0.06);
+  transform: translateY(-1px);
+}
+.pm-rv__img {
+  aspect-ratio: 1 / 1;
+  background: var(--pm-ink-100, #F2F4F7);
+  border-radius: 6px;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+  color: var(--pm-ink-400);
+}
+.pm-rv__img img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.pm-rv__brand {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pm-tan, #8B7355);
+}
+.pm-rv__name {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--pm-ink-900, #101828);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 36px;
+}
+.pm-rv__price {
+  margin-top: auto;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--pm-navy-deep, #0D2340);
+}
+
+/* ── Cart-drawer mini-strip ── */
+.pm-rv-mini {
+  margin: 16px 0 0;
+  padding: 14px 22px 16px;
+  border-top: 1px solid var(--pm-ink-100, #F2F4F7);
+}
+.pm-rv-mini__head {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--pm-tan, #8B7355);
+  margin-bottom: 10px;
+}
+.pm-rv-mini__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.pm-rv-mini__row { margin: 0; }
+.pm-rv-mini__link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px;
+  border-radius: 6px;
+  text-decoration: none;
+  color: inherit;
+  transition: background var(--pm-dur-fast);
+}
+.pm-rv-mini__link:hover { background: var(--pm-ink-100, #F2F4F7); }
+.pm-rv-mini__img {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  background: var(--pm-ink-100);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pm-rv-mini__img img { width: 100%; height: 100%; object-fit: contain; padding: 3px; }
+.pm-rv-mini__main { min-width: 0; flex: 1; }
+.pm-rv-mini__name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pm-ink-900);
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.pm-rv-mini__price { font-size: 11px; color: var(--pm-ink-500); margin-top: 1px; }

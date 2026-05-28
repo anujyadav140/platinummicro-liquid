@@ -580,6 +580,28 @@
       </div>
     </div>
   </section>
+
+  {%- comment -%}
+    ── Recently viewed strip ──
+    Tracking + render handled by assets/pm-recently-viewed.js. The
+    track element stamps the current product's data into data-attrs
+    the JS auto-pushes onto the MRU on load. The mount holds the
+    rendered horizontal cards; its `data-current-sku` lets the JS
+    filter out the current PDP's own item so the strip never shows
+    "you're looking at this thing — here, look at it again".
+  {%- endcomment -%}
+  <div
+    data-pm-rv-track
+    data-rv-sku="{{ _sku | escape }}"
+    data-rv-handle="{{ product.handle }}"
+    data-rv-title="{{ product.title | escape }}"
+    data-rv-vendor="{{ product.vendor | escape }}"
+    data-rv-image="{% if product.featured_image %}{{ product.featured_image | image_url: width: 320 }}{% endif %}"
+    data-rv-price="{{ product.price | money }}"
+    data-rv-href="{{ product.url }}"
+    hidden
+  ></div>
+  <section class="pm-rv" data-pm-rv-mount data-current-sku="{{ _sku | escape }}" hidden></section>
 </main>
 
 <script>
