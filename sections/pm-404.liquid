@@ -36,8 +36,7 @@
   <div data-handle="social-responsibility">{%- render 'pm-static-body', handle: 'social-responsibility', fallback: '' -%}</div>
   <div data-handle="order-verification"> {%- render 'pm-static-body', handle: 'order-verification',     fallback: '' -%}</div>
   <div data-handle="compare">            {%- render 'pm-static-body', handle: 'compare',                fallback: '' -%}</div>
-  <div data-handle="sign-in">            {%- render 'pm-static-body', handle: 'sign-in',                fallback: '' -%}</div>
-  <div data-handle="register">           {%- render 'pm-static-body', handle: 'register',               fallback: '' -%}</div>
+  <div data-handle="account">            {%- render 'pm-static-body', handle: 'account',                fallback: '' -%}</div>
 </div>
 
 <script>
@@ -69,8 +68,7 @@
       'social-responsibility': 'Social responsibility · Platinum Micro',
       'order-verification': 'Order verification · Platinum Micro',
       'compare': 'Compare products · Platinum Micro',
-      'sign-in': 'Sign in · Platinum Micro',
-      'register': 'Create account · Platinum Micro'
+      'account': 'My account · Platinum Micro'
     };
     if (titles[handle]) document.title = titles[handle];
     // Re-init dynamic components that look for elements that just appeared

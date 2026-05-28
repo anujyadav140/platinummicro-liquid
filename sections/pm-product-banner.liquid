@@ -1,0 +1,710 @@
+{%- comment -%}
+  PM — Product Banner
+
+  One reusable section, five block types, infinite combinations. Built
+  for brand & product-line landing pages (e.g. HPE Smart Choice, HPE +
+  AMD EPYC, Cisco refresh, NASPO bundles).
+
+  Block types (admin adds any combination, in any order):
+
+    1. Hero band         — full-bleed image + eyebrow + headline + body + CTA.
+                           For the marquee at the top of the page.
+    2. Feature callout   — narrow text band w/ eyebrow + title + body +
+                           optional brand logo image on the right.
+                           For "Smart and secure — with AMD EPYC™ performance".
+    3. Category tiles    — up to 6 image+title+link tiles in a responsive
+                           grid. For MicroServers / Tower / Rack / Storage.
+    4. Product spotlight — up to 4 picked products with optional pill
+                           labels (e.g. "Hot Pick!", "Edge-optimized").
+    5. CTA band          — slim colored band with title + body + button.
+                           Closes the page with a single action.
+
+  Every block has its own background / colors / spacing controls so
+  pages can shift between dark navy bands and light paper bands to
+  create rhythm.
+
+  Designed for any JSON template that supports sections (default
+  templates/page.json, templates/index.json, brand pages, etc.).
+{%- endcomment -%}
+
+<section class="pm-pbnr" style="{% if section.settings.section_bg != blank %}background:{{ section.settings.section_bg }};{% endif %}">
+
+  {%- for block in section.blocks -%}
+    {%- assign b = block.settings -%}
+    {%- case block.type -%}
+
+    {%- comment -%} ─────────────────────────────  HERO BAND  ───── {%- endcomment -%}
+    {%- when 'hero' -%}
+      <div
+        class="pm-pbnr-hero pm-pbnr-hero--text-{{ b.text_color }}"
+        style="
+          {% if b.background_image %}background-image:url({{ b.background_image | image_url: width: 2400 }});{% endif %}
+          background-color:{{ b.bg_color }};
+          background-position:{{ b.bg_position }};
+          min-height:{{ b.height_px }}px;
+        "
+        {{ block.shopify_attributes }}
+      >
+        {%- if b.show_overlay -%}
+          <div class="pm-pbnr-hero__overlay" style="background:linear-gradient(90deg, {{ b.bg_color }} 0%, {{ b.bg_color }}aa 45%, transparent 100%);"></div>
+        {%- endif -%}
+        <div class="pm-pbnr-hero__inner pm-container">
+          {%- if b.eyebrow != blank -%}
+            <div class="pm-pbnr-hero__eyebrow" style="color:{{ b.accent_color | default: '#C04E3E' }};">{{ b.eyebrow }}</div>
+          {%- endif -%}
+          {%- if b.headline != blank -%}
+            <h2 class="pm-pbnr-hero__headline">{{ b.headline }}</h2>
+          {%- endif -%}
+          {%- if b.body != blank -%}
+            <p class="pm-pbnr-hero__body">{{ b.body }}</p>
+          {%- endif -%}
+          {%- if b.cta_label != blank and b.cta_href != blank -%}
+            <a href="{{ b.cta_href }}" class="pm-pbnr-hero__cta" style="background:{{ b.accent_color | default: '#A63D2F' }};">
+              {{ b.cta_label }}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </a>
+          {%- endif -%}
+        </div>
+      </div>
+
+    {%- comment -%} ────────────────────────────  FEATURE CALLOUT  ─ {%- endcomment -%}
+    {%- when 'feature' -%}
+      <div class="pm-pbnr-feat" style="background:{{ b.bg_color }};color:{{ b.text_color }};" {{ block.shopify_attributes }}>
+        <div class="pm-pbnr-feat__inner pm-container">
+          <div class="pm-pbnr-feat__text">
+            {%- if b.eyebrow != blank -%}
+              <div class="pm-pbnr-feat__eyebrow" style="color:{{ b.accent_color | default: '#8B7355' }};">{{ b.eyebrow }}</div>
+            {%- endif -%}
+            {%- if b.title != blank -%}
+              <h2 class="pm-pbnr-feat__title">{{ b.title }}</h2>
+            {%- endif -%}
+            {%- if b.body != blank -%}
+              <p class="pm-pbnr-feat__body">{{ b.body }}</p>
+            {%- endif -%}
+          </div>
+          {%- if b.brand_logo != blank -%}
+            <div class="pm-pbnr-feat__logo">
+              <img src="{{ b.brand_logo | image_url: width: 320 }}" alt="" loading="lazy">
+            </div>
+          {%- endif -%}
+        </div>
+      </div>
+
+    {%- comment -%} ────────────────────────────  CATEGORY TILES  ── {%- endcomment -%}
+    {%- when 'category_tiles' -%}
+      <div class="pm-pbnr-cats" style="background:{{ b.bg_color }};" {{ block.shopify_attributes }}>
+        <div class="pm-pbnr-cats__inner pm-container">
+          {%- if b.title != blank -%}
+            <h2 class="pm-pbnr-cats__title" style="color:{{ b.text_color }};">{{ b.title }}</h2>
+          {%- endif -%}
+          {%- if b.subtitle != blank -%}
+            <p class="pm-pbnr-cats__sub" style="color:{{ b.text_color }};opacity:0.75;">{{ b.subtitle }}</p>
+          {%- endif -%}
+          <div class="pm-pbnr-cats__grid" data-cols="{{ b.columns | default: 4 }}">
+            {%- for n in (1..6) -%}
+              {%- capture _img_key   -%}tile{{ n }}_image{%- endcapture -%}
+              {%- capture _title_key -%}tile{{ n }}_title{%- endcapture -%}
+              {%- capture _sub_key   -%}tile{{ n }}_subtitle{%- endcapture -%}
+              {%- capture _link_key  -%}tile{{ n }}_link{%- endcapture -%}
+              {%- assign _img   = b[_img_key]   -%}
+              {%- assign _title = b[_title_key] -%}
+              {%- assign _sub   = b[_sub_key]   -%}
+              {%- assign _link  = b[_link_key]  -%}
+              {%- if _title != blank or _img != blank -%}
+                <a href="{{ _link | default: '#' }}" class="pm-pbnr-cats__tile" style="color:{{ b.text_color }};">
+                  {%- if _img != blank -%}
+                    <div class="pm-pbnr-cats__tile-img">
+                      <img src="{{ _img | image_url: width: 480 }}" alt="{{ _title | escape }}" loading="lazy">
+                    </div>
+                  {%- endif -%}
+                  {%- if _title != blank -%}
+                    <div class="pm-pbnr-cats__tile-title">{{ _title }}</div>
+                  {%- endif -%}
+                  {%- if _sub != blank -%}
+                    <div class="pm-pbnr-cats__tile-sub">{{ _sub }}</div>
+                  {%- endif -%}
+                </a>
+              {%- endif -%}
+            {%- endfor -%}
+          </div>
+        </div>
+      </div>
+
+    {%- comment -%} ───────────────────────────  PRODUCT SPOTLIGHT  ─ {%- endcomment -%}
+    {%- when 'product_spotlight' -%}
+      <div class="pm-pbnr-prods" style="background:{{ b.bg_color }};" {{ block.shopify_attributes }}>
+        <div class="pm-pbnr-prods__inner pm-container">
+          {%- if b.title != blank -%}
+            <h2 class="pm-pbnr-prods__title" style="color:{{ b.text_color }};">{{ b.title }}</h2>
+          {%- endif -%}
+          {%- if b.subtitle != blank -%}
+            <p class="pm-pbnr-prods__sub" style="color:{{ b.text_color }};opacity:0.75;">{{ b.subtitle }}</p>
+          {%- endif -%}
+          <div class="pm-pbnr-prods__grid">
+            {%- for n in (1..4) -%}
+              {%- capture _prod_key       -%}prod{{ n }}{%- endcapture -%}
+              {%- capture _pill_key       -%}prod{{ n }}_pill{%- endcapture -%}
+              {%- capture _pill_color_key -%}prod{{ n }}_pill_color{%- endcapture -%}
+              {%- assign _handle = b[_prod_key] -%}
+              {%- if _handle != blank -%}
+                {%- assign p = all_products[_handle] -%}
+                {%- if p != blank and p.id != blank -%}
+                  <a href="{{ p.url }}" class="pm-pbnr-prods__card" style="color:{{ b.text_color }};">
+                    {%- assign _pill = b[_pill_key] -%}
+                    {%- if _pill != blank -%}
+                      <span class="pm-pbnr-prods__pill" style="background:{{ b[_pill_color_key] | default: '#6F4FE8' }};">{{ _pill }}</span>
+                    {%- endif -%}
+                    {%- if p.featured_image -%}
+                      <div class="pm-pbnr-prods__card-img">
+                        <img src="{{ p.featured_image | image_url: width: 480 }}" alt="{{ p.title | escape }}" loading="lazy">
+                      </div>
+                    {%- endif -%}
+                    {%- if p.vendor != blank -%}
+                      <div class="pm-pbnr-prods__card-brand">{{ p.vendor }}</div>
+                    {%- endif -%}
+                    <div class="pm-pbnr-prods__card-title">{{ p.title | truncate: 70 }}</div>
+                    <div class="pm-pbnr-prods__card-price">{{ p.price | money }}</div>
+                  </a>
+                {%- endif -%}
+              {%- endif -%}
+            {%- endfor -%}
+          </div>
+        </div>
+      </div>
+
+    {%- comment -%} ─────────────────────────────  CTA BAND  ────── {%- endcomment -%}
+    {%- when 'cta_band' -%}
+      <div class="pm-pbnr-ctab" style="background:{{ b.bg_color }};color:{{ b.text_color }};" {{ block.shopify_attributes }}>
+        <div class="pm-pbnr-ctab__inner pm-container">
+          <div class="pm-pbnr-ctab__text">
+            {%- if b.eyebrow != blank -%}
+              <div class="pm-pbnr-ctab__eyebrow" style="color:{{ b.accent_color | default: '#C04E3E' }};">{{ b.eyebrow }}</div>
+            {%- endif -%}
+            {%- if b.title != blank -%}
+              <h2 class="pm-pbnr-ctab__title">{{ b.title }}</h2>
+            {%- endif -%}
+            {%- if b.body != blank -%}
+              <p class="pm-pbnr-ctab__body">{{ b.body }}</p>
+            {%- endif -%}
+          </div>
+          {%- if b.cta_label != blank and b.cta_href != blank -%}
+            <a href="{{ b.cta_href }}" class="pm-pbnr-ctab__btn" style="background:{{ b.accent_color | default: '#A63D2F' }};">
+              {{ b.cta_label }}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </a>
+          {%- endif -%}
+        </div>
+      </div>
+
+    {%- endcase -%}
+  {%- endfor -%}
+
+</section>
+
+<style>
+/* ─────────────────────────────────────────────────────────────────
+   PM — Product Banner styles
+   Scoped under .pm-pbnr so this section can be dropped into any
+   theme/page without leaking. Each block is a standalone band.
+   ───────────────────────────────────────────────────────────── */
+
+.pm-pbnr { display: block; }
+.pm-pbnr a { text-decoration: none; }
+
+/* ── Hero band ── */
+.pm-pbnr-hero {
+  position: relative;
+  background-size: cover;
+  background-repeat: no-repeat;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+}
+.pm-pbnr-hero__overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.pm-pbnr-hero__inner {
+  position: relative;
+  z-index: 1;
+  padding: 48px 16px;
+  width: 100%;
+}
+@media (min-width: 768px) { .pm-pbnr-hero__inner { padding: 64px 24px; } }
+.pm-pbnr-hero__eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+.pm-pbnr-hero__headline {
+  margin: 0 0 14px;
+  font-family: var(--pm-font-heading, 'Google Sans Flex', sans-serif);
+  font-size: clamp(28px, 4.2vw, 48px);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  max-width: 760px;
+}
+.pm-pbnr-hero__body {
+  margin: 0 0 24px;
+  font-size: clamp(15px, 1.4vw, 18px);
+  line-height: 1.55;
+  max-width: 580px;
+}
+.pm-pbnr-hero--text-light { color: #fff; }
+.pm-pbnr-hero--text-light .pm-pbnr-hero__body { color: rgba(255,255,255,0.85); }
+.pm-pbnr-hero--text-dark  { color: var(--pm-ink-900, #101828); }
+.pm-pbnr-hero--text-dark  .pm-pbnr-hero__body { color: var(--pm-ink-700, #344054); }
+.pm-pbnr-hero__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 22px;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  transition: opacity 120ms;
+}
+.pm-pbnr-hero__cta:hover { opacity: 0.92; color: #fff; }
+
+/* ── Feature callout ── */
+.pm-pbnr-feat { padding: 40px 0; }
+@media (min-width: 768px) { .pm-pbnr-feat { padding: 56px 0; } }
+.pm-pbnr-feat__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  flex-wrap: wrap;
+  padding: 0 16px;
+}
+@media (min-width: 768px) { .pm-pbnr-feat__inner { padding: 0 24px; } }
+.pm-pbnr-feat__text { flex: 1; min-width: 280px; max-width: 720px; }
+.pm-pbnr-feat__eyebrow {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.pm-pbnr-feat__title {
+  margin: 0 0 8px;
+  font-size: clamp(22px, 2.6vw, 30px);
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.012em;
+}
+.pm-pbnr-feat__body {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.55;
+  opacity: 0.8;
+}
+.pm-pbnr-feat__logo { flex-shrink: 0; }
+.pm-pbnr-feat__logo img { display: block; max-height: 56px; width: auto; }
+
+/* ── Category tiles ── */
+.pm-pbnr-cats { padding: 48px 0; }
+@media (min-width: 768px) { .pm-pbnr-cats { padding: 64px 0; } }
+.pm-pbnr-cats__inner { padding: 0 16px; }
+@media (min-width: 768px) { .pm-pbnr-cats__inner { padding: 0 24px; } }
+.pm-pbnr-cats__title {
+  margin: 0 0 6px;
+  font-size: clamp(22px, 2.6vw, 28px);
+  font-weight: 700;
+  letter-spacing: -0.012em;
+}
+.pm-pbnr-cats__sub {
+  margin: 0 0 28px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.pm-pbnr-cats__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+@media (min-width: 640px) {
+  .pm-pbnr-cats__grid[data-cols="3"] { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .pm-pbnr-cats__grid[data-cols="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 960px) {
+  .pm-pbnr-cats__grid[data-cols="4"] { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .pm-pbnr-cats__grid[data-cols="5"] { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+  .pm-pbnr-cats__grid[data-cols="6"] { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+}
+.pm-pbnr-cats__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 16px;
+  text-align: center;
+  border-radius: 12px;
+  transition: transform 180ms ease, background 120ms;
+}
+.pm-pbnr-cats__tile:hover {
+  background: rgba(0, 0, 0, 0.03);
+  transform: translateY(-2px);
+}
+.pm-pbnr-cats__tile-img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 10px;
+  overflow: hidden;
+  padding: 16px;
+}
+.pm-pbnr-cats__tile-img img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.pm-pbnr-cats__tile-title {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: -0.005em;
+}
+.pm-pbnr-cats__tile-sub {
+  font-size: 12px;
+  opacity: 0.65;
+  line-height: 1.4;
+}
+
+/* ── Product spotlight ── */
+.pm-pbnr-prods { padding: 48px 0; }
+@media (min-width: 768px) { .pm-pbnr-prods { padding: 64px 0; } }
+.pm-pbnr-prods__inner { padding: 0 16px; }
+@media (min-width: 768px) { .pm-pbnr-prods__inner { padding: 0 24px; } }
+.pm-pbnr-prods__title {
+  margin: 0 0 6px;
+  font-size: clamp(22px, 2.6vw, 28px);
+  font-weight: 700;
+  letter-spacing: -0.012em;
+}
+.pm-pbnr-prods__sub {
+  margin: 0 0 24px;
+  font-size: 15px;
+  line-height: 1.5;
+}
+.pm-pbnr-prods__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+@media (min-width: 768px) { .pm-pbnr-prods__grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 1024px) { .pm-pbnr-prods__grid { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+.pm-pbnr-prods__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 16px;
+  background: #fff;
+  border: 1px solid var(--pm-ink-200, #E4E7EC);
+  border-radius: 12px;
+  transition: transform 180ms ease, box-shadow 120ms;
+}
+.pm-pbnr-prods__card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(16, 24, 40, 0.08);
+}
+.pm-pbnr-prods__pill {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.pm-pbnr-prods__card-img {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--pm-ink-100, #F2F4F7);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 6px;
+}
+.pm-pbnr-prods__card-img img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.pm-pbnr-prods__card-brand {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+.pm-pbnr-prods__card-title {
+  font-size: 13.5px;
+  font-weight: 600;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.pm-pbnr-prods__card-price {
+  margin-top: auto;
+  font-size: 15px;
+  font-weight: 700;
+  padding-top: 6px;
+}
+
+/* ── CTA band ── */
+.pm-pbnr-ctab { padding: 32px 0; }
+@media (min-width: 768px) { .pm-pbnr-ctab { padding: 40px 0; } }
+.pm-pbnr-ctab__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding: 0 16px;
+}
+@media (min-width: 768px) { .pm-pbnr-ctab__inner { padding: 0 24px; } }
+.pm-pbnr-ctab__text { flex: 1; min-width: 280px; }
+.pm-pbnr-ctab__eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.pm-pbnr-ctab__title {
+  margin: 0 0 6px;
+  font-size: clamp(20px, 2.4vw, 26px);
+  font-weight: 700;
+  letter-spacing: -0.012em;
+}
+.pm-pbnr-ctab__body { margin: 0; font-size: 14px; line-height: 1.5; opacity: 0.85; }
+.pm-pbnr-ctab__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 22px;
+  border-radius: 8px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  transition: opacity 120ms;
+  flex-shrink: 0;
+}
+.pm-pbnr-ctab__btn:hover { opacity: 0.92; color: #fff; }
+</style>
+
+{% schema %}
+{
+  "name": "PM — Product Banner",
+  "tag": "section",
+  "class": "shopify-section-pm-product-banner",
+  "max_blocks": 12,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Section",
+      "info": "Add Hero / Feature / Category / Product / CTA blocks below. Drag to reorder. Each block is its own band."
+    },
+    {
+      "type": "color",
+      "id": "section_bg",
+      "label": "Outer background (between bands)",
+      "info": "Optional. Leave blank for default."
+    }
+  ],
+  "blocks": [
+    {
+      "type": "hero",
+      "name": "Hero band",
+      "limit": 4,
+      "settings": [
+        { "type": "header", "content": "Image + colors" },
+        { "type": "image_picker", "id": "background_image", "label": "Background image" },
+        {
+          "type": "select",
+          "id": "bg_position",
+          "label": "Image position",
+          "options": [
+            { "value": "center", "label": "Center" },
+            { "value": "top",    "label": "Top" },
+            { "value": "bottom", "label": "Bottom" },
+            { "value": "left center",  "label": "Left" },
+            { "value": "right center", "label": "Right" }
+          ],
+          "default": "center"
+        },
+        { "type": "color", "id": "bg_color", "label": "Background color (fallback / overlay base)", "default": "#0D2340" },
+        { "type": "checkbox", "id": "show_overlay", "label": "Gradient overlay for text legibility", "default": true },
+        {
+          "type": "select",
+          "id": "text_color",
+          "label": "Text color",
+          "options": [
+            { "value": "light", "label": "Light (white)" },
+            { "value": "dark",  "label": "Dark" }
+          ],
+          "default": "light"
+        },
+        { "type": "color", "id": "accent_color", "label": "Eyebrow + CTA color", "default": "#A63D2F" },
+
+        { "type": "header", "content": "Content" },
+        { "type": "text", "id": "eyebrow",  "label": "Eyebrow",  "default": "Featured" },
+        { "type": "text", "id": "headline", "label": "Headline", "default": "HPE + AMD = an \"EPYC\" win" },
+        { "type": "textarea", "id": "body", "label": "Body", "default": "Workload-optimized servers built on AMD EPYC™ — pre-tested, NASPO-aligned, ready to deploy." },
+        { "type": "text", "id": "cta_label", "label": "CTA label", "default": "Shop the line" },
+        { "type": "url",  "id": "cta_href",  "label": "CTA link" },
+
+        { "type": "header", "content": "Size" },
+        { "type": "range", "id": "height_px", "label": "Band height (px)", "min": 280, "max": 720, "step": 20, "default": 420 }
+      ]
+    },
+
+    {
+      "type": "feature",
+      "name": "Feature callout",
+      "limit": 6,
+      "settings": [
+        { "type": "color", "id": "bg_color",    "label": "Background", "default": "#FBFAF7" },
+        { "type": "color", "id": "text_color",  "label": "Text color", "default": "#101828" },
+        { "type": "color", "id": "accent_color","label": "Eyebrow color", "default": "#8B7355" },
+        { "type": "text",  "id": "eyebrow",  "label": "Eyebrow", "default": "Why it matters" },
+        { "type": "text",  "id": "title",    "label": "Title",   "default": "Smart and secure — with AMD EPYC™ performance" },
+        { "type": "textarea", "id": "body",  "label": "Body",    "default": "Choose from workload-optimized solutions to fit your business needs." },
+        { "type": "image_picker", "id": "brand_logo", "label": "Brand logo (right side)", "info": "Optional. ~56px tall." }
+      ]
+    },
+
+    {
+      "type": "category_tiles",
+      "name": "Category tiles",
+      "limit": 4,
+      "settings": [
+        { "type": "color", "id": "bg_color",   "label": "Background", "default": "#FFFFFF" },
+        { "type": "color", "id": "text_color", "label": "Text color", "default": "#101828" },
+        { "type": "text",  "id": "title",      "label": "Section title",  "default": "Find your form factor" },
+        { "type": "textarea", "id": "subtitle","label": "Subtitle" },
+        {
+          "type": "select",
+          "id": "columns",
+          "label": "Columns (desktop)",
+          "options": [
+            { "value": "3", "label": "3" },
+            { "value": "4", "label": "4" },
+            { "value": "5", "label": "5" },
+            { "value": "6", "label": "6" }
+          ],
+          "default": "4"
+        },
+
+        { "type": "header", "content": "Tile 1" },
+        { "type": "image_picker", "id": "tile1_image", "label": "Image" },
+        { "type": "text", "id": "tile1_title",   "label": "Title", "default": "MicroServers" },
+        { "type": "text", "id": "tile1_subtitle","label": "Subtitle" },
+        { "type": "url",  "id": "tile1_link",    "label": "Link" },
+
+        { "type": "header", "content": "Tile 2" },
+        { "type": "image_picker", "id": "tile2_image", "label": "Image" },
+        { "type": "text", "id": "tile2_title",   "label": "Title", "default": "Tower Servers" },
+        { "type": "text", "id": "tile2_subtitle","label": "Subtitle" },
+        { "type": "url",  "id": "tile2_link",    "label": "Link" },
+
+        { "type": "header", "content": "Tile 3" },
+        { "type": "image_picker", "id": "tile3_image", "label": "Image" },
+        { "type": "text", "id": "tile3_title",   "label": "Title", "default": "Rack Servers" },
+        { "type": "text", "id": "tile3_subtitle","label": "Subtitle" },
+        { "type": "url",  "id": "tile3_link",    "label": "Link" },
+
+        { "type": "header", "content": "Tile 4" },
+        { "type": "image_picker", "id": "tile4_image", "label": "Image" },
+        { "type": "text", "id": "tile4_title",   "label": "Title", "default": "Storage Solutions" },
+        { "type": "text", "id": "tile4_subtitle","label": "Subtitle" },
+        { "type": "url",  "id": "tile4_link",    "label": "Link" },
+
+        { "type": "header", "content": "Tile 5 (optional)" },
+        { "type": "image_picker", "id": "tile5_image", "label": "Image" },
+        { "type": "text", "id": "tile5_title",   "label": "Title" },
+        { "type": "text", "id": "tile5_subtitle","label": "Subtitle" },
+        { "type": "url",  "id": "tile5_link",    "label": "Link" },
+
+        { "type": "header", "content": "Tile 6 (optional)" },
+        { "type": "image_picker", "id": "tile6_image", "label": "Image" },
+        { "type": "text", "id": "tile6_title",   "label": "Title" },
+        { "type": "text", "id": "tile6_subtitle","label": "Subtitle" },
+        { "type": "url",  "id": "tile6_link",    "label": "Link" }
+      ]
+    },
+
+    {
+      "type": "product_spotlight",
+      "name": "Product spotlight",
+      "limit": 6,
+      "settings": [
+        { "type": "color", "id": "bg_color",   "label": "Background", "default": "#F4EFE8" },
+        { "type": "color", "id": "text_color", "label": "Text color", "default": "#101828" },
+        { "type": "text",  "id": "title",      "label": "Section title", "default": "Edge-optimized" },
+        { "type": "textarea", "id": "subtitle","label": "Subtitle", "default": "Powerful performance in a compact, quiet form factor." },
+
+        { "type": "header", "content": "Product 1" },
+        { "type": "product", "id": "prod1",            "label": "Product" },
+        { "type": "text",    "id": "prod1_pill",       "label": "Pill label (optional)", "info": "e.g. \"Hot Pick!\"" },
+        { "type": "color",   "id": "prod1_pill_color", "label": "Pill color", "default": "#6F4FE8" },
+
+        { "type": "header", "content": "Product 2" },
+        { "type": "product", "id": "prod2",            "label": "Product" },
+        { "type": "text",    "id": "prod2_pill",       "label": "Pill label (optional)" },
+        { "type": "color",   "id": "prod2_pill_color", "label": "Pill color", "default": "#6F4FE8" },
+
+        { "type": "header", "content": "Product 3" },
+        { "type": "product", "id": "prod3",            "label": "Product" },
+        { "type": "text",    "id": "prod3_pill",       "label": "Pill label (optional)" },
+        { "type": "color",   "id": "prod3_pill_color", "label": "Pill color", "default": "#6F4FE8" },
+
+        { "type": "header", "content": "Product 4" },
+        { "type": "product", "id": "prod4",            "label": "Product" },
+        { "type": "text",    "id": "prod4_pill",       "label": "Pill label (optional)" },
+        { "type": "color",   "id": "prod4_pill_color", "label": "Pill color", "default": "#6F4FE8" }
+      ]
+    },
+
+    {
+      "type": "cta_band",
+      "name": "CTA band",
+      "limit": 4,
+      "settings": [
+        { "type": "color", "id": "bg_color",    "label": "Background", "default": "#0D2340" },
+        { "type": "color", "id": "text_color",  "label": "Text color", "default": "#FFFFFF" },
+        { "type": "color", "id": "accent_color","label": "Button + eyebrow color", "default": "#A63D2F" },
+        { "type": "text", "id": "eyebrow",   "label": "Eyebrow",   "default": "Ready when you are" },
+        { "type": "text", "id": "title",     "label": "Title",     "default": "Talk to a specialist about your spec." },
+        { "type": "textarea", "id": "body",  "label": "Body",      "default": "Net-30 terms available. Same-day quote." },
+        { "type": "text", "id": "cta_label", "label": "CTA label", "default": "Request a quote" },
+        { "type": "url",  "id": "cta_href",  "label": "CTA link" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "PM — Product Banner",
+      "blocks": [
+        { "type": "hero" },
+        { "type": "feature" },
+        { "type": "category_tiles" },
+        { "type": "product_spotlight" },
+        { "type": "cta_band" }
+      ]
+    }
+  ]
+}
+{% endschema %}

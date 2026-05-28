@@ -1,0 +1,197 @@
+{%- comment -%}
+  PM — PDP specs extractor (Liquid port of pm-product-by-slug.ts in Hydrogen)
+
+  Outputs a "<<ROW>>"-delimited stream of "<name><<KV>><value>" pairs.
+  Call site captures this and splits to render rows / bullets / count.
+
+  Sources scanned, in priority order:
+
+    1. AGGREGATE metafields (BigCommerce-style):
+       ONE metafield value containing pipe-separated entries, each entry
+       being comma-separated `Key: Value` pairs. Example:
+         "Category Name: SERVERS, Category Path: SERVERS|Brand: HPE"
+       Probed identifiers (matches the Hydrogen GraphQL query):
+         custom.product_custom_fields | custom.custom_fields
+         custom.specifications | custom.specs | custom.spec_sheet
+         custom.product_specs | custom.category_details
+         pm.product_custom_fields | pm.custom_fields
+         pm.specifications | pm.specs | pm.category_details | pm.warranty
+         bc.product_custom_fields | bc.custom_fields
+         specs.body | specs.data
+
+    2. STANDARD Shopify category metafields under the `shopify` namespace
+       — auto-filled when a product is assigned to a category in admin
+       (e.g. "Processor number", "Memory type"). Iterates the namespace
+       and uses `metafield.definition.name` for the human label.
+
+    3. PER-SPEC metafields in the custom / pm / specs / bc namespaces
+       (a metafield per spec row). Reserved/aggregate keys are skipped
+       so we don't double-count.
+
+  De-duplication: the lowercased name is tracked in a `seen` ledger so
+  the same spec only emits once even if it appears in multiple sources.
+{%- endcomment -%}
+
+{%- liquid
+  assign cand_list = 'custom.product_custom_fields|custom.custom_fields|custom.specifications|custom.specs|custom.spec_sheet|custom.product_specs|custom.category_details|pm.product_custom_fields|pm.custom_fields|pm.specifications|pm.specs|pm.category_details|pm.warranty|bc.product_custom_fields|bc.custom_fields|specs.body|specs.data' | split: '|'
+  assign seen = '|'
+-%}
+
+{%- comment -%} ── Pass 1: Aggregate metafields ── {%- endcomment -%}
+{%- for cand in cand_list -%}
+  {%- assign parts = cand | split: '.' -%}
+  {%- assign ns_ = parts[0] -%}
+  {%- assign k_  = parts[1] -%}
+  {%- assign mf_ = product.metafields[ns_][k_] -%}
+  {%- if mf_ == blank -%}{%- continue -%}{%- endif -%}
+  {%- capture raw_ -%}{{ mf_ }}{%- endcapture -%}
+  {%- assign raw_ = raw_ | strip -%}
+  {%- if raw_ == blank -%}{%- continue -%}{%- endif -%}
+
+  {%- if raw_ contains '|' and raw_ contains ':' -%}
+    {%- comment -%} Aggregate format: split on `|` then on `, ` ── {%- endcomment -%}
+    {%- assign segments = raw_ | split: '|' -%}
+    {%- for segment in segments -%}
+      {%- assign seg = segment | strip -%}
+      {%- assign sub_pairs = seg | split: ', ' -%}
+      {%- assign cur_n = '' -%}
+      {%- assign cur_v = '' -%}
+      {%- for p in sub_pairs -%}
+        {%- assign pstr = p | strip -%}
+        {%- if pstr contains ':' -%}
+          {%- assign before = pstr | split: ':' | first | strip -%}
+          {%- assign blen = before | size -%}
+          {%- if blen > 0 and blen < 60 -%}
+            {%- comment -%} flush previous {%- endcomment -%}
+            {%- if cur_n != '' and cur_v != '' -%}
+              {%- assign sk = '|' | append: cur_n | downcase | append: '|' -%}
+              {%- unless seen contains sk -%}
+                {%- assign seen = seen | append: cur_n | downcase | append: '|' -%}
+                {{ cur_n }}<<KV>>{{ cur_v }}<<ROW>>
+              {%- endunless -%}
+            {%- endif -%}
+            {%- assign cur_n = before -%}
+            {%- assign cur_v = pstr | remove_first: before | remove_first: ':' | strip -%}
+          {%- else -%}
+            {%- if cur_n != '' -%}
+              {%- assign cur_v = cur_v | append: ', ' | append: pstr -%}
+            {%- endif -%}
+          {%- endif -%}
+        {%- else -%}
+          {%- if cur_n != '' and pstr != '' -%}
+            {%- assign cur_v = cur_v | append: ', ' | append: pstr -%}
+          {%- endif -%}
+        {%- endif -%}
+      {%- endfor -%}
+      {%- if cur_n != '' and cur_v != '' -%}
+        {%- assign sk = '|' | append: cur_n | downcase | append: '|' -%}
+        {%- unless seen contains sk -%}
+          {%- assign seen = seen | append: cur_n | downcase | append: '|' -%}
+          {{ cur_n }}<<KV>>{{ cur_v }}<<ROW>>
+        {%- endunless -%}
+      {%- endif -%}
+    {%- endfor -%}
+
+  {%- elsif raw_ contains ':' -%}
+    {%- comment -%} Single `Key: Value` line {%- endcomment -%}
+    {%- assign nm = raw_ | split: ':' | first | strip -%}
+    {%- assign vl = raw_ | remove_first: nm | remove_first: ':' | strip -%}
+    {%- if nm != '' and vl != '' -%}
+      {%- assign sk = '|' | append: nm | downcase | append: '|' -%}
+      {%- unless seen contains sk -%}
+        {%- assign seen = seen | append: nm | downcase | append: '|' -%}
+        {{ nm }}<<KV>>{{ vl }}<<ROW>>
+      {%- endunless -%}
+    {%- endif -%}
+
+  {%- else -%}
+    {%- comment -%} Plain value → humanized metafield key as the name {%- endcomment -%}
+    {%- assign nm = k_ | replace: '_', ' ' | replace: '-', ' ' | capitalize -%}
+    {%- if nm != '' -%}
+      {%- assign sk = '|' | append: nm | downcase | append: '|' -%}
+      {%- unless seen contains sk -%}
+        {%- assign seen = seen | append: nm | downcase | append: '|' -%}
+        {{ nm }}<<KV>>{{ raw_ }}<<ROW>>
+      {%- endunless -%}
+    {%- endif -%}
+  {%- endif -%}
+{%- endfor -%}
+
+{%- comment -%} ── Pass 2: Standard Shopify category metafields ── {%- endcomment -%}
+{%- for entry in product.metafields.shopify -%}
+  {%- assign mf_   = entry.last -%}
+  {%- assign mtype = mf_.type | default: '' -%}
+  {%- assign nm    = mf_.definition.name -%}
+  {%- if nm == blank -%}
+    {%- assign nm = entry.first | replace: '-', ' ' | replace: '_', ' ' | capitalize -%}
+  {%- endif -%}
+
+  {%- assign vl = '' -%}
+  {%- if mtype contains 'list' -%}
+    {%- for item in mf_.value -%}
+      {%- assign part = item.name | default: item -%}
+      {%- if forloop.first -%}{%- assign vl = part -%}{%- else -%}{%- assign vl = vl | append: ', ' | append: part -%}{%- endif -%}
+    {%- endfor -%}
+  {%- else -%}
+    {%- assign ref_name = mf_.value.name -%}
+    {%- if ref_name != blank -%}
+      {%- assign vl = ref_name -%}
+    {%- else -%}
+      {%- capture vl -%}{{ mf_ }}{%- endcapture -%}
+    {%- endif -%}
+  {%- endif -%}
+  {%- assign vl = vl | strip -%}
+
+  {%- if nm != '' and vl != '' -%}
+    {%- assign sk = '|' | append: nm | downcase | append: '|' -%}
+    {%- unless seen contains sk -%}
+      {%- assign seen = seen | append: nm | downcase | append: '|' -%}
+      {{ nm }}<<KV>>{{ vl }}<<ROW>>
+    {%- endunless -%}
+  {%- endif -%}
+{%- endfor -%}
+
+{%- comment -%} ── Pass 3: per-spec metafields in custom/pm/specs/bc ── {%- endcomment -%}
+{%- assign ns_list   = 'custom,pm,specs,bc' | split: ',' -%}
+{%- assign skip_keys = 'mpn,upc,key_features,bc_product_id,product_custom_fields,custom_fields,specifications,specs,spec_sheet,product_specs,category_details,warranty,body,data' | split: ',' -%}
+{%- for ns_ in ns_list -%}
+  {%- for entry in product.metafields[ns_] -%}
+    {%- assign k_   = entry.first -%}
+    {%- assign skip = false -%}
+    {%- for sk_ in skip_keys -%}
+      {%- if sk_ == k_ -%}{%- assign skip = true -%}{%- endif -%}
+    {%- endfor -%}
+    {%- if skip -%}{%- continue -%}{%- endif -%}
+
+    {%- assign mf_   = entry.last -%}
+    {%- assign mtype = mf_.type | default: '' -%}
+    {%- assign nm    = mf_.definition.name -%}
+    {%- if nm == blank -%}
+      {%- assign nm = k_ | replace: '-', ' ' | replace: '_', ' ' | capitalize -%}
+    {%- endif -%}
+
+    {%- assign vl = '' -%}
+    {%- if mtype contains 'list' -%}
+      {%- for item in mf_.value -%}
+        {%- assign part = item.name | default: item -%}
+        {%- if forloop.first -%}{%- assign vl = part -%}{%- else -%}{%- assign vl = vl | append: ', ' | append: part -%}{%- endif -%}
+      {%- endfor -%}
+    {%- else -%}
+      {%- assign ref_name = mf_.value.name -%}
+      {%- if ref_name != blank -%}
+        {%- assign vl = ref_name -%}
+      {%- else -%}
+        {%- capture vl -%}{{ mf_ }}{%- endcapture -%}
+      {%- endif -%}
+    {%- endif -%}
+    {%- assign vl = vl | strip -%}
+
+    {%- if nm != '' and vl != '' -%}
+      {%- assign sk2 = '|' | append: nm | downcase | append: '|' -%}
+      {%- unless seen contains sk2 -%}
+        {%- assign seen = seen | append: nm | downcase | append: '|' -%}
+        {{ nm }}<<KV>>{{ vl }}<<ROW>>
+      {%- endunless -%}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endfor -%}

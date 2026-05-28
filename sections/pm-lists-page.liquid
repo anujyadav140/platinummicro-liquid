@@ -1,0 +1,122 @@
+{%- comment -%}
+  PM — Lists dashboard
+  Reuses the site-wide static-page chrome (.pm-static__hero on navy
+  + .pm-static__body band on pm-paper) so this page matches /pages/about,
+  /pages/brands, etc. The interior is JS-driven by pm-lists-page.js.
+{%- endcomment -%}
+
+<section class="pm-static pm-lists">
+
+  {%- comment -%} ── Dashboard body on pm-paper (no navy hero) ── {%- endcomment -%}
+  <div class="pm-static__body">
+    <div class="pm-static__body__inner pm-static__body__inner--wide pm-lists__inner">
+
+      <header class="pm-lists__header">
+        <h1 class="pm-lists__title">Lists</h1>
+        <p class="pm-lists__lede">Save BOMs, recurring carts, and shortlists. Add their items to your cart in one click.</p>
+      </header>
+      <hr class="pm-lists__rule">
+
+      {%- comment -%}
+        ── Inline "Create list" panel ──
+        Hidden until the user clicks "New list" / "Create your first list".
+        Submit creates the list via the JS store and re-renders the grid.
+      {%- endcomment -%}
+      <section class="pm-lists__create" data-pm-lists-create hidden>
+        <form data-pm-lists-create-form>
+          <label class="pm-lists__create-label" for="pm-new-list-name">List name</label>
+          <input
+            id="pm-new-list-name"
+            type="text"
+            name="listName"
+            maxlength="80"
+            autocomplete="off"
+            placeholder="e.g. Server build, Q2 reorder, NASPO bid"
+            class="pm-lists__create-input"
+          >
+          <div class="pm-lists__create-actions">
+            <button type="button" class="pm-lists__btn pm-lists__btn--ghost" data-pm-lists-create-cancel>Cancel</button>
+            <button type="submit" class="pm-lists__btn pm-lists__btn--primary" disabled>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><path d="M12 5v14M5 12h14"/></svg>
+              Create list
+            </button>
+          </div>
+        </form>
+      </section>
+
+      {%- comment -%}
+        ── Empty state ──
+        Starts hidden — the pre-paint script at the bottom of this
+        block reveals the correct section (detail / grid / empty)
+        synchronously from localStorage, so users with saved lists
+        never see this state flash before the deferred JS hydrates.
+      {%- endcomment -%}
+      <section class="pm-lists__empty" data-pm-lists-empty hidden>
+        <div class="pm-lists__empty-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        </div>
+        <h2 class="pm-lists__empty-title">No lists yet</h2>
+        <p class="pm-lists__empty-lede">
+          Save BOMs, reorder kits, and shortlists. Add items to a list from
+          any product page.
+        </p>
+        <button type="button" class="pm-lists__btn pm-lists__btn--primary pm-lists__empty-cta" data-pm-lists-start-create>
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><path d="M12 5v14M5 12h14"/></svg>
+          Create your first list
+        </button>
+      </section>
+
+      {%- comment -%} ── Grid view: list cards ── {%- endcomment -%}
+      <section class="pm-lists__grid" data-pm-lists-grid hidden></section>
+
+      {%- comment -%} ── Detail view: one list's items ── {%- endcomment -%}
+      <section class="pm-lists__detail" data-pm-lists-detail hidden></section>
+
+      {%- comment -%}
+        ── Hidden header-mirror nodes ──
+        pm-lists-page.js writes the active view's title / count into
+        these so the detail view shows the right name even though the
+        visible h1 above is fixed. Detail body still renders its own
+        header card with the name + count + delete CTA.
+      {%- endcomment -%}
+      <span hidden data-pm-lists-title></span>
+      <span hidden data-pm-lists-lede></span>
+
+      {%- comment -%}
+        ── Pre-paint visibility ──
+        Synchronous inline script — runs before the browser paints, so
+        the correct section is visible from the first frame and the
+        empty-state never flashes for users who already have lists.
+        The deferred pm-lists-page.js still renders card / row content
+        into the revealed container.
+      {%- endcomment -%}
+      <script>
+        (function () {
+          try {
+            var raw = localStorage.getItem('pm:lists:v1');
+            var lists = raw ? JSON.parse(raw) : [];
+            if (!Array.isArray(lists)) lists = [];
+            lists = lists.filter(function (l) {
+              return l && typeof l.id === 'string' && Array.isArray(l.items);
+            });
+            var hash = (window.location.hash || '').replace(/^#/, '');
+            var detailId = hash.indexOf('list_') === 0 ? hash : '';
+            var hasDetail = detailId && lists.some(function (l) { return l.id === detailId; });
+            var sel = hasDetail
+              ? '[data-pm-lists-detail]'
+              : (lists.length > 0 ? '[data-pm-lists-grid]' : '[data-pm-lists-empty]');
+            var el = document.querySelector(sel);
+            if (el) el.removeAttribute('hidden');
+          } catch (e) { /* if anything goes wrong, the deferred JS will reveal */ }
+        })();
+      </script>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "PM — Lists Page",
+  "settings": []
+}
+{% endschema %}

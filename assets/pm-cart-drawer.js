@@ -43,24 +43,33 @@
       var item = e.target.closest('[data-cart-item]');
       if (!item) return;
       var key = item.getAttribute('data-cart-key');
+      var isQuote = item.getAttribute('data-cart-kind') === 'quote';
       var input = item.querySelector('.pm-cart__qty-input');
       var curr = parseInt(input.value, 10) || 0;
-      if (e.target.closest('[data-cart-inc]')) updateLine(key, curr + 1);
-      else if (e.target.closest('[data-cart-dec]')) updateLine(key, Math.max(0, curr - 1));
-      else if (e.target.closest('[data-cart-remove]')) removeLine(key);
+      if (e.target.closest('[data-cart-inc]'))
+        isQuote ? updateQuote(key, curr + 1) : updateLine(key, curr + 1);
+      else if (e.target.closest('[data-cart-dec]'))
+        isQuote ? updateQuote(key, Math.max(0, curr - 1)) : updateLine(key, Math.max(0, curr - 1));
+      else if (e.target.closest('[data-cart-remove]'))
+        isQuote ? removeQuote(key) : removeLine(key);
     });
     itemsEl.addEventListener('change', function (e) {
       var input = e.target.closest('.pm-cart__qty-input');
       if (!input) return;
       var item = e.target.closest('[data-cart-item]');
       var key  = item.getAttribute('data-cart-key');
+      var isQuote = item.getAttribute('data-cart-kind') === 'quote';
       var qty  = parseInt(input.value, 10);
       if (isNaN(qty) || qty < 0) qty = 0;
-      if (qty === 0) removeLine(key);
-      else updateLine(key, qty);
+      if (isQuote) {
+        if (qty === 0) removeQuote(key); else updateQuote(key, qty);
+      } else {
+        if (qty === 0) removeLine(key); else updateLine(key, qty);
+      }
     });
 
     clearBtn.addEventListener('click', function () {
+      if (window.PmQuote) window.PmQuote.clear();
       fetch('/cart/clear.js', { method: 'POST' })
         .then(function () { document.dispatchEvent(new CustomEvent('pm:cart-changed')); });
     });
@@ -99,17 +108,25 @@
   }
 
   function render(cart) {
-    var totalItems = cart.item_count || 0;
-    var totalQty   = (cart.items || []).reduce(function (a, i) { return a + (i.quantity || 0); }, 0);
-    countEl.textContent = totalItems === 1
-      ? '1 item · ' + totalQty + ' unit' + (totalQty === 1 ? '' : 's')
-      : totalItems + ' items · ' + totalQty + ' units';
+    var shopifyItems = (cart && cart.items) ? cart.items : [];
+    var quoteItems   = (window.PmQuote && window.PmQuote.list) ? window.PmQuote.list() : [];
 
-    // Update header cart badge
+    var shopifyLines = shopifyItems.length;
+    var quoteLines   = quoteItems.length;
+    var totalLines   = shopifyLines + quoteLines;
+    var shopifyQty   = shopifyItems.reduce(function (a, i) { return a + (i.quantity || 0); }, 0);
+    var quoteQty     = quoteItems.reduce(function (a, i) { return a + (i.quantity || 0); }, 0);
+    var totalQty     = shopifyQty + quoteQty;
+
+    countEl.textContent = totalLines === 1
+      ? '1 item · ' + totalQty + ' unit' + (totalQty === 1 ? '' : 's')
+      : totalLines + ' items · ' + totalQty + ' units';
+
+    // Header cart badge counts BOTH Shopify cart and local quote items.
     var badge = document.querySelector('[data-cart-badge]');
     if (badge) {
-      if (totalItems > 0) {
-        badge.textContent = totalItems;
+      if (totalLines > 0) {
+        badge.textContent = totalLines;
         badge.removeAttribute('hidden');
       } else {
         badge.setAttribute('hidden', '');
@@ -118,7 +135,7 @@
 
     itemsEl.innerHTML = '';
 
-    if (!cart.items || cart.items.length === 0) {
+    if (totalLines === 0) {
       emptyEl.removeAttribute('hidden');
       itemsEl.setAttribute('hidden', '');
       footEl.setAttribute('hidden', '');
@@ -129,37 +146,120 @@
     itemsEl.removeAttribute('hidden');
     footEl.removeAttribute('hidden');
 
-    cart.items.forEach(function (item) {
-      var node = template.content.firstElementChild.cloneNode(true);
-      node.setAttribute('data-cart-key', item.key);
-
-      var imgLink = node.querySelector('[data-cart-link].pm-cart__item-img');
-      var nameLink = node.querySelector('[data-cart-link].pm-cart__item-name');
-      imgLink.setAttribute('href', item.url);
-      nameLink.setAttribute('href', item.url);
-      nameLink.textContent = item.product_title || item.title;
-
-      var img = node.querySelector('img');
-      if (item.image) {
-        img.src = item.image.replace(/\.(jpg|jpeg|png|webp)/i, '_120x120.$1');
-        img.alt = item.product_title || item.title;
-      } else {
-        img.remove();
-      }
-
-      var skuEl = node.querySelector('.pm-cart__item-sku');
-      var dotEl = node.querySelector('.pm-cart__item-dot');
-      if (item.sku) {
-        skuEl.textContent = item.sku;
-      } else {
-        skuEl.remove();
-        dotEl.remove();
-      }
-      node.querySelector('.pm-cart__item-price').textContent = formatMoney(item.line_price || item.price * item.quantity);
-
-      node.querySelector('.pm-cart__qty-input').value = item.quantity;
-
+    shopifyItems.forEach(function (item) {
+      var node = buildLineNode({
+        key:        item.key,
+        kind:       'shopify',
+        url:        item.url,
+        title:      item.product_title || item.title,
+        imageUrl:   item.image,
+        sku:        item.sku,
+        lineTotal:  formatMoney(item.line_price || item.price * item.quantity),
+        quantity:   item.quantity,
+      });
       itemsEl.appendChild(node);
+    });
+
+    quoteItems.forEach(function (q) {
+      var lineCents = (typeof q.priceCents === 'number' && !isNaN(q.priceCents))
+        ? q.priceCents * (q.quantity || 1) : null;
+      var node = buildLineNode({
+        key:        q.sku,
+        kind:       'quote',
+        url:        q.href || '#',
+        title:      q.name,
+        imageUrl:   q.imageUrl,
+        sku:        q.sku,
+        lineTotal:  lineCents != null ? formatMoney(lineCents) : (q.unitPrice || ''),
+        quantity:   q.quantity,
+      });
+      itemsEl.appendChild(node);
+    });
+  }
+
+  // Shared line-node builder used by both Shopify cart lines and local
+  // quote items. The QUOTE pill + class are applied when kind==='quote'.
+  function buildLineNode(opts) {
+    var node = template.content.firstElementChild.cloneNode(true);
+    node.setAttribute('data-cart-key', opts.key);
+    node.setAttribute('data-cart-kind', opts.kind);
+    if (opts.kind === 'quote') {
+      node.classList.add('pm-cart__item--quote');
+      var main = node.querySelector('.pm-cart__item-main');
+      if (main && !main.querySelector('.pm-cart__item-quote-pill')) {
+        var pill = document.createElement('span');
+        pill.className = 'pm-cart__item-quote-pill';
+        pill.textContent = 'Quote';
+        // Insert at top of main column so it sits above the name.
+        main.insertBefore(pill, main.firstChild);
+      }
+    }
+
+    var imgLink  = node.querySelector('[data-cart-link].pm-cart__item-img');
+    var nameLink = node.querySelector('[data-cart-link].pm-cart__item-name');
+    imgLink.setAttribute('href', opts.url || '#');
+    nameLink.setAttribute('href', opts.url || '#');
+    nameLink.textContent = opts.title || '';
+
+    var img = node.querySelector('img');
+    if (opts.imageUrl) {
+      img.src = String(opts.imageUrl).replace(/\.(jpg|jpeg|png|webp)/i, '_120x120.$1');
+      img.alt = opts.title || '';
+    } else {
+      img.remove();
+    }
+
+    var skuEl = node.querySelector('.pm-cart__item-sku');
+    var dotEl = node.querySelector('.pm-cart__item-dot');
+    if (opts.sku) {
+      skuEl.textContent = opts.sku;
+    } else {
+      skuEl.remove();
+      dotEl.remove();
+    }
+
+    node.querySelector('.pm-cart__item-price').textContent = opts.lineTotal || '';
+    node.querySelector('.pm-cart__qty-input').value = opts.quantity || 1;
+
+    return node;
+  }
+
+  // ── Quote line mutations — go through PmQuote, not Shopify ──
+  function updateQuote(sku, qty) {
+    var li = itemsEl.querySelector('[data-cart-item][data-cart-key="' + cssEscape(sku) + '"]');
+    if (li) li.querySelector('.pm-cart__qty-input').value = qty;
+    optimisticHeader();
+    if (window.PmQuote) window.PmQuote.setQuantity(sku, qty);
+    // refresh()/render is triggered by pm:cart-changed event the store fires.
+  }
+
+  function removeQuote(sku) {
+    var li = itemsEl.querySelector('[data-cart-item][data-cart-key="' + cssEscape(sku) + '"]');
+    if (li) {
+      li.style.transition = 'opacity 120ms, max-height 180ms 60ms, padding 180ms 60ms, margin 180ms 60ms';
+      li.style.maxHeight = li.offsetHeight + 'px';
+      requestAnimationFrame(function () {
+        li.style.opacity = '0';
+        li.style.maxHeight = '0';
+        li.style.paddingTop = '0';
+        li.style.paddingBottom = '0';
+        li.style.marginTop = '0';
+        li.style.marginBottom = '0';
+        li.style.overflow = 'hidden';
+      });
+      setTimeout(function () { if (li.parentNode) li.parentNode.removeChild(li); optimisticHeader(); }, 220);
+    }
+    if (li) li.querySelector('.pm-cart__qty-input').value = 0;
+    optimisticHeader();
+    if (window.PmQuote) window.PmQuote.remove(sku);
+  }
+
+  // Minimal CSS.escape polyfill so a SKU containing `.` / `:` in a
+  // selector doesn't trip the attribute-value matcher.
+  function cssEscape(s) {
+    if (window.CSS && CSS.escape) return CSS.escape(s);
+    return String(s).replace(/[^a-zA-Z0-9_-]/g, function (c) {
+      return '\\' + c;
     });
   }
 

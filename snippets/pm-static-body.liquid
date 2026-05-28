@@ -19,7 +19,7 @@
     their own headers inline.
   {%- endcomment -%}
   {%- assign _skip_hero = false -%}
-  {%- if _h == 'compare' or _h == 'sign-in' or _h == 'register' -%}{%- assign _skip_hero = true -%}{%- endif -%}
+  {%- if _h == 'compare' or _h == 'sign-in' or _h == 'register' or _h == 'account' or _h == 'lists' -%}{%- assign _skip_hero = true -%}{%- endif -%}
   {%- unless _skip_hero -%}
     <header class="pm-static__hero">
       <div class="pm-static__hero__inner">
@@ -375,6 +375,95 @@
       </div>
     </div>
 
+  {%- comment -%} ────────────────────────────────  ACCOUNT (dashboard)  ──── {%- endcomment -%}
+  {%- when 'account' -%}
+    {%- comment -%}
+      Custom dashboard users land on after signing in via
+      /customer_authentication/login?return_to=/pages/account.
+      We branch on the {{ customer }} object — if Liquid sees them as
+      signed in, show the dashboard; otherwise nudge them to /pages/sign-in.
+    {%- endcomment -%}
+    <div class="pm-acct">
+      <div class="pm-acct__inner pm-container">
+        {%- if customer -%}
+          <header class="pm-acct__head">
+            <div class="pm-static__kicker">My Account</div>
+            <h1 class="pm-acct__title">Welcome back, {{ customer.first_name | default: 'friend' }}.</h1>
+            <p class="pm-acct__lead">Signed in as <strong>{{ customer.email }}</strong>.</p>
+          </header>
+
+          <div class="pm-acct__grid">
+            {%- assign _parts = routes.account_url | split: '?' -%}
+            {%- assign _base = _parts | first -%}
+            {%- assign _qs = '' -%}
+            {%- if _parts.size > 1 -%}{%- assign _qs = '?' | append: _parts.last -%}{%- endif -%}
+
+            <a class="pm-acct__tile" href="{{ _base }}/orders{{ _qs }}">
+              <div class="pm-acct__tile-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="15" y2="16"/></svg>
+              </div>
+              <div>
+                <h3>Orders</h3>
+                <p>{{ customer.orders_count | default: 0 }} order{% if customer.orders_count != 1 %}s{% endif %} on file</p>
+              </div>
+              <svg class="pm-acct__tile-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </a>
+
+            <a class="pm-acct__tile" href="{{ _base }}/profile{{ _qs }}">
+              <div class="pm-acct__tile-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+              </div>
+              <div>
+                <h3>Profile</h3>
+                <p>Update your name, email, and password</p>
+              </div>
+              <svg class="pm-acct__tile-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </a>
+
+            <a class="pm-acct__tile" href="{{ _base }}/addresses{{ _qs }}">
+              <div class="pm-acct__tile-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+              </div>
+              <div>
+                <h3>Addresses</h3>
+                <p>Manage your shipping addresses</p>
+              </div>
+              <svg class="pm-acct__tile-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </a>
+
+            <a class="pm-acct__tile" href="#quick-order" data-qo-open>
+              <div class="pm-acct__tile-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+              </div>
+              <div>
+                <h3>Quick order</h3>
+                <p>Paste SKUs straight into the cart</p>
+              </div>
+              <svg class="pm-acct__tile-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+            </a>
+          </div>
+
+          <div class="pm-acct__foot">
+            <a class="pm-btn pm-btn--ghost" href="{{ routes.account_logout_url }}" rel="nofollow">Sign out</a>
+            <a class="pm-btn pm-btn--primary" href="/collections/all">Browse catalog
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </a>
+          </div>
+
+        {%- else -%}
+          <div class="pm-acct__signed-out">
+            <div class="pm-static__kicker">My Account</div>
+            <h1 class="pm-acct__title">You're not signed in.</h1>
+            <p class="pm-acct__lead">Sign in to see your orders, manage your addresses, and access your profile.</p>
+            <div class="pm-acct__foot" style="margin-top:24px;">
+              <a class="pm-btn pm-btn--primary" href="/customer_authentication/login?return_to=%2Fpages%2Faccount">Sign in</a>
+              <a class="pm-btn pm-btn--ghost" href="/customer_authentication/login?return_to=%2Fpages%2Faccount">Create an account</a>
+            </div>
+          </div>
+        {%- endif -%}
+      </div>
+    </div>
+
   {%- comment -%} ───────────────────────────────────  REGISTER  ──── {%- endcomment -%}
   {%- when 'register' -%}
     <div class="pm-reg">
@@ -387,11 +476,14 @@
         </header>
 
         {%- comment -%}
-          With New Customer Accounts enabled, neither /account/register
-          nor /account/login accept POST. Submission redirects to /account
-          (Shopify-hosted flow) — see the pm-auth-redirect script below.
+          Canonical Shopify pattern for New Customer Accounts:
+          /customer_authentication/login + return_to (relative path).
+          The email field's name is `login_hint` so Shopify pre-fills it
+          on the hosted sign-in page.
+          Ref: https://shopify.dev/docs/storefronts/themes/sign-in
         {%- endcomment -%}
-        <form action="/account" method="get" class="pm-reg__form" data-pm-auth-redirect>
+        <form action="/customer_authentication/login" method="get" class="pm-reg__form">
+          <input type="hidden" name="return_to" value="/pages/account">
           <div class="pm-reg__grid">
 
             <div class="pm-reg__field">
@@ -399,7 +491,7 @@
                 <label for="pm-reg-email" class="pm-reg__label">Email address</label>
                 <span class="pm-reg__req">Required</span>
               </div>
-              <input id="pm-reg-email" name="customer[email]" type="email" autocomplete="email" placeholder="you@company.com" required>
+              <input id="pm-reg-email" name="login_hint" type="email" autocomplete="email" placeholder="you@company.com" required>
             </div>
 
             <div class="pm-reg__field">
@@ -415,7 +507,8 @@
                 <label for="pm-reg-pass" class="pm-reg__label">Password</label>
                 <span class="pm-reg__req">Required</span>
               </div>
-              <input id="pm-reg-pass" name="customer[password]" type="password" autocomplete="new-password" minlength="8" required>
+              {%- comment -%} No `name` — visual only (email magic-link auth) {%- endcomment -%}
+              <input id="pm-reg-pass" type="password" autocomplete="new-password" minlength="8">
               <p class="pm-reg__hint">At least 8 characters, with a letter and a number.</p>
             </div>
 
@@ -424,7 +517,8 @@
                 <label for="pm-reg-pass2" class="pm-reg__label">Confirm password</label>
                 <span class="pm-reg__req">Required</span>
               </div>
-              <input id="pm-reg-pass2" name="customer[password_confirmation]" type="password" autocomplete="new-password" minlength="8" required>
+              {%- comment -%} No `name` — visual only {%- endcomment -%}
+              <input id="pm-reg-pass2" type="password" autocomplete="new-password" minlength="8">
             </div>
 
             <div class="pm-reg__field">
@@ -551,6 +645,31 @@
         </form>
 
         <p class="pm-reg__signin">Already have an account? <a href="/pages/sign-in">Sign in</a></p>
+
+        {%- comment -%}
+          Pre-submit hook: New Customer Accounts has no register endpoint that
+          accepts customer[*] fields — they would otherwise pollute the URL on
+          GET submit. Capture them to sessionStorage so the dashboard can
+          remind the user to paste into their Shopify profile, then strip the
+          name attrs so only return_to + login_hint reach Shopify.
+        {%- endcomment -%}
+        <script>
+          (function () {
+            var form = document.querySelector('form.pm-reg__form');
+            if (!form) return;
+            form.addEventListener('submit', function () {
+              try {
+                var data = {};
+                form.querySelectorAll('input[name^="customer["], select[name^="customer["]').forEach(function (el) {
+                  if (el.type === 'checkbox') data[el.name] = el.checked ? el.value : '';
+                  else data[el.name] = el.value || '';
+                  el.removeAttribute('name'); // strip before browser builds the GET URL
+                });
+                sessionStorage.setItem('pm-reg-pending', JSON.stringify(data));
+              } catch (e) { /* non-blocking */ }
+            }, { capture: true });
+          })();
+        </script>
       </div>
     </div>
 
@@ -586,7 +705,14 @@
           <div class="pm-static__kicker">Returning customer</div>
           <h2 class="pm-signin__title">Sign in to your<br>account.</h2>
 
-          <form action="/account" method="get" class="pm-signin__form" data-pm-auth-redirect>
+          {%- comment -%}
+            Canonical Shopify pattern: /customer_authentication/login
+            + return_to (relative path). Email name is `login_hint` so
+            it pre-fills on Shopify's hosted sign-in page.
+            Ref: https://shopify.dev/docs/storefronts/themes/sign-in
+          {%- endcomment -%}
+          <form action="/customer_authentication/login" method="get" class="pm-signin__form">
+            <input type="hidden" name="return_to" value="/pages/account">
             <div class="pm-signin__field">
               <div class="pm-signin__label-row">
                 <label for="pm-signin-email" class="pm-signin__label">Email address</label>
@@ -595,7 +721,7 @@
               <input
                 type="email"
                 id="pm-signin-email"
-                name="customer[email]"
+                name="login_hint"
                 autocomplete="email"
                 placeholder="you@company.com"
                 required
@@ -607,13 +733,16 @@
                 <label for="pm-signin-pass" class="pm-signin__label">Password</label>
                 <span class="pm-signin__req">Required</span>
               </div>
+              {%- comment -%}
+                No `name` attr — New Customer Accounts uses email
+                magic-link auth, so the password field is visual only
+                and should NOT end up in the URL on submit.
+              {%- endcomment -%}
               <input
                 type="password"
                 id="pm-signin-pass"
-                name="customer[password]"
                 autocomplete="current-password"
                 placeholder="••••••••"
-                required
               >
             </div>
 
@@ -682,6 +811,96 @@
             <li>International shipments may require export-control documentation.</li>
           </ul>
         </article>
+      </div>
+    </div>
+
+  {%- when 'lists' -%}
+    {%- comment -%}
+      ── Lists dashboard interior ──
+      Same JS-driven dashboard as sections/pm-lists-page.liquid. Lives
+      here too so it works when admin assigns the default `page` template
+      to the Lists Page (instead of the custom `lists` template). The
+      hero above is already specialized via the `when 'lists'` case in
+      the header switch; here we render the body content.
+    {%- endcomment -%}
+    <div class="pm-static__body">
+      <div class="pm-static__body__inner pm-static__body__inner--wide pm-lists pm-lists__inner">
+
+        <header class="pm-lists__header">
+          <h1 class="pm-lists__title">Lists</h1>
+          <p class="pm-lists__lede">Save BOMs, recurring carts, and shortlists. Add their items to your cart in one click.</p>
+        </header>
+        <hr class="pm-lists__rule">
+
+        <section class="pm-lists__create" data-pm-lists-create hidden>
+          <form data-pm-lists-create-form>
+            <label class="pm-lists__create-label" for="pm-new-list-name">List name</label>
+            <input
+              id="pm-new-list-name"
+              type="text"
+              name="listName"
+              maxlength="80"
+              autocomplete="off"
+              placeholder="e.g. Server build, Q2 reorder, NASPO bid"
+              class="pm-lists__create-input"
+            >
+            <div class="pm-lists__create-actions">
+              <button type="button" class="pm-lists__btn pm-lists__btn--ghost" data-pm-lists-create-cancel>Cancel</button>
+              <button type="submit" class="pm-lists__btn pm-lists__btn--primary" disabled>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><path d="M12 5v14M5 12h14"/></svg>
+                Create list
+              </button>
+            </div>
+          </form>
+        </section>
+
+        <section class="pm-lists__empty" data-pm-lists-empty hidden>
+          <div class="pm-lists__empty-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </div>
+          <h2 class="pm-lists__empty-title">No lists yet</h2>
+          <p class="pm-lists__empty-lede">
+            Save BOMs, reorder kits, and shortlists. Add items to a list from
+            any product page.
+          </p>
+          <button type="button" class="pm-lists__btn pm-lists__btn--primary pm-lists__empty-cta" data-pm-lists-start-create>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><path d="M12 5v14M5 12h14"/></svg>
+            Create your first list
+          </button>
+        </section>
+
+        <section class="pm-lists__grid" data-pm-lists-grid hidden></section>
+        <section class="pm-lists__detail" data-pm-lists-detail hidden></section>
+
+        <span hidden data-pm-lists-title></span>
+        <span hidden data-pm-lists-lede></span>
+
+        {%- comment -%}
+          ── Pre-paint visibility ──
+          Synchronous inline script — reveals the correct section
+          (detail/grid/empty) before paint, so the empty-state never
+          flashes for users who already have saved lists.
+        {%- endcomment -%}
+        <script>
+          (function () {
+            try {
+              var raw = localStorage.getItem('pm:lists:v1');
+              var lists = raw ? JSON.parse(raw) : [];
+              if (!Array.isArray(lists)) lists = [];
+              lists = lists.filter(function (l) {
+                return l && typeof l.id === 'string' && Array.isArray(l.items);
+              });
+              var hash = (window.location.hash || '').replace(/^#/, '');
+              var detailId = hash.indexOf('list_') === 0 ? hash : '';
+              var hasDetail = detailId && lists.some(function (l) { return l.id === detailId; });
+              var sel = hasDetail
+                ? '[data-pm-lists-detail]'
+                : (lists.length > 0 ? '[data-pm-lists-grid]' : '[data-pm-lists-empty]');
+              var el = document.querySelector(sel);
+              if (el) el.removeAttribute('hidden');
+            } catch (e) {}
+          })();
+        </script>
       </div>
     </div>
 

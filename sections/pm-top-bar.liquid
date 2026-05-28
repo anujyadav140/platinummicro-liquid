@@ -43,9 +43,9 @@
       <a href="#quick-order" data-qo-open>Quick order</a>
       <span class="pm-dot">&middot;</span>
       {%- if customer -%}
-        <a href="/account">Hi, {{ customer.first_name }}</a>
+        <a href="{{ routes.account_url }}">Hi, {{ customer.first_name | default: 'Account' }}</a>
       {%- else -%}
-        <a href="/pages/sign-in">Sign in</a>
+        <a href="/customer_authentication/login?return_to=%2F">Sign in</a>
       {%- endif -%}
       <span class="pm-dot">&middot;</span>
       <a href="tel:{{ section.settings.phone | default: '8776764986' }}">

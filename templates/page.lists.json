@@ -1,0 +1,9 @@
+{
+  "sections": {
+    "pm-lists-page": {
+      "type": "pm-lists-page",
+      "settings": {}
+    }
+  },
+  "order": ["pm-lists-page"]
+}

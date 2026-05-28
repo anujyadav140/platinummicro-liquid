@@ -1,238 +1,887 @@
-<div class="pm-container" style="padding-top:48px;padding-bottom:80px;">
-  <h1 style="font-size:28px;font-weight:700;color:var(--pm-ink-900);margin-bottom:32px;letter-spacing:-0.02em;">Your cart</h1>
+{%- comment -%}
+  PM — Cart page (two-bucket model).
 
-  {%- if cart.item_count > 0 -%}
-    <div class="pm-cart-layout">
+  Renders two buckets:
+    1. STOCKED — real Shopify cart lines, server-rendered from cart.items.
+       Standard /checkout flow via the order-summary card.
+    2. QUOTE   — local pm:quote:v1 store (window.PmQuote), client-rendered.
+       Submits via Shopify's built-in {% form 'contact' %} which emails
+       the store's configured contact address with the SKU list +
+       customer-entered notes. Zero apps required; the wire is ready to
+       swap to Globo / Draft Orders later without touching the UI.
 
-      {%- comment -%} Line items {%- endcomment -%}
-      <div class="pm-cart-items">
-        {%- for item in cart.items -%}
-          <div class="pm-cart-item" style="display:flex;gap:16px;padding:20px 0;border-bottom:1px solid var(--pm-ink-200);">
+  Empty-state handling: the "your cart is empty" panel is suppressed
+  when the local quote store has items, even if cart.items is empty —
+  a quote-only cart is still a cart.
+{%- endcomment -%}
 
-            {%- comment -%} Product image {%- endcomment -%}
-            <a href="{{ item.url }}" style="flex-shrink:0;">
-              {%- if item.image -%}
-                <img
-                  src="{{ item.image | image_url: width: 160 }}"
-                  alt="{{ item.image.alt | default: item.product.title | escape }}"
-                  width="80"
-                  height="80"
-                  style="width:80px;height:80px;object-fit:contain;border-radius:6px;border:1px solid var(--pm-ink-200);padding:4px;background:var(--pm-white);"
-                  loading="lazy"
-                >
-              {%- else -%}
-                <div style="width:80px;height:80px;border-radius:6px;border:1px solid var(--pm-ink-200);background:var(--pm-ink-100);display:flex;align-items:center;justify-content:center;">
-                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--pm-ink-300)" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+<div class="pm-container pm-cart-page">
+  <h1 class="pm-cart-page__h1">Your cart</h1>
+
+  {%- comment -%} Quote-request success toast (from ?contact_posted=true after submit) {%- endcomment -%}
+  <div class="pm-cart-quote-success" data-pm-cart-quote-success hidden>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+    <div>
+      <strong>Quote request received.</strong>
+      <span>An account manager will follow up within one business day with availability and pricing.</span>
+    </div>
+  </div>
+
+  <div class="pm-cart-layout" data-pm-cart-layout>
+
+    {%- comment -%} ── Items column ────────────────────────────────────────── {%- endcomment -%}
+    <div class="pm-cart-items">
+
+      {%- comment -%} ── Bucket 1: stocked items (server-rendered) ──────── {%- endcomment -%}
+      {%- if cart.item_count > 0 -%}
+        <section class="pm-cart-bucket" data-pm-cart-stocked>
+          <header class="pm-cart-bucket__head">
+            <h2 class="pm-cart-bucket__title">In-stock items</h2>
+            <p class="pm-cart-bucket__lede">Ready to ship. Settle in checkout.</p>
+          </header>
+          {%- for item in cart.items -%}
+            <div class="pm-cart-row" data-cart-row="{{ forloop.index }}" data-cart-key="{{ item.key }}" data-cart-unit-cents="{{ item.final_price }}">
+              <a href="{{ item.url }}" class="pm-cart-row__img-link">
+                {%- if item.image -%}
+                  <img
+                    src="{{ item.image | image_url: width: 160 }}"
+                    alt="{{ item.image.alt | default: item.product.title | escape }}"
+                    width="80"
+                    height="80"
+                    loading="lazy"
+                  >
+                {%- else -%}
+                  <div class="pm-cart-row__img-empty">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                  </div>
+                {%- endif -%}
+              </a>
+
+              <div class="pm-cart-row__main">
+                <div class="pm-cart-row__top">
+                  <div class="pm-cart-row__info">
+                    {%- if item.product.vendor != blank -%}
+                      <div class="pm-cart-row__brand">{{ item.product.vendor }}</div>
+                    {%- endif -%}
+                    <a href="{{ item.url }}" class="pm-cart-row__name">{{ item.product.title }}</a>
+                    {%- unless item.variant.title == 'Default Title' -%}
+                      <div class="pm-cart-row__variant">{{ item.variant.title }}</div>
+                    {%- endunless -%}
+                    {%- if item.variant.sku != blank -%}
+                      <div class="pm-cart-row__sku">SKU: {{ item.variant.sku }}</div>
+                    {%- endif -%}
+                  </div>
+                  <div class="pm-cart-row__price">
+                    <div class="pm-cart-row__line-price" data-cart-line-price>{{ item.final_line_price | money }}</div>
+                    {%- if item.original_line_price != item.final_line_price -%}
+                      <div class="pm-cart-row__line-was">{{ item.original_line_price | money }}</div>
+                    {%- endif -%}
+                    <div class="pm-cart-row__unit">{{ item.final_price | money }} each</div>
+                  </div>
                 </div>
-              {%- endif -%}
-            </a>
 
-            {%- comment -%} Item details {%- endcomment -%}
-            <div style="flex:1;min-width:0;">
-              <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-                <div>
-                  {%- if item.product.vendor != blank -%}
-                    <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--pm-tan);margin-bottom:4px;">{{ item.product.vendor }}</div>
-                  {%- endif -%}
-                  <a href="{{ item.url }}" style="font-size:15px;font-weight:600;color:var(--pm-ink-900);text-decoration:none;line-height:1.3;">{{ item.product.title }}</a>
-                  {%- unless item.variant.title == 'Default Title' -%}
-                    <div style="font-size:13px;color:var(--pm-ink-500);margin-top:2px;">{{ item.variant.title }}</div>
-                  {%- endunless -%}
-                  {%- if item.variant.sku != blank -%}
-                    <div style="font-size:12px;color:var(--pm-ink-400);margin-top:2px;">SKU: {{ item.variant.sku }}</div>
-                  {%- endif -%}
+                <div class="pm-cart-row__controls">
+                  <div class="pm-qty">
+                    <button class="pm-qty-btn" data-line="{{ forloop.index }}" data-qty="{{ item.quantity | minus: 1 }}" aria-label="Decrease quantity">−</button>
+                    <span data-cart-qty-display>{{ item.quantity }}</span>
+                    <button class="pm-qty-btn" data-line="{{ forloop.index }}" data-qty="{{ item.quantity | plus: 1 }}" aria-label="Increase quantity">+</button>
+                  </div>
+                  <a href="{{ routes.cart_change_url }}?line={{ forloop.index }}&quantity=0" class="pm-cart-row__remove" data-cart-remove="{{ forloop.index }}">Remove</a>
                 </div>
-                <div style="text-align:right;flex-shrink:0;">
-                  <div style="font-size:16px;font-weight:700;color:var(--pm-ink-900);">{{ item.final_line_price | money }}</div>
-                  {%- if item.original_line_price != item.final_line_price -%}
-                    <div style="font-size:13px;color:var(--pm-ink-400);text-decoration:line-through;">{{ item.original_line_price | money }}</div>
-                  {%- endif -%}
-                  <div style="font-size:12px;color:var(--pm-ink-400);margin-top:2px;">{{ item.final_price | money }} each</div>
-                </div>
-              </div>
-
-              {%- comment -%} Quantity + remove {%- endcomment -%}
-              <div style="display:flex;align-items:center;gap:16px;margin-top:12px;flex-wrap:wrap;">
-                <div style="display:flex;align-items:center;border:1.5px solid var(--pm-ink-200);border-radius:6px;overflow:hidden;">
-                  <button
-                    class="pm-qty-btn"
-                    data-cart-qty-url="{{ routes.cart_change_url }}"
-                    data-line="{{ forloop.index }}"
-                    data-qty="{{ item.quantity | minus: 1 }}"
-                    aria-label="Decrease quantity"
-                    style="width:36px;height:36px;background:none;border:none;cursor:pointer;font-size:18px;color:var(--pm-ink-700);display:flex;align-items:center;justify-content:center;"
-                  >−</button>
-                  <span style="min-width:36px;text-align:center;font-size:14px;font-weight:600;color:var(--pm-ink-900);padding:0 4px;">{{ item.quantity }}</span>
-                  <button
-                    class="pm-qty-btn"
-                    data-cart-qty-url="{{ routes.cart_change_url }}"
-                    data-line="{{ forloop.index }}"
-                    data-qty="{{ item.quantity | plus: 1 }}"
-                    aria-label="Increase quantity"
-                    style="width:36px;height:36px;background:none;border:none;cursor:pointer;font-size:18px;color:var(--pm-ink-700);display:flex;align-items:center;justify-content:center;"
-                  >+</button>
-                </div>
-                <a
-                  href="{{ routes.cart_change_url }}?line={{ forloop.index }}&quantity=0"
-                  style="font-size:13px;color:var(--pm-ink-400);text-decoration:none;border-bottom:1px solid var(--pm-ink-300);"
-                  data-cart-remove="{{ forloop.index }}"
-                >Remove</a>
               </div>
             </div>
-          </div>
-        {%- endfor -%}
+          {%- endfor -%}
+        </section>
+      {%- endif -%}
+
+      {%- comment -%} ── Bucket 2: quote items (client-rendered) ───────── {%- endcomment -%}
+      <section class="pm-cart-bucket pm-cart-bucket--quote" data-pm-cart-quote hidden>
+        <header class="pm-cart-bucket__head">
+          <h2 class="pm-cart-bucket__title">
+            Quote items
+            <span class="pm-cart-bucket__pill">Quote</span>
+          </h2>
+          <p class="pm-cart-bucket__lede">Out of stock or quote-only. Your account manager will confirm availability and pricing within one business day — no automatic checkout.</p>
+        </header>
+        <div data-pm-cart-quote-items></div>
+      </section>
+
+      {%- comment -%} ── Empty state ─ only when BOTH buckets are empty (JS confirms) {%- endcomment -%}
+      <div class="pm-cart-empty" data-pm-cart-empty {% if cart.item_count > 0 %}hidden{% endif %}>
+        <div class="pm-cart-empty__icon">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        </div>
+        <h2 class="pm-cart-empty__title">Your cart is empty</h2>
+        <p class="pm-cart-empty__lede">Looks like you haven't added any items yet.</p>
+        <a href="/collections/all" class="pm-cart-page__btn pm-cart-page__btn--primary">
+          Browse catalog
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </a>
       </div>
+    </div>
 
-      {%- comment -%} Order summary sidebar {%- endcomment -%}
-      <div class="pm-cart-summary">
-        <div style="background:var(--pm-ink-50,#F9FAFB);border:1.5px solid var(--pm-ink-200);border-radius:12px;padding:28px;">
-          <h2 style="font-size:18px;font-weight:700;color:var(--pm-ink-900);margin-bottom:20px;">Order summary</h2>
+    {%- comment -%} ── Summary sidebar ───────────────────────────────────── {%- endcomment -%}
+    <div class="pm-cart-summary">
 
-          <div style="display:flex;flex-direction:column;gap:12px;margin-bottom:20px;">
-            <div style="display:flex;justify-content:space-between;font-size:14px;color:var(--pm-ink-600);">
-              <span>Subtotal ({{ cart.item_count }} {% if cart.item_count == 1 %}item{% else %}items{% endif %})</span>
-              <span style="font-weight:600;color:var(--pm-ink-900);">{{ cart.total_price | money }}</span>
+      {%- comment -%} Order summary — only when there ARE stocked items {%- endcomment -%}
+      {%- if cart.item_count > 0 -%}
+        <aside class="pm-cart-card" data-pm-cart-order-summary>
+          <h2 class="pm-cart-card__h2">Order summary</h2>
+
+          <div class="pm-cart-card__rows">
+            <div class="pm-cart-card__row">
+              <span data-cart-itemcount-label>Subtotal ({{ cart.item_count }} {% if cart.item_count == 1 %}item{% else %}items{% endif %})</span>
+              <span data-cart-subtotal class="pm-cart-card__row-val">{{ cart.total_price | money }}</span>
             </div>
             {%- if cart.total_discounts > 0 -%}
-              <div style="display:flex;justify-content:space-between;font-size:14px;color:var(--pm-terracotta);">
+              <div class="pm-cart-card__row pm-cart-card__row--savings">
                 <span>Savings</span>
-                <span style="font-weight:600;">−{{ cart.total_discounts | money }}</span>
+                <span>−{{ cart.total_discounts | money }}</span>
               </div>
             {%- endif -%}
-            <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--pm-ink-500);">
+            <div class="pm-cart-card__row pm-cart-card__row--muted">
               <span>Shipping</span>
               <span>Calculated at checkout</span>
             </div>
           </div>
 
-          <div style="border-top:1.5px solid var(--pm-ink-200);padding-top:16px;margin-bottom:20px;display:flex;justify-content:space-between;align-items:baseline;">
-            <span style="font-size:16px;font-weight:700;color:var(--pm-ink-900);">Total</span>
-            <span style="font-size:20px;font-weight:800;color:var(--pm-ink-900);">{{ cart.total_price | money }}</span>
+          <div class="pm-cart-card__total">
+            <span>Total</span>
+            <span data-cart-total>{{ cart.total_price | money }}</span>
           </div>
 
-          {%- comment -%} Cart note {%- endcomment -%}
-          <div style="margin-bottom:16px;">
-            <label for="pm-cart-note" style="font-size:13px;font-weight:600;color:var(--pm-ink-700);display:block;margin-bottom:6px;">Order note (optional)</label>
+          <div class="pm-cart-card__note">
+            <label for="pm-cart-note">Order note (optional)</label>
             <textarea
               id="pm-cart-note"
               name="note"
               rows="3"
               placeholder="PO number, delivery instructions, etc."
               form="pm-cart-form"
-              style="width:100%;padding:10px 12px;border:1.5px solid var(--pm-ink-200);border-radius:6px;font-size:13px;color:var(--pm-ink-900);resize:vertical;font-family:inherit;box-sizing:border-box;"
             >{{ cart.note }}</textarea>
           </div>
 
           <form id="pm-cart-form" action="{{ routes.cart_url }}" method="post">
             <input type="hidden" name="checkout" value="1">
-            <button
-              type="submit"
-              style="width:100%;background:var(--pm-terracotta);color:white;border:none;border-radius:8px;padding:14px 24px;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity 0.15s;"
-              onmouseover="this.style.opacity='0.88';" onmouseout="this.style.opacity='1';"
-            >
+            <button type="submit" class="pm-cart-page__btn pm-cart-page__btn--primary pm-cart-page__btn--block">
               Proceed to checkout
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
             </button>
           </form>
 
-          <a
-            href="/collections/all"
-            style="display:block;text-align:center;margin-top:14px;font-size:13px;color:var(--pm-ink-500);text-decoration:none;border-bottom:1px solid transparent;"
-            onmouseover="this.style.borderBottomColor='var(--pm-ink-400)';" onmouseout="this.style.borderBottomColor='transparent';"
-          >← Continue shopping</a>
+          <a href="/collections/all" class="pm-cart-card__continue">← Continue shopping</a>
+        </aside>
+      {%- endif -%}
 
-          {%- comment -%} Trust signals {%- endcomment -%}
-          <div style="margin-top:20px;padding-top:16px;border-top:1px solid var(--pm-ink-200);display:flex;flex-direction:column;gap:8px;">
-            <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--pm-ink-500);">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-              Secure checkout — SSL encrypted
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--pm-ink-500);">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
-              Free freight on orders over $5,000
-            </div>
-            <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--pm-ink-500);">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/><polyline points="16 21 12 17 8 21"/><polyline points="8 3 12 7 16 3"/></svg>
-              Net-30 terms available — contact us
-            </div>
+      {%- comment -%}
+        ── Quote-request summary ──
+        Hidden until the local store has any items. The Liquid {% form 'contact' %}
+        block below the trigger renders Shopify's built-in contact form (no
+        third-party app required). JS opens it on click and pre-populates
+        the body with the SKU list from window.PmQuote.list().
+      {%- endcomment -%}
+      <aside class="pm-cart-card pm-cart-card--quote" data-pm-cart-quote-summary hidden>
+        <h2 class="pm-cart-card__h2">Quote request</h2>
+        <p class="pm-cart-card__lede">Your account manager handles quote items separately — sales reviews availability + pricing and replies with a written quote.</p>
+
+        <div class="pm-cart-card__rows">
+          <div class="pm-cart-card__row">
+            <span><span data-pm-cart-quote-count>0</span> quote item<span data-pm-cart-quote-s>s</span></span>
+            <span class="pm-cart-card__row-val" data-pm-cart-quote-est>—</span>
+          </div>
+          <div class="pm-cart-card__row pm-cart-card__row--muted">
+            <span>Final pricing</span>
+            <span>Confirmed by sales</span>
           </div>
         </div>
-      </div>
-    </div>
 
-  {%- else -%}
-    {%- comment -%} Empty cart state {%- endcomment -%}
-    <div style="text-align:center;padding:80px 24px;">
-      <div style="width:64px;height:64px;margin:0 auto 20px;background:var(--pm-ink-100);border-radius:50%;display:flex;align-items:center;justify-content:center;">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--pm-ink-400)" stroke-width="1.5" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-      </div>
-      <h2 style="font-size:20px;font-weight:700;color:var(--pm-ink-900);margin-bottom:8px;">Your cart is empty</h2>
-      <p style="font-size:15px;color:var(--pm-ink-500);margin-bottom:28px;">Looks like you haven't added any items yet.</p>
-      <a
-        href="/collections/all"
-        class="pm-hero__cta"
-        style="display:inline-flex;align-items:center;gap:8px;background:var(--pm-terracotta);color:white;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;"
-      >
-        Browse catalog
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-      </a>
+        <button type="button" class="pm-cart-page__btn pm-cart-page__btn--primary pm-cart-page__btn--block" data-pm-cart-quote-open>
+          Request quote for these items
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </button>
+
+        {%- comment -%}
+          ── Inline quote form ──
+          {% form 'contact' %} maps to /contact (Shopify's built-in mailer).
+          On submit, Shopify redirects back here with ?contact_posted=true
+          and the JS at the bottom clears the local quote store + flashes
+          the success toast at the top of the page.
+        {%- endcomment -%}
+        <div class="pm-cart-quote-form" data-pm-cart-quote-form hidden>
+          {% form 'contact', id: 'pm-cart-quote-contact' %}
+            <input type="hidden" name="contact[subject]" value="Quote request from website">
+
+            <div class="pm-cart-quote-form__field">
+              <label>Name<span aria-hidden="true">*</span></label>
+              <input
+                type="text"
+                name="contact[name]"
+                required
+                value="{% if customer %}{{ customer.first_name }} {{ customer.last_name }}{% endif %}"
+              >
+            </div>
+
+            <div class="pm-cart-quote-form__field">
+              <label>Email<span aria-hidden="true">*</span></label>
+              <input
+                type="email"
+                name="contact[email]"
+                required
+                value="{% if customer %}{{ customer.email }}{% endif %}"
+              >
+            </div>
+
+            <div class="pm-cart-quote-form__field">
+              <label>Company</label>
+              <input
+                type="text"
+                name="contact[company]"
+                value="{% if customer.default_address %}{{ customer.default_address.company }}{% endif %}"
+              >
+            </div>
+
+            <div class="pm-cart-quote-form__field">
+              <label>Phone</label>
+              <input
+                type="tel"
+                name="contact[phone]"
+                value="{% if customer.phone %}{{ customer.phone }}{% endif %}"
+              >
+            </div>
+
+            <div class="pm-cart-quote-form__field">
+              <label>Notes (optional)</label>
+              <textarea name="contact[notes]" rows="3" placeholder="Delivery timeline, NASPO/contract vehicle, special requirements…"></textarea>
+            </div>
+
+            <textarea
+              name="contact[body]"
+              data-pm-cart-quote-body
+              hidden
+              required
+              aria-hidden="true"
+            ></textarea>
+
+            <div class="pm-cart-quote-form__actions">
+              <button type="button" class="pm-cart-page__btn pm-cart-page__btn--ghost" data-pm-cart-quote-cancel>Cancel</button>
+              <button type="submit" class="pm-cart-page__btn pm-cart-page__btn--primary">Send quote request</button>
+            </div>
+          {% endform %}
+        </div>
+      </aside>
     </div>
-  {%- endif -%}
+  </div>
 </div>
 
 <style>
+.pm-cart-page { padding: 48px 16px 80px; }
+.pm-cart-page__h1 {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--pm-ink-900);
+  margin: 0 0 24px;
+  letter-spacing: -0.02em;
+}
+
+/* Success toast */
+.pm-cart-quote-success {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--pm-success-bg);
+  border: 1px solid rgba(47, 125, 91, 0.25);
+  border-radius: 10px;
+  padding: 14px 18px;
+  margin-bottom: 24px;
+  color: var(--pm-success);
+}
+.pm-cart-quote-success strong { display: block; font-size: 14px; }
+.pm-cart-quote-success span { display: block; margin-top: 2px; font-size: 13px; color: var(--pm-ink-700); }
+
+/* Layout */
 .pm-cart-layout {
   display: grid;
   grid-template-columns: 1fr;
   gap: 32px;
 }
 @media (min-width: 960px) {
-  .pm-cart-layout {
-    grid-template-columns: 1fr 380px;
-    align-items: start;
-  }
-  .pm-cart-summary {
-    position: sticky;
-    top: 24px;
-  }
+  .pm-cart-layout { grid-template-columns: 1fr 380px; align-items: start; }
+  .pm-cart-summary { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 16px; }
 }
+
+/* Bucket */
+.pm-cart-bucket {
+  background: #fff;
+  border: 1px solid var(--pm-ink-200);
+  border-radius: 12px;
+  padding: 22px 24px;
+  margin-bottom: 16px;
+}
+.pm-cart-bucket--quote {
+  background: var(--pm-terracotta-pale);
+  border-color: rgba(166, 61, 47, 0.25);
+}
+.pm-cart-bucket__head { margin-bottom: 12px; }
+.pm-cart-bucket__title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--pm-ink-900);
+}
+.pm-cart-bucket__pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--pm-terracotta);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.pm-cart-bucket__lede {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--pm-ink-500);
+  line-height: 1.5;
+}
+
+/* Row */
+.pm-cart-row {
+  display: flex;
+  gap: 16px;
+  padding: 16px 0;
+  border-top: 1px solid var(--pm-ink-100);
+}
+.pm-cart-row:first-of-type { border-top: none; padding-top: 8px; }
+.pm-cart-row__img-link { flex-shrink: 0; }
+.pm-cart-row__img-link img,
+.pm-cart-row__img-empty {
+  width: 80px;
+  height: 80px;
+  object-fit: contain;
+  border-radius: 6px;
+  border: 1px solid var(--pm-ink-200);
+  background: #fff;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pm-cart-row__img-empty { background: var(--pm-ink-100); color: var(--pm-ink-300); }
+
+.pm-cart-row__main { flex: 1; min-width: 0; }
+.pm-cart-row__top { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.pm-cart-row__brand {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--pm-tan);
+  margin-bottom: 4px;
+}
+.pm-cart-row__name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--pm-ink-900);
+  text-decoration: none;
+  line-height: 1.3;
+}
+.pm-cart-row__variant { font-size: 13px; color: var(--pm-ink-500); margin-top: 2px; }
+.pm-cart-row__sku { font-size: 12px; color: var(--pm-ink-400); margin-top: 2px; }
+.pm-cart-row__price { text-align: right; flex-shrink: 0; }
+.pm-cart-row__line-price { font-size: 16px; font-weight: 700; color: var(--pm-ink-900); }
+.pm-cart-row__line-was { font-size: 13px; color: var(--pm-ink-400); text-decoration: line-through; }
+.pm-cart-row__unit { font-size: 12px; color: var(--pm-ink-400); margin-top: 2px; }
+
+.pm-cart-row__controls { display: flex; align-items: center; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+.pm-qty {
+  display: inline-flex;
+  align-items: center;
+  border: 1.5px solid var(--pm-ink-200);
+  border-radius: 6px;
+  overflow: hidden;
+  background: #fff;
+}
+.pm-qty-btn {
+  width: 36px;
+  height: 36px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--pm-ink-700);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--pm-dur-fast);
+}
+.pm-qty-btn:hover:not(:disabled) { background: var(--pm-ink-100); }
+.pm-qty-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.pm-qty > span {
+  min-width: 36px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--pm-ink-900);
+  padding: 0 4px;
+}
+.pm-cart-row__remove {
+  font-size: 13px;
+  color: var(--pm-ink-400);
+  text-decoration: none;
+  border-bottom: 1px solid var(--pm-ink-300);
+}
+.pm-cart-row__remove:hover { color: var(--pm-danger); border-bottom-color: var(--pm-danger); }
+
+/* Empty state */
+.pm-cart-empty { text-align: center; padding: 64px 24px; }
+.pm-cart-empty__icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 20px;
+  background: var(--pm-ink-100);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--pm-ink-400);
+}
+.pm-cart-empty__title { font-size: 20px; font-weight: 700; color: var(--pm-ink-900); margin: 0 0 8px; }
+.pm-cart-empty__lede { font-size: 15px; color: var(--pm-ink-500); margin: 0 0 24px; }
+
+/* Summary card */
+.pm-cart-card {
+  background: #fff;
+  border: 1px solid var(--pm-ink-200);
+  border-radius: 12px;
+  padding: 24px;
+}
+.pm-cart-card--quote { background: var(--pm-terracotta-pale); border-color: rgba(166, 61, 47, 0.25); }
+.pm-cart-card__h2 { margin: 0 0 16px; font-size: 18px; font-weight: 700; color: var(--pm-ink-900); }
+.pm-cart-card__lede { margin: -10px 0 16px; font-size: 13px; line-height: 1.5; color: var(--pm-ink-600); }
+.pm-cart-card__rows { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.pm-cart-card__row { display: flex; justify-content: space-between; font-size: 14px; color: var(--pm-ink-600); }
+.pm-cart-card__row-val { font-weight: 600; color: var(--pm-ink-900); }
+.pm-cart-card__row--savings { color: var(--pm-terracotta); }
+.pm-cart-card__row--savings span:last-child { font-weight: 600; }
+.pm-cart-card__row--muted { font-size: 13px; color: var(--pm-ink-500); }
+.pm-cart-card__total {
+  border-top: 1.5px solid var(--pm-ink-200);
+  padding-top: 14px;
+  margin-bottom: 18px;
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.pm-cart-card__total > span:first-child { font-size: 16px; font-weight: 700; color: var(--pm-ink-900); }
+.pm-cart-card__total > span:last-child { font-size: 20px; font-weight: 800; color: var(--pm-ink-900); }
+
+.pm-cart-card__note { margin-bottom: 14px; }
+.pm-cart-card__note label { display: block; margin-bottom: 6px; font-size: 13px; font-weight: 600; color: var(--pm-ink-700); }
+.pm-cart-card__note textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1.5px solid var(--pm-ink-200);
+  border-radius: 6px;
+  font-size: 13px;
+  color: var(--pm-ink-900);
+  resize: vertical;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+.pm-cart-card__continue {
+  display: block;
+  text-align: center;
+  margin-top: 14px;
+  font-size: 13px;
+  color: var(--pm-ink-500);
+  text-decoration: none;
+}
+.pm-cart-card__continue:hover { color: var(--pm-ink-700); text-decoration: underline; }
+
+/* Buttons */
+.pm-cart-page__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  font-family: var(--pm-font-body);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background var(--pm-dur-fast), color var(--pm-dur-fast), border-color var(--pm-dur-fast);
+  text-decoration: none;
+}
+.pm-cart-page__btn--block { width: 100%; }
+.pm-cart-page__btn--primary {
+  background: var(--pm-terracotta);
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 14px 24px;
+  font-size: 15px;
+}
+.pm-cart-page__btn--primary:hover { background: var(--pm-terracotta-light); color: #fff; }
+.pm-cart-page__btn--ghost {
+  background: transparent;
+  color: var(--pm-ink-700);
+}
+.pm-cart-page__btn--ghost:hover { background: var(--pm-ink-100); color: var(--pm-ink-900); }
+
+/* Quote form */
+.pm-cart-quote-form { margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(166, 61, 47, 0.2); }
+.pm-cart-quote-form__field { margin-bottom: 12px; }
+.pm-cart-quote-form__field label { display: block; font-size: 12px; font-weight: 600; color: var(--pm-ink-700); margin-bottom: 4px; }
+.pm-cart-quote-form__field label span { color: var(--pm-terracotta); margin-left: 2px; }
+.pm-cart-quote-form__field input,
+.pm-cart-quote-form__field textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--pm-ink-200);
+  border-radius: 6px;
+  background: #fff;
+  font-family: var(--pm-font-body);
+  font-size: 13px;
+  color: var(--pm-ink-900);
+  outline: none;
+  transition: border-color var(--pm-dur-fast), box-shadow var(--pm-dur-fast);
+  box-sizing: border-box;
+}
+.pm-cart-quote-form__field input:focus,
+.pm-cart-quote-form__field textarea:focus {
+  border-color: var(--pm-terracotta);
+  box-shadow: 0 0 0 3px rgba(166, 61, 47, 0.15);
+}
+.pm-cart-quote-form__actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
 </style>
 
 <script>
-(function() {
-  // Cart page reload is fine for now — keeps totals/discounts in sync.
-  // (Drawer-style optimistic update would require re-rendering the
-  // entire summary block too.)
-  function reloadCart() { window.location.reload(); }
+(function () {
+  var CURRENCY = {{ cart.currency.iso_code | default: shop.currency | json }};
+
+  function formatMoney(cents) {
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency', currency: CURRENCY,
+        minimumFractionDigits: 2, maximumFractionDigits: 2
+      }).format((cents || 0) / 100);
+    } catch (e) {
+      return '$' + ((cents || 0) / 100).toFixed(2);
+    }
+  }
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Quote rendering — reads window.PmQuote.list() and paints rows
+  // ─────────────────────────────────────────────────────────────────
+  var quoteSection = document.querySelector('[data-pm-cart-quote]');
+  var quoteItemsEl = document.querySelector('[data-pm-cart-quote-items]');
+  var quoteSummary = document.querySelector('[data-pm-cart-quote-summary]');
+  var quoteCountEl = document.querySelector('[data-pm-cart-quote-count]');
+  var quoteSEl     = document.querySelector('[data-pm-cart-quote-s]');
+  var quoteEstEl   = document.querySelector('[data-pm-cart-quote-est]');
+  var emptyEl      = document.querySelector('[data-pm-cart-empty]');
+  var orderSummary = document.querySelector('[data-pm-cart-order-summary]');
+  var hasStocked   = !!orderSummary;
+
+  function renderQuote() {
+    var items = (window.PmQuote && window.PmQuote.list) ? window.PmQuote.list() : [];
+    var n = items.length;
+
+    if (n === 0) {
+      if (quoteSection) quoteSection.setAttribute('hidden', '');
+      if (quoteSummary) quoteSummary.setAttribute('hidden', '');
+      // No quote items + no stocked items → show empty state.
+      if (!hasStocked && emptyEl) emptyEl.removeAttribute('hidden');
+      return;
+    }
+
+    // Suppress empty state once we know quote items exist.
+    if (emptyEl) emptyEl.setAttribute('hidden', '');
+
+    if (quoteSection) quoteSection.removeAttribute('hidden');
+    if (quoteSummary) quoteSummary.removeAttribute('hidden');
+
+    var estCents = 0;
+    var html = '';
+    for (var i = 0; i < items.length; i++) {
+      var q = items[i];
+      var lineCents = (typeof q.priceCents === 'number' && !isNaN(q.priceCents))
+        ? q.priceCents * (q.quantity || 1) : null;
+      if (lineCents != null) estCents += lineCents;
+
+      var img = q.imageUrl
+        ? '<img src="' + escapeHtml(q.imageUrl) + '" alt="" width="80" height="80" loading="lazy">'
+        : '<div class="pm-cart-row__img-empty"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>';
+
+      html +=
+        '<div class="pm-cart-row" data-pm-cart-quote-row="' + escapeHtml(q.sku) + '">' +
+          '<a href="' + escapeHtml(q.href || '#') + '" class="pm-cart-row__img-link">' + img + '</a>' +
+          '<div class="pm-cart-row__main">' +
+            '<div class="pm-cart-row__top">' +
+              '<div class="pm-cart-row__info">' +
+                (q.brand ? '<div class="pm-cart-row__brand">' + escapeHtml(q.brand) + '</div>' : '') +
+                '<a href="' + escapeHtml(q.href || '#') + '" class="pm-cart-row__name">' + escapeHtml(q.name) + '</a>' +
+                '<div class="pm-cart-row__sku">SKU: ' + escapeHtml(q.sku) + '</div>' +
+              '</div>' +
+              '<div class="pm-cart-row__price">' +
+                '<div class="pm-cart-row__line-price">' + (lineCents != null ? escapeHtml(formatMoney(lineCents)) : escapeHtml(q.unitPrice || '')) + '</div>' +
+                (q.unitPrice ? '<div class="pm-cart-row__unit">' + escapeHtml(q.unitPrice) + ' each <em>(est)</em></div>' : '') +
+              '</div>' +
+            '</div>' +
+            '<div class="pm-cart-row__controls">' +
+              '<div class="pm-qty">' +
+                '<button class="pm-qty-btn" data-pm-cart-quote-dec aria-label="Decrease quantity" ' + (q.quantity <= 1 ? 'disabled' : '') + '>−</button>' +
+                '<span>' + q.quantity + '</span>' +
+                '<button class="pm-qty-btn" data-pm-cart-quote-inc aria-label="Increase quantity">+</button>' +
+              '</div>' +
+              '<a href="#" class="pm-cart-row__remove" data-pm-cart-quote-remove>Remove</a>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+    }
+    quoteItemsEl.innerHTML = html;
+
+    if (quoteCountEl) quoteCountEl.textContent = n;
+    if (quoteSEl)     quoteSEl.textContent     = n === 1 ? '' : 's';
+    if (quoteEstEl)   quoteEstEl.textContent   = estCents > 0 ? formatMoney(estCents) + ' (est)' : '—';
+  }
+
+  // Quote-row qty / remove
+  if (quoteItemsEl) {
+    quoteItemsEl.addEventListener('click', function (e) {
+      var row = e.target.closest('[data-pm-cart-quote-row]');
+      if (!row || !window.PmQuote) return;
+      var sku = row.getAttribute('data-pm-cart-quote-row');
+      if (e.target.closest('[data-pm-cart-quote-inc]')) {
+        var span = row.querySelector('.pm-qty span');
+        var cur = parseInt(span.textContent, 10) || 1;
+        window.PmQuote.setQuantity(sku, cur + 1);
+      } else if (e.target.closest('[data-pm-cart-quote-dec]')) {
+        var span2 = row.querySelector('.pm-qty span');
+        var cur2 = parseInt(span2.textContent, 10) || 1;
+        window.PmQuote.setQuantity(sku, Math.max(1, cur2 - 1));
+      } else if (e.target.closest('[data-pm-cart-quote-remove]')) {
+        e.preventDefault();
+        window.PmQuote.remove(sku);
+      }
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Quote-request form — open / cancel / pre-fill body / clear-on-success
+  // ─────────────────────────────────────────────────────────────────
+  var openBtn   = document.querySelector('[data-pm-cart-quote-open]');
+  var cancelBtn = document.querySelector('[data-pm-cart-quote-cancel]');
+  var formWrap  = document.querySelector('[data-pm-cart-quote-form]');
+  var bodyField = document.querySelector('[data-pm-cart-quote-body]');
+  var formEl    = formWrap ? formWrap.querySelector('form') : null;
+
+  function buildBody() {
+    var items = (window.PmQuote && window.PmQuote.list) ? window.PmQuote.list() : [];
+    var notesEl = formWrap.querySelector('textarea[name="contact[notes]"]');
+    var notes = notesEl ? notesEl.value.trim() : '';
+    var lines = [];
+    lines.push('--- Quote items ---');
+    items.forEach(function (q, i) {
+      var line = (i + 1) + '. ' + q.name + ' (SKU ' + q.sku + ') — qty ' + q.quantity;
+      if (q.unitPrice) line += ' @ ' + q.unitPrice + ' each (est)';
+      lines.push(line);
+    });
+    lines.push('');
+    if (notes) {
+      lines.push('--- Notes ---');
+      lines.push(notes);
+      lines.push('');
+    }
+    return lines.join('\n');
+  }
+
+  if (openBtn && formWrap) {
+    openBtn.addEventListener('click', function () {
+      formWrap.removeAttribute('hidden');
+      openBtn.setAttribute('hidden', '');
+      var first = formWrap.querySelector('input[name="contact[name]"]');
+      if (first && !first.value) first.focus();
+      else {
+        var emailEl = formWrap.querySelector('input[name="contact[email]"]');
+        if (emailEl && !emailEl.value) emailEl.focus();
+      }
+    });
+  }
+  if (cancelBtn && formWrap && openBtn) {
+    cancelBtn.addEventListener('click', function () {
+      formWrap.setAttribute('hidden', '');
+      openBtn.removeAttribute('hidden');
+    });
+  }
+  if (formEl && bodyField) {
+    formEl.addEventListener('submit', function () {
+      bodyField.value = buildBody();
+      // Stash the SKU set so we know what to clear when we land back with ?contact_posted=true.
+      try {
+        var pending = (window.PmQuote && window.PmQuote.list) ? window.PmQuote.list().map(function (q) { return q.sku; }) : [];
+        sessionStorage.setItem('pm:quote:pending', JSON.stringify(pending));
+      } catch (e) {}
+    });
+  }
+
+  // Successful submission redirect detect.
+  function paramOf(name) {
+    var m = (window.location.search || '').match(new RegExp('[?&]' + name + '=([^&]*)'));
+    return m ? decodeURIComponent(m[1]) : '';
+  }
+  if (paramOf('contact_posted') === 'true') {
+    try {
+      var raw = sessionStorage.getItem('pm:quote:pending');
+      var pendingSkus = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(pendingSkus) && pendingSkus.length > 0 && window.PmQuote) {
+        pendingSkus.forEach(function (sku) { window.PmQuote.remove(sku); });
+      }
+      sessionStorage.removeItem('pm:quote:pending');
+    } catch (e) {}
+    var toast = document.querySelector('[data-pm-cart-quote-success]');
+    if (toast) toast.removeAttribute('hidden');
+  }
+
+  document.addEventListener('pm:cart-changed', renderQuote);
+
+  // pm-quote.js is loaded with `defer`, so window.PmQuote isn't defined
+  // yet when this inline script runs. Defer the first render until
+  // DOMContentLoaded — by then all defer scripts have executed.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', renderQuote);
+  } else {
+    renderQuote();
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Existing stocked-cart qty stepper (unchanged behaviour).
+  // ─────────────────────────────────────────────────────────────────
+  var pendingQty = {}, inflightQty = {}, debounceTimer = {}, inflight = {};
+
+  function getRow(line) { return document.querySelector('[data-cart-row="' + line + '"]'); }
+
+  function refreshRowDisplay(line) {
+    var row = getRow(line); if (!row) return;
+    var qty = pendingQty[line]; if (qty == null) return;
+    var unitCents = parseInt(row.getAttribute('data-cart-unit-cents'), 10) || 0;
+    var qtySpan = row.querySelector('[data-cart-qty-display]');
+    if (qtySpan) qtySpan.textContent = qty;
+    var priceEl = row.querySelector('[data-cart-line-price]');
+    if (priceEl) priceEl.textContent = formatMoney(qty * unitCents);
+    var btns = row.querySelectorAll('.pm-qty-btn');
+    if (btns[0]) btns[0].setAttribute('data-qty', Math.max(0, qty - 1));
+    if (btns[1]) btns[1].setAttribute('data-qty', qty + 1);
+    refreshTotals();
+  }
+
+  function refreshTotals() {
+    var subtotalCents = 0, itemCount = 0;
+    document.querySelectorAll('[data-cart-row]').forEach(function (row) {
+      var line = row.getAttribute('data-cart-row');
+      var q = pendingQty[line];
+      if (q == null) {
+        var sp = row.querySelector('[data-cart-qty-display]');
+        q = sp ? parseInt(sp.textContent, 10) || 0 : 0;
+      }
+      var unitCents = parseInt(row.getAttribute('data-cart-unit-cents'), 10) || 0;
+      subtotalCents += q * unitCents;
+      itemCount += q;
+    });
+    var sub = document.querySelector('[data-cart-subtotal]');   if (sub)   sub.textContent   = formatMoney(subtotalCents);
+    var total = document.querySelector('[data-cart-total]');    if (total) total.textContent = formatMoney(subtotalCents);
+    var lbl = document.querySelector('[data-cart-itemcount-label]');
+    if (lbl) lbl.textContent = 'Subtotal (' + itemCount + ' ' + (itemCount === 1 ? 'item' : 'items') + ')';
+    var badge = document.querySelector('[data-cart-badge]');
+    if (badge) {
+      if (itemCount > 0) { badge.textContent = itemCount; badge.removeAttribute('hidden'); }
+      else { badge.setAttribute('hidden', ''); }
+    }
+  }
+
+  function flushChange(line) {
+    if (inflight[line]) return;
+    var target = pendingQty[line]; if (target == null) return;
+    if (target === inflightQty[line]) return;
+    inflight[line] = true; inflightQty[line] = target; var sentQty = target;
+
+    fetch('/cart/change.js', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ line: parseInt(line, 10), quantity: sentQty })
+    }).then(function (r) {
+      return r.json().then(function (j) { return { ok: r.ok, body: j }; });
+    }).then(function (res) {
+      inflight[line] = false;
+      var serverItem = res.body.items && res.body.items[parseInt(line, 10) - 1];
+      var serverQty = serverItem ? serverItem.quantity : 0;
+      if (pendingQty[line] === sentQty) {
+        if (serverQty !== pendingQty[line]) {
+          pendingQty[line] = serverQty;
+          refreshRowDisplay(line);
+        }
+      } else {
+        flushChange(line);
+      }
+      if (serverQty === 0) {
+        var row = getRow(line);
+        if (row) {
+          row.style.transition = 'opacity 180ms ease';
+          row.style.opacity = '0';
+          setTimeout(function () { row.remove(); refreshTotals(); }, 200);
+        }
+        if (res.body.item_count === 0) {
+          // Don't hard-reload if quote items are still around — just let JS re-render.
+          var quoteCount = (window.PmQuote && window.PmQuote.list) ? window.PmQuote.list().length : 0;
+          if (quoteCount === 0) window.location.assign(window.location.pathname);
+          else {
+            if (orderSummary) orderSummary.remove();
+            hasStocked = false;
+            renderQuote();
+          }
+        }
+      }
+    }).catch(function () { inflight[line] = false; });
+  }
+
+  function scheduleChange(line) {
+    clearTimeout(debounceTimer[line]);
+    debounceTimer[line] = setTimeout(function () { flushChange(line); }, 250);
+  }
 
   document.addEventListener('click', function (e) {
-    var qBtn = e.target.closest('.pm-qty-btn');
+    var qBtn = e.target.closest('.pm-qty-btn[data-line]');
     if (qBtn) {
       e.preventDefault();
       var line = qBtn.dataset.line;
-      var qty  = parseInt(qBtn.dataset.qty, 10);
-      if (qty < 0) qty = 0;
-      qBtn.disabled = true;
-      fetch('/cart/change.js', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ line: parseInt(line, 10), quantity: qty })
-      })
-        .then(function () { document.dispatchEvent(new CustomEvent('pm:cart-changed')); })
-        .then(reloadCart);
+      var qty  = Math.max(0, parseInt(qBtn.dataset.qty, 10) || 0);
+      pendingQty[line] = qty;
+      refreshRowDisplay(line);
+      scheduleChange(line);
       return;
     }
     var rmLink = e.target.closest('[data-cart-remove]');
     if (rmLink) {
       e.preventDefault();
-      var line = rmLink.dataset.cartRemove;
-      fetch('/cart/change.js', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ line: parseInt(line, 10), quantity: 0 })
-      })
-        .then(function () { document.dispatchEvent(new CustomEvent('pm:cart-changed')); })
-        .then(reloadCart);
+      var line2 = rmLink.dataset.cartRemove;
+      pendingQty[line2] = 0;
+      var row2 = getRow(line2);
+      if (row2) { row2.style.transition = 'opacity 160ms ease'; row2.style.opacity = '0.4'; }
+      refreshTotals();
+      scheduleChange(line2);
     }
   });
 })();

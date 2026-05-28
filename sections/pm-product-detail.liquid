@@ -1,194 +1,492 @@
 {%- comment -%}
   PM — Product Detail Page
-  Two-column layout: gallery left, info right.
-  + Add uses the universal data-pm-add handler → opens cart drawer.
-  Compare checkbox uses the universal data-pm-compare handler.
+  Modeled on the Hydrogen PDP design (platinummicro-hydrogen):
+   1. Breadcrumb
+   2. Two-column main:
+        LEFT  — gallery (~488px cap, thumbs + main with hover zoom)
+        RIGHT — info pane that splits at md+ into:
+                  - Details: title, brand link, SKU, MPN, divider, price,
+                    UPC, Shipping & Returns button, At-a-glance bullets
+                  - Buy-box card: Availability + "X in stock", Quantity,
+                    Add to Cart / Add to Quote, Add to List
+   3. Description ‖ Specifications block (parallel, flat, on pm-paper)
+        LEFT  — wider (1.4fr) prose w/ Key features (2-col bullets)
+        RIGHT — narrower (1fr) specs table w/ zebra rows + expand toggle
 {%- endcomment -%}
 
-{%- assign _v = product.selected_or_first_available_variant -%}
+{%- assign _v       = product.selected_or_first_available_variant -%}
+{%- assign _sku     = _v.sku -%}
+{%- assign _upc     = _v.barcode -%}
+{%- assign _stock   = _v.inventory_quantity -%}
+{%- assign _instock = product.available -%}
 
-<section class="pm-pdp">
-  <div class="pm-container pm-pdp__inner">
+{%- comment -%} ── MPN: prefer metafield, fall back to SKU so the line never goes empty ── {%- endcomment -%}
+{%- assign _mpn = product.metafields.custom.mpn | default: product.metafields.specs.mpn -%}
+{%- if _mpn == blank -%}
+  {%- assign _mpn = _sku -%}
+{%- endif -%}
 
-    <nav class="pm-breadcrumb pm-pdp__breadcrumb" aria-label="Breadcrumb">
-      <a href="/">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        Home
+{%- comment -%} ── Key features (newline-separated metafield) ── {%- endcomment -%}
+{%- assign _features_raw = product.metafields.custom.key_features | default: product.metafields.specs.key_features -%}
+{%- assign _features = '' | split: '' -%}
+{%- if _features_raw != blank -%}
+  {%- assign _features = _features_raw | newline_to_br | strip_html | split: '<br />' -%}
+{%- endif -%}
+
+{%- comment -%}
+  ── Specs sourcing ──
+  Delegate to `pm-pdp-specs-build` (ports the Hydrogen pm-product-by-slug
+  extractor). It probes BC-style aggregate metafields, Shopify category
+  metafields, and per-spec metafields across custom/pm/specs/bc
+  namespaces; emits an encoded "<name><<KV>><value><<ROW>>…" stream that
+  we split into pairs for rendering rows + at-a-glance bullets.
+{%- endcomment -%}
+{%- capture _specs_encoded -%}{%- render 'pm-pdp-specs-build', product: product -%}{%- endcapture -%}
+{%- assign _spec_pairs = _specs_encoded | split: '<<ROW>>' -%}
+{%- assign _spec_count = 0 -%}
+{%- for pair in _spec_pairs -%}
+  {%- assign _p = pair | strip -%}
+  {%- if _p != '' and _p contains '<<KV>>' -%}
+    {%- assign _spec_count = _spec_count | plus: 1 -%}
+  {%- endif -%}
+{%- endfor -%}
+
+<main class="pm-pdp">
+  <div class="pm-container pm-pdp__top">
+
+    {%- comment -%} ── Breadcrumb ───────────────────────────────────────────── {%- endcomment -%}
+    <nav class="pm-pdp__crumb" aria-label="Breadcrumb">
+      <a href="/" class="pm-pdp__crumb-link">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span>Home</span>
       </a>
-      <span class="pm-breadcrumb__sep">›</span>
       {%- if collection -%}
-        <a href="{{ collection.url }}">{{ collection.title }}</a>
-        <span class="pm-breadcrumb__sep">›</span>
+        <svg class="pm-pdp__crumb-sep" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+        <a href="{{ collection.url }}" class="pm-pdp__crumb-link">{{ collection.title }}</a>
       {%- endif -%}
-      <span aria-current="page" class="pm-breadcrumb__current">{{ product.title | truncate: 60 }}</span>
+      <svg class="pm-pdp__crumb-sep" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+      <span class="pm-pdp__crumb-current">{{ product.title | truncate: 80 }}</span>
     </nav>
 
-    <div class="pm-pdp__grid">
+    {%- comment -%} ── Main grid: Gallery + Info pane ─────────────────────── {%- endcomment -%}
+    <div class="pm-pdp__main-grid">
 
-      {%- comment -%} ── Gallery ─────────────────────────────────────── {%- endcomment -%}
-      <div class="pm-pdp__gallery">
-        <div class="pm-pdp__main">
-          {%- if product.featured_image -%}
-            <img
-              id="pm-pdp-main-img"
-              src="{{ product.featured_image | image_url: width: 900 }}"
-              alt="{{ product.featured_image.alt | default: product.title | escape }}"
-              width="900"
-              height="900"
-              loading="eager"
-            >
-          {%- else -%}
-            <div class="pm-pdp__main-placeholder">
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+      {%- comment -%}
+        ── Gallery ──
+        DOM order is thumbs → hero. Mobile uses column-reverse to flip
+        the visual order (hero on top, thumbs below). Tablet+ swaps to
+        row so thumbs sit in a vertical column to the LEFT of the hero
+        (mirrors the Hydrogen PmProductGallery layout).
+      {%- endcomment -%}
+      <div class="pm-pdp__gallery{% if product.images.size > 1 %} pm-pdp__gallery--has-thumbs{% endif %}">
+        {%- comment -%}
+          ── Frame: thumbs + hero ──
+          Hero is intentionally short (2:1 instead of square) so the
+          column has room for the At-a-glance bullets below — which
+          pushes the Description / Specs band closer to the fold.
+        {%- endcomment -%}
+        <div class="pm-pdp__gallery-frame">
+          {%- if product.images.size > 1 -%}
+            <div class="pm-pdp__thumbs">
+              {%- for image in product.images limit: 8 -%}
+                <button
+                  type="button"
+                  class="pm-pdp__thumb{% if forloop.first %} is-active{% endif %}"
+                  data-pm-pdp-thumb="{{ image | image_url: width: 900 }}"
+                  aria-label="View image {{ forloop.index }}"
+                >
+                  <img
+                    src="{{ image | image_url: width: 160 }}"
+                    alt="{{ image.alt | default: product.title | escape }}"
+                    loading="lazy"
+                    width="62"
+                    height="62"
+                  >
+                </button>
+              {%- endfor -%}
             </div>
           {%- endif -%}
+
+          <div class="pm-pdp__hero" data-pm-pdp-hero>
+            {%- if product.featured_image -%}
+              <img
+                id="pm-pdp-main-img"
+                src="{{ product.featured_image | image_url: width: 900 }}"
+                alt="{{ product.featured_image.alt | default: product.title | escape }}"
+                width="900"
+                height="900"
+                loading="eager"
+                data-pm-pdp-zoom
+              >
+            {%- else -%}
+              <div class="pm-pdp__hero-empty">
+                <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+              </div>
+            {%- endif -%}
+          </div>
         </div>
 
-        {%- if product.images.size > 1 -%}
-          <div class="pm-pdp__thumbs">
-            {%- for image in product.images limit: 8 -%}
-              <button
-                type="button"
-                class="pm-pdp__thumb{% if forloop.first %} is-active{% endif %}"
-                data-pm-pdp-thumb="{{ image | image_url: width: 900 }}"
-                aria-label="View image {{ forloop.index }}"
-              >
-                <img
-                  src="{{ image | image_url: width: 160 }}"
-                  alt="{{ image.alt | default: product.title | escape }}"
-                  loading="lazy"
-                  width="68"
-                  height="68"
-                >
-              </button>
-            {%- endfor -%}
+        {%- comment -%}
+          ── At a glance ──
+          Lives under the gallery frame (not in the details column) so
+          the buy-area stays compact and the Description / Specs band
+          rises closer to the fold.
+        {%- endcomment -%}
+        <div class="pm-pdp__glance pm-pdp__glance--under-gallery" data-pm-pdp-glance{% if _features.size == 0 and _spec_count == 0 %} hidden{% endif %}>
+          <div class="pm-pdp__glance-eyebrow" data-pm-pdp-glance-eyebrow>
+            {%- if _features.size > 0 -%}Key features{%- else -%}At a glance{%- endif -%}
           </div>
-        {%- endif -%}
+          <ul class="pm-pdp__glance-list" data-pm-pdp-glance-list>
+            {%- if _features.size > 0 -%}
+              {%- for f in _features limit: 4 -%}
+                {%- assign _ft = f | strip -%}
+                {%- if _ft != blank -%}
+                  <li>
+                    <span class="pm-pdp__glance-dot" aria-hidden="true"></span>
+                    <span>{{ _ft }}</span>
+                  </li>
+                {%- endif -%}
+              {%- endfor -%}
+            {%- else -%}
+              {%- assign _shown = 0 -%}
+              {%- for pair in _spec_pairs -%}
+                {%- if _shown >= 4 -%}{%- break -%}{%- endif -%}
+                {%- assign _p = pair | strip -%}
+                {%- if _p == '' -%}{%- continue -%}{%- endif -%}
+                {%- unless _p contains '<<KV>>' -%}{%- continue -%}{%- endunless -%}
+                {%- assign _kv = _p | split: '<<KV>>' -%}
+                {%- assign _nm = _kv[0] | strip -%}
+                {%- assign _vl = _kv[1] | strip -%}
+                {%- if _nm != '' and _vl != '' -%}
+                  <li>
+                    <span class="pm-pdp__glance-dot" aria-hidden="true"></span>
+                    <span><strong>{{ _nm }}:</strong> {{ _vl }}</span>
+                  </li>
+                  {%- assign _shown = _shown | plus: 1 -%}
+                {%- endif -%}
+              {%- endfor -%}
+            {%- endif -%}
+          </ul>
+          <a href="#pm-product-description" class="pm-pdp__glance-more">
+            <span>See full details &amp; specs</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+          </a>
+        </div>
       </div>
 
-      {%- comment -%} ── Info column ─────────────────────────────────── {%- endcomment -%}
-      <div class="pm-pdp__info">
-        {%- if product.vendor != blank -%}
-          <div class="pm-pdp__brand">{{ product.vendor | upcase }}</div>
-        {%- endif -%}
+      {%- comment -%} ── Info pane: Details column + Buy-box card ──────── {%- endcomment -%}
+      <div class="pm-pdp__info-grid">
 
-        <h1 class="pm-pdp__title">{{ product.title }}</h1>
+        {%- comment -%} ── Details column ─────────────────────────────── {%- endcomment -%}
+        <div class="pm-pdp__details">
+          <h1 class="pm-pdp__title">{{ product.title }}</h1>
 
-        {%- if _v.sku != blank -%}
-          <div class="pm-pdp__sku">SKU <span>{{ _v.sku }}</span></div>
-        {%- endif -%}
-
-        <div class="pm-pdp__price">
-          {%- if product.compare_at_price > product.price -%}
-            <span class="pm-pdp__price-now pm-pdp__price-now--sale">{{ product.price | money }}</span>
-            <span class="pm-pdp__price-strike">{{ product.compare_at_price | money }}</span>
-            <span class="pm-pdp__flag pm-pdp__flag--sale">Sale</span>
-          {%- else -%}
-            <span class="pm-pdp__price-now">{{ product.price | money }}</span>
-            {%- if product.available -%}
-              <span class="pm-pdp__stock">
-                <span class="pm-pdp__stock-dot"></span>In stock
-              </span>
-            {%- else -%}
-              <span class="pm-pdp__stock pm-pdp__stock--out">
-                <span class="pm-pdp__stock-dot"></span>Sold out
-              </span>
-            {%- endif -%}
+          {%- if product.vendor != blank -%}
+            <a href="/collections/vendors?q={{ product.vendor | url_encode }}" class="pm-pdp__brand">{{ product.vendor }}</a>
           {%- endif -%}
+
+          <div class="pm-pdp__ids">
+            {%- if _sku != blank -%}
+              <div class="pm-pdp__id-row">
+                <span class="pm-pdp__id-label">SKU:</span>
+                <span class="pm-pdp__id-value" id="pm-pdp-sku">{{ _sku }}</span>
+              </div>
+            {%- endif -%}
+            {%- if _mpn != blank -%}
+              <div class="pm-pdp__id-row">
+                <span class="pm-pdp__id-label">MPN:</span>
+                <span class="pm-pdp__id-value">{{ _mpn }}</span>
+              </div>
+            {%- endif -%}
+          </div>
+
+          {%- comment -%} ── Price ───────────────────────────────────── {%- endcomment -%}
+          <div class="pm-pdp__price-block">
+            {%- if product.compare_at_price > product.price -%}
+              <div class="pm-pdp__price pm-pdp__price--sale" id="pm-pdp-price">{{ product.price | money }}</div>
+              <div class="pm-pdp__price-meta">
+                <span class="pm-pdp__price-was">{{ product.compare_at_price | money }}</span>
+                <span class="pm-pdp__price-flag">Sale</span>
+              </div>
+            {%- else -%}
+              <div class="pm-pdp__price" id="pm-pdp-price">{{ product.price | money }}</div>
+            {%- endif -%}
+          </div>
+
+          {%- if _upc != blank -%}
+            <div class="pm-pdp__upc">
+              <span class="pm-pdp__id-label">UPC:</span>
+              <span class="pm-pdp__upc-value">{{ _upc }}</span>
+            </div>
+          {%- endif -%}
+
+          <a href="/policies/shipping-policy" class="pm-pdp__ship-btn">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <rect x="1" y="3" width="15" height="13" rx="1"/>
+              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/>
+              <circle cx="5.5" cy="18.5" r="2.5"/>
+              <circle cx="18.5" cy="18.5" r="2.5"/>
+            </svg>
+            <span>Shipping and Returns</span>
+          </a>
+
         </div>
 
-        {%- comment -%} Variant selector (only if non-default options) {%- endcomment -%}
-        {%- if product.has_only_default_variant == false -%}
-          <div class="pm-pdp__options" id="pm-pdp-options">
-            {%- for option in product.options_with_values -%}
-              <div class="pm-pdp__option">
-                <label class="pm-pdp__option-label">{{ option.name }}</label>
-                <select data-pm-pdp-option="{{ forloop.index0 }}">
-                  {%- for value in option.values -%}
-                    <option value="{{ value | escape }}"{% if option.selected_value == value %} selected{% endif %}>{{ value }}</option>
-                  {%- endfor -%}
-                </select>
-              </div>
-            {%- endfor -%}
-            {%- comment -%} Embed variant data as JSON for client-side selection {%- endcomment -%}
-            <script type="application/json" id="pm-pdp-variants">
-              {{ product.variants | json }}
-            </script>
-          </div>
-        {%- endif -%}
+        {%- comment -%} ── Buy-box card ──────────────────────────────── {%- endcomment -%}
+        <aside class="pm-pdp__buybox">
 
-        <div class="pm-pdp__actions">
+          {%- if product.has_only_default_variant == false -%}
+            <div class="pm-pdp__options" id="pm-pdp-options">
+              {%- for option in product.options_with_values -%}
+                <div class="pm-pdp__option">
+                  <label class="pm-pdp__option-label">{{ option.name }}</label>
+                  <select data-pm-pdp-option="{{ forloop.index0 }}">
+                    {%- for value in option.values -%}
+                      <option value="{{ value | escape }}"{% if option.selected_value == value %} selected{% endif %}>{{ value }}</option>
+                    {%- endfor -%}
+                  </select>
+                </div>
+              {%- endfor -%}
+              <script type="application/json" id="pm-pdp-variants">
+                {{ product.variants | json }}
+              </script>
+            </div>
+          {%- endif -%}
+
+          <div class="pm-pdp__avail-label">Availability</div>
+          {%- if _instock -%}
+            <div class="pm-pdp__avail pm-pdp__avail--in" data-pm-pdp-avail>
+              {%- if _v.inventory_management == 'shopify' and _v.inventory_policy == 'deny' and _stock and _stock > 0 -%}
+                {{ _stock }} in stock
+              {%- else -%}
+                In stock
+              {%- endif -%}
+            </div>
+          {%- else -%}
+            <div class="pm-pdp__avail pm-pdp__avail--out" data-pm-pdp-avail>Out of stock</div>
+          {%- endif -%}
+
+          <label for="pm-pdp-qty" class="pm-pdp__qty-label">Quantity:</label>
           <div class="pm-pdp__qty">
             <button type="button" class="pm-pdp__qty-btn" data-pm-pdp-qty="-1" aria-label="Decrease quantity">−</button>
             <input type="number" id="pm-pdp-qty" value="1" min="1" step="1" aria-label="Quantity">
             <button type="button" class="pm-pdp__qty-btn" data-pm-pdp-qty="1" aria-label="Increase quantity">+</button>
           </div>
-          {%- if product.available -%}
+
+          {%- if _instock -%}
             <button
               type="button"
-              class="pm-btn pm-btn--primary pm-pdp__add"
+              class="pm-pdp__cta pm-pdp__cta--cart"
               data-pm-add
               data-pm-pdp-add
               data-variant-id="{{ _v.id }}"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-              <span>Add to cart</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+              <span>Add to Cart</span>
+            </button>
+          {%- endif -%}
+
+          <button
+            type="button"
+            class="pm-pdp__cta pm-pdp__cta--ghost"
+            data-pm-add-to-list-trigger
+            data-default-label="Add to List"
+            data-item-sku="{{ _sku | escape }}"
+            data-item-name="{{ product.title | escape }}"
+            data-item-brand="{{ product.vendor | escape }}"
+            data-item-image="{% if product.featured_image %}{{ product.featured_image | image_url: width: 200 }}{% endif %}"
+            data-item-price="{{ product.price | money }}"
+            data-item-href="{{ product.url }}"
+            aria-haspopup="menu"
+            aria-expanded="false"
+          >
+            <svg data-pm-add-icon-plus width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            <svg data-pm-add-icon-star width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="0" aria-hidden="true" style="display:none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            <span data-pm-add-to-list-label>Add to List</span>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" class="pm-pdp__cta-caret"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+
+          {%- if _instock -%}
+            <button type="button" class="pm-pdp__cta pm-pdp__cta--ghost" data-pm-add-to-quote title="Quote requests — coming with B2B Ninja">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span>Add to Quote</span>
             </button>
           {%- else -%}
-            <button type="button" class="pm-btn pm-pdp__add" disabled>Sold out</button>
+            <button type="button" class="pm-pdp__cta pm-pdp__cta--quote" data-pm-add-to-quote title="Quote requests — coming with B2B Ninja">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span>Add to Quote</span>
+            </button>
           {%- endif -%}
-        </div>
 
-        <label class="pm-pdp__compare">
-          <input type="checkbox" data-pm-compare data-product-handle="{{ product.handle }}">
-          <span>Compare</span>
-        </label>
-
-        {%- comment -%} Trust signals {%- endcomment -%}
-        <ul class="pm-pdp__trust">
-          <li>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            Free freight on orders over $5,000
-          </li>
-          <li>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            Ships from Southern California
-          </li>
-          <li>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-            Quotes valid 14 days — call <a href="tel:18777644968">(877) PMG-4YOU</a>
-          </li>
-        </ul>
-
-        {%- if product.description != blank -%}
-          <details class="pm-pdp__details" open>
-            <summary>
-              <span>Product details</span>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
-            </summary>
-            <div class="pm-pdp__desc rte">{{ product.description }}</div>
-          </details>
-        {%- endif -%}
+          <label class="pm-pdp__compare">
+            <input type="checkbox" data-pm-compare data-product-handle="{{ product.handle }}">
+            <span>Compare</span>
+          </label>
+        </aside>
       </div>
     </div>
   </div>
-</section>
+
+  {%- comment -%} ── Description ‖ Specifications ─────────────────────────── {%- endcomment -%}
+  <section id="pm-product-description" class="pm-pdp__longblock">
+    <div class="pm-container pm-pdp__longblock-inner">
+      <div class="pm-pdp__longgrid">
+
+        {%- comment -%} ── Description (wider, left) ─────────────────────── {%- endcomment -%}
+        <div class="pm-pdp__desc-col">
+          <h2 class="pm-pdp__h2">Description</h2>
+          {%- if product.description != blank -%}
+            <div class="pm-pdp__desc-body rte">{{ product.description }}</div>
+          {%- else -%}
+            <p class="pm-pdp__empty">
+              A long-form description for this part is not yet published.
+              Reach out to your account manager for spec sheets and
+              configuration guidance.
+            </p>
+          {%- endif -%}
+
+          {%- if _features.size > 0 -%}
+            <div class="pm-pdp__features">
+              <div class="pm-pdp__features-eyebrow">Key features</div>
+              <ul class="pm-pdp__features-list">
+                {%- for f in _features -%}
+                  {%- assign _ft = f | strip -%}
+                  {%- if _ft != blank -%}
+                    <li>
+                      <span class="pm-pdp__glance-dot" aria-hidden="true"></span>
+                      <span>{{ _ft }}</span>
+                    </li>
+                  {%- endif -%}
+                {%- endfor -%}
+              </ul>
+            </div>
+          {%- endif -%}
+        </div>
+
+        {%- comment -%}
+          ── Specifications (narrower, right) ──
+          Server-side render uses metafields when available. When they
+          aren't (Hydrogen ships specs in a separate sidecar JSON, not
+          metafields), JS hydrates this section from the bundled
+          pm-product-specs.json asset using `data-pm-pdp-handle`.
+        {%- endcomment -%}
+        <div
+          class="pm-pdp__specs-col"
+          data-pm-pdp-handle="{{ product.handle }}"
+          data-pm-pdp-specs-asset="{{ 'pm-product-specs.json' | asset_url }}"
+        >
+          <div class="pm-pdp__specs-head">
+            <h2 class="pm-pdp__h2">Specifications</h2>
+            <span
+              class="pm-pdp__specs-count"
+              data-pm-pdp-specs-count
+              {% if _spec_count == 0 %}hidden{% endif %}
+            >
+              {%- if _spec_count > 0 -%}{{ _spec_count }} {% if _spec_count == 1 %}spec{% else %}specs{% endif %}{%- endif -%}
+            </span>
+          </div>
+
+          <dl
+            class="pm-pdp__specs"
+            data-pm-pdp-specs
+            data-total="{{ _spec_count }}"
+            {% if _spec_count == 0 %}hidden{% endif %}
+          >
+            {%- assign _i = 0 -%}
+            {%- for pair in _spec_pairs -%}
+              {%- assign _p = pair | strip -%}
+              {%- if _p == '' -%}{%- continue -%}{%- endif -%}
+              {%- unless _p contains '<<KV>>' -%}{%- continue -%}{%- endunless -%}
+              {%- assign _kv = _p | split: '<<KV>>' -%}
+              {%- assign _nm = _kv[0] | strip -%}
+              {%- assign _vl = _kv[1] | strip -%}
+              {%- if _nm != '' and _vl != '' -%}
+                <div class="pm-pdp__spec-row{% if _i >= 8 %} is-extra{% endif %}" data-pm-pdp-spec-row>
+                  <dt class="pm-pdp__spec-key">{{ _nm }}</dt>
+                  <dd class="pm-pdp__spec-val">{{ _vl }}</dd>
+                </div>
+                {%- assign _i = _i | plus: 1 -%}
+              {%- endif -%}
+            {%- endfor -%}
+          </dl>
+
+          {%- assign _extra = _spec_count | minus: 8 -%}
+          <button
+            type="button"
+            class="pm-pdp__specs-toggle"
+            data-pm-pdp-specs-toggle
+            aria-expanded="false"
+            {% if _spec_count <= 8 %}hidden{% endif %}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><polyline points="6 9 12 15 18 9"/></svg>
+            <span data-pm-pdp-specs-toggle-label>
+              {%- if _spec_count > 8 -%}Show {{ _extra }} more {% if _extra == 1 %}spec{% else %}specs{% endif %}{%- endif -%}
+            </span>
+          </button>
+
+          <p
+            class="pm-pdp__empty"
+            data-pm-pdp-specs-empty
+            {% if _spec_count > 0 %}hidden{% endif %}
+          >
+            Detailed specifications for this part are not yet published.
+            Reach out to your account manager — dimensions, voltage,
+            capacity, and supported configurations will be confirmed
+            within one business day.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
 
 <script>
 (function () {
-  // ── Gallery thumbs ──
+  // ── Gallery thumbs (click + hover swap) ──
   var main = document.getElementById('pm-pdp-main-img');
+  var setActiveThumb = function (target) {
+    document.querySelectorAll('[data-pm-pdp-thumb]').forEach(function (b) {
+      b.classList.toggle('is-active', b === target);
+    });
+  };
   document.querySelectorAll('[data-pm-pdp-thumb]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
+    var swap = function () {
       var url = btn.getAttribute('data-pm-pdp-thumb');
       if (main) main.src = url;
-      document.querySelectorAll('[data-pm-pdp-thumb]').forEach(function (b) {
-        b.classList.toggle('is-active', b === btn);
-      });
-    });
+      setActiveThumb(btn);
+    };
+    btn.addEventListener('click', swap);
+    btn.addEventListener('mouseenter', swap);
   });
 
-  // ── Quantity ± buttons (also feeds the Add button's quantity) ──
+  // ── Hero hover-zoom (Amazon-style, cursor-tracked transform-origin) ──
+  // Match the Hydrogen PmProductGallery: 2x scale on the <img>, origin
+  // follows the cursor as %. Surrounding frame is overflow:hidden via
+  // CSS so the unzoomed area is clipped, no portal / lens needed.
+  var frame = document.querySelector('[data-pm-pdp-hero]');
+  var zoomImg = document.querySelector('[data-pm-pdp-zoom]');
+  if (frame && zoomImg) {
+    var ZOOM = 2;
+    var clamp = function (n) { return Math.max(0, Math.min(100, n)); };
+    frame.addEventListener('mouseenter', function () {
+      zoomImg.style.transform = 'scale(' + ZOOM + ')';
+      frame.style.cursor = 'zoom-out';
+    });
+    frame.addEventListener('mouseleave', function () {
+      zoomImg.style.transform = 'scale(1)';
+      zoomImg.style.transformOrigin = '50% 50%';
+      frame.style.cursor = 'zoom-in';
+    });
+    frame.addEventListener('mousemove', function (e) {
+      var r = frame.getBoundingClientRect();
+      var x = clamp(((e.clientX - r.left) / r.width) * 100);
+      var y = clamp(((e.clientY - r.top) / r.height) * 100);
+      zoomImg.style.transformOrigin = x + '% ' + y + '%';
+    });
+    frame.style.cursor = 'zoom-in';
+  }
+
+  // ── Quantity ± buttons (also feeds the Add-to-Cart quantity) ──
   var qty = document.getElementById('pm-pdp-qty');
   document.querySelectorAll('[data-pm-pdp-qty]').forEach(function (b) {
     b.addEventListener('click', function () {
@@ -198,33 +496,70 @@
     });
   });
 
-  // ── Variant selection ──
+  // ── Variant selection (updates variant id, availability, image, price) ──
   var variantsEl = document.getElementById('pm-pdp-variants');
   var addBtn     = document.querySelector('[data-pm-pdp-add]');
-  if (variantsEl && addBtn) {
+  if (variantsEl) {
     var variants = [];
     try { variants = JSON.parse(variantsEl.textContent); } catch (e) {}
+    var moneyFmt = function (cents) {
+      try {
+        return new Intl.NumberFormat(undefined, { style: 'currency', currency: (window.Shopify && Shopify.currency && Shopify.currency.active) || 'USD' }).format(cents / 100);
+      } catch (e) { return '$' + (cents / 100).toFixed(2); }
+    };
     document.querySelectorAll('[data-pm-pdp-option]').forEach(function (sel) {
       sel.addEventListener('change', function () {
         var chosen = Array.from(document.querySelectorAll('[data-pm-pdp-option]')).map(function (s) { return s.value; });
         var match = variants.find(function (v) {
           return chosen.every(function (c, i) { return v['option' + (i + 1)] === c; });
         });
-        if (match) {
+        if (!match) return;
+
+        // Update SKU + price
+        var skuEl = document.getElementById('pm-pdp-sku');
+        if (skuEl && match.sku) skuEl.textContent = match.sku;
+        var priceEl = document.getElementById('pm-pdp-price');
+        if (priceEl && typeof match.price === 'number') priceEl.textContent = moneyFmt(match.price);
+
+        // Update hero image
+        if (match.featured_image && main) {
+          main.src = match.featured_image.src;
+        }
+
+        // Update availability badge
+        var availEl = document.querySelector('[data-pm-pdp-avail]');
+        if (availEl) {
+          if (!match.available) {
+            availEl.className = 'pm-pdp__avail pm-pdp__avail--out';
+            availEl.textContent = 'Out of stock';
+          } else if (match.inventory_management === 'shopify' && match.inventory_policy === 'deny' && typeof match.inventory_quantity === 'number' && match.inventory_quantity > 0) {
+            availEl.className = 'pm-pdp__avail pm-pdp__avail--in';
+            availEl.textContent = match.inventory_quantity.toLocaleString() + ' in stock';
+          } else {
+            availEl.className = 'pm-pdp__avail pm-pdp__avail--in';
+            availEl.textContent = 'In stock';
+          }
+        }
+
+        // Wire the cart button to the new variant
+        if (addBtn) {
           addBtn.setAttribute('data-variant-id', match.id);
-          if (match.available) { addBtn.removeAttribute('disabled'); addBtn.querySelector('span').textContent = 'Add to cart'; }
-          else { addBtn.setAttribute('disabled', ''); addBtn.querySelector('span').textContent = 'Sold out'; }
-          if (match.featured_image && main) main.src = match.featured_image.src.replace(/(\.[a-z]+)$/, '_900x900$1');
+          if (match.available) {
+            addBtn.removeAttribute('disabled');
+            var lbl = addBtn.querySelector('span');
+            if (lbl) lbl.textContent = 'Add to Cart';
+          } else {
+            addBtn.setAttribute('disabled', '');
+          }
         }
       });
     });
   }
 
-  // ── Add to cart uses the chosen quantity (pm-add-to-cart.js by default uses 1) ──
+  // ── Add to cart: respect the PDP quantity (pm-add-to-cart.js posts qty=1) ──
   if (addBtn) {
     addBtn.addEventListener('click', function (e) {
-      var n = parseInt(qty.value, 10) || 1;
-      // pm-add-to-cart.js posts quantity 1; intercept for PDP to send chosen qty
+      var n = parseInt(qty && qty.value, 10) || 1;
       if (n > 1) {
         e.stopImmediatePropagation();
         e.preventDefault();
@@ -243,19 +578,181 @@
             if (label) label.textContent = 'Added';
             document.dispatchEvent(new CustomEvent('pm:cart-changed', { detail: { source: 'pdp', addedCount: n } }));
             setTimeout(function () {
-              if (label) label.textContent = orig || 'Add to cart';
+              if (label) label.textContent = orig || 'Add to Cart';
               addBtn.disabled = false;
               addBtn.dataset.busy = '0';
             }, 900);
           })
           .catch(function () {
-            if (label) label.textContent = orig || 'Add to cart';
+            if (label) label.textContent = orig || 'Add to Cart';
             addBtn.disabled = false;
             addBtn.dataset.busy = '0';
           });
       }
-    }, true /* capture, so we run before pm-add-to-cart.js's bubble-phase listener */);
+    }, true);
   }
+
+  // ── Specs: expand/collapse + asset-driven hydration ──
+  // The PDP renders an empty Specifications block when no usable
+  // metafields exist server-side. Mirror the Hydrogen storefront's
+  // approach by loading specs from a single bundled JSON asset
+  // (pm-product-specs.json, keyed by product handle) and populating
+  // the table on the client. The asset hits Shopify's CDN with long
+  // cache headers; we also cache the parsed map in sessionStorage so
+  // subsequent PDPs reuse it without parsing 2MB of JSON twice.
+  var specsRoot   = document.querySelector('[data-pm-pdp-handle]');
+  var specsDl     = document.querySelector('[data-pm-pdp-specs]');
+  var specsToggle = document.querySelector('[data-pm-pdp-specs-toggle]');
+  var specsEmpty  = document.querySelector('[data-pm-pdp-specs-empty]');
+  var specsCount  = document.querySelector('[data-pm-pdp-specs-count]');
+
+  var escapeHtml = function (s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  };
+
+  var wireSpecsToggle = function (total) {
+    if (!specsToggle || !specsDl) return;
+    if (total <= 8) { specsToggle.setAttribute('hidden', ''); return; }
+    specsToggle.removeAttribute('hidden');
+    var extra = total - 8;
+    var lbl = specsToggle.querySelector('[data-pm-pdp-specs-toggle-label]');
+    var svg = specsToggle.querySelector('svg');
+    if (lbl) lbl.textContent = 'Show ' + extra + ' more spec' + (extra === 1 ? '' : 's');
+    // Idempotent wiring — replace the previous listener (this fn may be
+    // called twice: once at load with metafield count, once after the
+    // asset fetch with the real count).
+    var clone = specsToggle.cloneNode(true);
+    specsToggle.parentNode.replaceChild(clone, specsToggle);
+    specsToggle = clone;
+    var lbl2 = specsToggle.querySelector('[data-pm-pdp-specs-toggle-label]');
+    var svg2 = specsToggle.querySelector('svg');
+    specsToggle.addEventListener('click', function () {
+      var expanded = specsToggle.getAttribute('aria-expanded') === 'true';
+      var next = !expanded;
+      specsToggle.setAttribute('aria-expanded', next ? 'true' : 'false');
+      specsDl.classList.toggle('is-expanded', next);
+      if (svg2) svg2.style.transform = next ? 'rotate(180deg)' : '';
+      if (lbl2) {
+        lbl2.textContent = next
+          ? 'Show fewer specs'
+          : ('Show ' + extra + ' more spec' + (extra === 1 ? '' : 's'));
+      }
+    });
+  };
+
+  var populateSpecs = function (specs) {
+    if (!Array.isArray(specs) || specs.length === 0 || !specsDl) return false;
+
+    var rowsHtml = '';
+    for (var i = 0; i < specs.length; i++) {
+      var s = specs[i] || {};
+      var nm = (s.name || '').trim();
+      var vl = (s.value || '').trim();
+      if (!nm || !vl) continue;
+      var extraCls = i >= 8 ? ' is-extra' : '';
+      rowsHtml +=
+        '<div class="pm-pdp__spec-row' + extraCls + '" data-pm-pdp-spec-row>' +
+          '<dt class="pm-pdp__spec-key">' + escapeHtml(nm) + '</dt>' +
+          '<dd class="pm-pdp__spec-val">' + escapeHtml(vl) + '</dd>' +
+        '</div>';
+    }
+    if (!rowsHtml) return false;
+
+    specsDl.innerHTML = rowsHtml;
+    specsDl.removeAttribute('hidden');
+    specsDl.setAttribute('data-total', String(specs.length));
+
+    if (specsCount) {
+      specsCount.textContent = specs.length + ' ' + (specs.length === 1 ? 'spec' : 'specs');
+      specsCount.removeAttribute('hidden');
+    }
+    if (specsEmpty) specsEmpty.setAttribute('hidden', '');
+
+    wireSpecsToggle(specs.length);
+
+    // Hydrate the at-a-glance bullets too, when the server didn't.
+    var glance = document.querySelector('[data-pm-pdp-glance]');
+    var glanceList = document.querySelector('[data-pm-pdp-glance-list]');
+    var glanceEyebrow = document.querySelector('[data-pm-pdp-glance-eyebrow]');
+    if (glance && glanceList && glance.hasAttribute('hidden')) {
+      var bulletsHtml = '';
+      var bulletCount = 0;
+      for (var j = 0; j < specs.length && bulletCount < 4; j++) {
+        var sb = specs[j] || {};
+        var bn = (sb.name || '').trim();
+        var bv = (sb.value || '').trim();
+        if (!bn || !bv) continue;
+        bulletsHtml +=
+          '<li>' +
+            '<span class="pm-pdp__glance-dot" aria-hidden="true"></span>' +
+            '<span><strong>' + escapeHtml(bn) + ':</strong> ' + escapeHtml(bv) + '</span>' +
+          '</li>';
+        bulletCount++;
+      }
+      if (bulletsHtml) {
+        glanceList.innerHTML = bulletsHtml;
+        if (glanceEyebrow) glanceEyebrow.textContent = 'At a glance';
+        glance.removeAttribute('hidden');
+      }
+    }
+    return true;
+  };
+
+  // Wire toggle for any server-rendered specs first.
+  if (specsDl && specsDl.querySelector('.pm-pdp__spec-row')) {
+    var serverTotal = parseInt(specsDl.getAttribute('data-total'), 10) || 0;
+    wireSpecsToggle(serverTotal);
+  }
+
+  // Asset-driven hydration — only when the table is currently empty.
+  if (specsRoot && specsDl && !specsDl.querySelector('.pm-pdp__spec-row')) {
+    var handle   = specsRoot.getAttribute('data-pm-pdp-handle');
+    var assetUrl = specsRoot.getAttribute('data-pm-pdp-specs-asset');
+    if (handle && assetUrl) {
+      var cacheKey = 'pm-specs-v1:' + assetUrl;
+      var fromCache = null;
+      try {
+        var raw = sessionStorage.getItem(cacheKey);
+        if (raw) fromCache = JSON.parse(raw);
+      } catch (e) { /* ignore */ }
+
+      var apply = function (map) {
+        if (!map || typeof map !== 'object') return;
+        var specs = map[handle];
+        if (specs) populateSpecs(specs);
+      };
+
+      if (fromCache) {
+        apply(fromCache);
+      } else {
+        // Defer the fetch one tick so it doesn't block initial render.
+        setTimeout(function () {
+          fetch(assetUrl, { cache: 'force-cache' })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (map) {
+              if (!map) return;
+              try { sessionStorage.setItem(cacheKey, JSON.stringify(map)); } catch (e) { /* quota */ }
+              apply(map);
+            })
+            .catch(function () { /* silent */ });
+        }, 0);
+      }
+    }
+  }
+
+  // ── Add to Quote — stub feedback until the B2B Ninja flow ships ──
+  // (Add to List has its own real flow in pm-add-to-list.js)
+  document.querySelectorAll('[data-pm-add-to-quote]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var s = b.querySelector('span');
+      if (!s) return;
+      var orig = s.textContent;
+      s.textContent = 'Saved';
+      setTimeout(function () { s.textContent = orig; }, 1200);
+    });
+  });
 })();
 </script>
 

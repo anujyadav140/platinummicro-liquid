@@ -49,10 +49,18 @@
             }
           }
         }
+        // /pages/sign-in and /pages/register were standalone pages in
+        // earlier iterations — now retired in favour of redirecting
+        // directly to Shopify's hosted auth (Hachiman-pattern).
+        if (/^\/pages\/(sign-in|register)(?:[\/?#]|$)/i.test(p)) {
+          document.documentElement.dataset.pmRedirecting = '1';
+          window.location.replace('/customer_authentication/login?return_to=%2F');
+          return;
+        }
         // /pages/<known> → pm-404.liquid will swap in the static body via JS.
         // Hide the body until that swap completes so the 404 placeholder
         // never flashes.
-        if (/^\/pages\/(about|brands|contact|shipping-returns|site-map|social-responsibility|order-verification|compare|sign-in|register)(?:[\/?#]|$)/i.test(p)) {
+        if (/^\/pages\/(about|brands|contact|shipping-returns|site-map|social-responsibility|order-verification|compare|account)(?:[\/?#]|$)/i.test(p)) {
           document.documentElement.dataset.pmStaticPending = '1';
         }
       })();
@@ -111,6 +119,17 @@
   {{ 'pm-facets.js'      | asset_url | script_tag }}
   {{ 'pm-plp.js'         | asset_url | script_tag }}
   {{ 'pm-add-to-cart.js' | asset_url | script_tag }}
+  {{ 'pm-add-to-list.js' | asset_url | script_tag }}
+  {{ 'pm-quote.js'       | asset_url | script_tag }}
+  {%- comment -%}
+    Lists dashboard JS loads on /pages/lists whether admin picked the
+    custom `lists` template OR the default `page` template — gating on
+    page.handle catches both.
+  {%- endcomment -%}
+  {%- if template == 'page.lists' or page.handle == 'lists' -%}
+    {{ 'pm-lists-page.js' | asset_url | script_tag }}
+  {%- endif -%}
   {{ 'pm-compare.js'     | asset_url | script_tag }}
+  {{ 'pm-auth-anchor.js' | asset_url | script_tag }}
 </body>
 </html>
