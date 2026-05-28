@@ -606,21 +606,85 @@
   </section>
 
   {%- comment -%}
-    ── Documentation band ──
-    Renders downloadable assets attached via the
-    `product.metafields.custom.documents` metafield (a list of
-    `pm_document` metaobject references — see admin setup notes
-    in the section comment header).
+    ── Documentation band (auto-parsed from description) ──
+    Zero admin overhead: scans product.description HTML for inline
+    `<a href="…">` links that look like documentation (PDF extension
+    or URL containing datasheet/quickspec/manual/firmware/driver/
+    warranty) and renders them as a Downloads grid.
 
-    Each entry resolves to a URL (uploaded file wins over an
-    external link when both are set) and a category icon. Category
-    can be set explicitly on the metaobject (e.g. "datasheet",
-    "firmware") or inferred from the filename when blank.
+    Vendor catalogs (HPE QuickSpecs, Dell spec sheets, Lenovo
+    PSREFs, etc.) already embed these links inline — this lights
+    them up across the catalog with zero admin work.
 
-    Hidden entirely when no documents are attached.
+    • Anchor text becomes the label (falls back to URL filename).
+    • Category is sniffed from URL + label keywords.
+    • Duplicates de-duped by URL; capped at 12 entries.
+    • Hidden entirely when no qualifying links are found.
   {%- endcomment -%}
-  {%- assign _docs = product.metafields.custom.documents.value -%}
-  {%- if _docs and _docs.size > 0 -%}
+
+  {%- assign _desc = product.description | default: '' -%}
+  {%- assign _anchor_chunks = _desc | split: '<a ' -%}
+
+  {%- comment -%}
+    Build two parallel pipe-delimited strings (urls + labels). Using
+    `|||` as the separator because real URLs can't contain raw pipes
+    (they'd be percent-encoded), so the boundary is unambiguous.
+  {%- endcomment -%}
+  {%- assign _doc_urls   = '' -%}
+  {%- assign _doc_labels = '' -%}
+  {%- assign _doc_count  = 0 -%}
+
+  {%- for chunk in _anchor_chunks offset: 1 -%}
+    {%- if _doc_count >= 12 -%}{%- break -%}{%- endif -%}
+
+    {%- comment -%} Slice off everything past </a> — that's body copy, not link content. {%- endcomment -%}
+    {%- assign _anchor_block = chunk | split: '</a>' | first -%}
+
+    {%- comment -%} ── href ── {%- endcomment -%}
+    {%- assign _hsplit = _anchor_block | split: 'href="' -%}
+    {%- if _hsplit.size < 2 -%}{%- continue -%}{%- endif -%}
+    {%- assign _doc_url = _hsplit[1] | split: '"' | first -%}
+    {%- if _doc_url == blank -%}{%- continue -%}{%- endif -%}
+
+    {%- comment -%} ── Filter to doc-type URLs only ── {%- endcomment -%}
+    {%- assign _url_lc = _doc_url | downcase -%}
+    {%- assign _is_doc = false -%}
+    {%- if _url_lc contains '.pdf'       -%}{%- assign _is_doc = true -%}{%- endif -%}
+    {%- if _url_lc contains 'datasheet'  -%}{%- assign _is_doc = true -%}{%- endif -%}
+    {%- if _url_lc contains 'quickspec'  -%}{%- assign _is_doc = true -%}{%- endif -%}
+    {%- if _url_lc contains 'spec-sheet' -%}{%- assign _is_doc = true -%}{%- endif -%}
+    {%- if _url_lc contains 'specsheet'  -%}{%- assign _is_doc = true -%}{%- endif -%}
+    {%- if _url_lc contains 'manual'     -%}{%- assign _is_doc = true -%}{%- endif -%}
+    {%- if _url_lc contains 'firmware'   -%}{%- assign _is_doc = true -%}{%- endif -%}
+    {%- if _url_lc contains 'driver'     -%}{%- assign _is_doc = true -%}{%- endif -%}
+    {%- if _url_lc contains 'warranty'   -%}{%- assign _is_doc = true -%}{%- endif -%}
+    {%- if _url_lc contains 'psref'      -%}{%- assign _is_doc = true -%}{%- endif -%}
+    {%- unless _is_doc -%}{%- continue -%}{%- endunless -%}
+
+    {%- comment -%} ── De-dupe (pipe-bracketed to avoid prefix collisions) ── {%- endcomment -%}
+    {%- assign _needle   = '|||' | append: _doc_url | append: '|||' -%}
+    {%- assign _haystack = '|||' | append: _doc_urls -%}
+    {%- if _haystack contains _needle -%}{%- continue -%}{%- endif -%}
+
+    {%- comment -%} ── Label = text between the closing > of <a …> and </a> ── {%- endcomment -%}
+    {%- assign _label_split = _anchor_block | split: '>' -%}
+    {%- assign _doc_label = _label_split | last | strip_html | strip | replace: '&nbsp;', ' ' | replace: '&amp;', '&' -%}
+
+    {%- comment -%} Fallback: derive a readable label from the URL filename. {%- endcomment -%}
+    {%- if _doc_label == blank -%}
+      {%- assign _filename = _doc_url | split: '?' | first | split: '/' | last -%}
+      {%- assign _doc_label = _filename | replace: '%20', ' ' | replace: '-', ' ' | replace: '_', ' ' -%}
+    {%- endif -%}
+
+    {%- assign _doc_urls   = _doc_urls   | append: _doc_url   | append: '|||' -%}
+    {%- assign _doc_labels = _doc_labels | append: _doc_label | append: '|||' -%}
+    {%- assign _doc_count  = _doc_count  | plus: 1 -%}
+  {%- endfor -%}
+
+  {%- if _doc_count > 0 -%}
+    {%- assign _doc_urls_arr   = _doc_urls   | split: '|||' -%}
+    {%- assign _doc_labels_arr = _doc_labels | split: '|||' -%}
+
     <section class="pm-pdp__docs">
       <div class="pm-container pm-pdp__docs-inner">
         <header class="pm-pdp__docs-head">
@@ -628,61 +692,41 @@
             <div class="pm-pdp__docs-eyebrow">Documentation</div>
             <h2 class="pm-pdp__docs-title">Datasheets, manuals &amp; downloads</h2>
           </div>
-          <span class="pm-pdp__docs-count">{{ _docs.size }} {% if _docs.size == 1 %}file{% else %}files{% endif %}</span>
+          <span class="pm-pdp__docs-count">{{ _doc_count }} {% if _doc_count == 1 %}file{% else %}files{% endif %}</span>
         </header>
 
         <ul class="pm-pdp__docs-grid">
-          {%- for doc in _docs -%}
-            {%- comment -%}
-              Resolve URL: prefer uploaded file, fall back to external URL.
-              The file_reference Drop exposes .url + .size + .original_name;
-              external_url is a plain string.
-            {%- endcomment -%}
-            {%- assign _file     = doc.file -%}
-            {%- assign _file_url = '' -%}
-            {%- assign _file_size = 0 -%}
-            {%- assign _file_name = '' -%}
-            {%- if _file -%}
-              {%- assign _file_url  = _file.url -%}
-              {%- assign _file_size = _file.size | default: 0 -%}
-              {%- assign _file_name = _file.original_name | default: '' -%}
-            {%- endif -%}
-            {%- assign _ext_url   = doc.external_url -%}
-            {%- assign _doc_url   = _file_url | default: _ext_url -%}
+          {%- for _doc_url in _doc_urls_arr -%}
             {%- if _doc_url == blank -%}{%- continue -%}{%- endif -%}
+            {%- assign _doc_label = _doc_labels_arr[forloop.index0] -%}
+            {%- if _doc_label == blank -%}{%- assign _doc_label = 'Download' -%}{%- endif -%}
 
-            {%- comment -%} Category — explicit field wins; otherwise sniff filename. {%- endcomment -%}
-            {%- assign _category = doc.category | downcase -%}
-            {%- if _category == blank -%}
-              {%- assign _name_lc = _file_name | append: ' ' | append: doc.label | downcase -%}
-              {%- if _name_lc contains 'datasheet' -%}{%- assign _category = 'datasheet' -%}
-              {%- elsif _name_lc contains 'firmware' -%}{%- assign _category = 'firmware' -%}
-              {%- elsif _name_lc contains 'driver' -%}{%- assign _category = 'driver' -%}
-              {%- elsif _name_lc contains 'manual' -%}{%- assign _category = 'manual' -%}
-              {%- elsif _name_lc contains 'warranty' -%}{%- assign _category = 'warranty' -%}
-              {%- elsif _name_lc contains 'compat' -%}{%- assign _category = 'compatibility' -%}
-              {%- elsif _name_lc contains 'quickspec' -%}{%- assign _category = 'datasheet' -%}
-              {%- else -%}{%- assign _category = 'other' -%}
-              {%- endif -%}
+            {%- comment -%} Auto-categorize from URL + label keywords. {%- endcomment -%}
+            {%- assign _sniff = _doc_url | append: ' ' | append: _doc_label | downcase -%}
+            {%- if _sniff contains 'datasheet' or _sniff contains 'quickspec' or _sniff contains 'spec sheet' or _sniff contains 'specsheet' or _sniff contains 'psref' -%}
+              {%- assign _category = 'datasheet' -%}
+            {%- elsif _sniff contains 'firmware' -%}
+              {%- assign _category = 'firmware' -%}
+            {%- elsif _sniff contains 'driver' -%}
+              {%- assign _category = 'driver' -%}
+            {%- elsif _sniff contains 'manual' or _sniff contains 'guide' or _sniff contains 'instructions' -%}
+              {%- assign _category = 'manual' -%}
+            {%- elsif _sniff contains 'warranty' -%}
+              {%- assign _category = 'warranty' -%}
+            {%- elsif _sniff contains 'compat' -%}
+              {%- assign _category = 'compatibility' -%}
+            {%- else -%}
+              {%- assign _category = 'other' -%}
             {%- endif -%}
 
-            {%- comment -%} Human-friendly file size if a Shopify file. {%- endcomment -%}
-            {%- assign _size_label = '' -%}
-            {%- if _file_size > 0 -%}
-              {%- if _file_size >= 1048576 -%}
-                {%- assign _mb = _file_size | divided_by: 104857.6 | round | divided_by: 10.0 -%}
-                {%- assign _size_label = _mb | append: ' MB' -%}
-              {%- elsif _file_size >= 1024 -%}
-                {%- assign _kb = _file_size | divided_by: 1024 -%}
-                {%- assign _size_label = _kb | append: ' KB' -%}
-              {%- endif -%}
-            {%- endif -%}
-
-            {%- comment -%} Extension for the secondary line. {%- endcomment -%}
+            {%- comment -%} Pull file extension for the meta line. {%- endcomment -%}
             {%- assign _ext = '' -%}
-            {%- if _file_name contains '.' -%}
-              {%- assign _ext_parts = _file_name | split: '.' -%}
+            {%- assign _url_path = _doc_url | split: '?' | first -%}
+            {%- if _url_path contains '.' -%}
+              {%- assign _ext_parts = _url_path | split: '.' -%}
               {%- assign _ext = _ext_parts | last | upcase -%}
+              {%- assign _ext_size = _ext | size -%}
+              {%- if _ext_size > 5 -%}{%- assign _ext = '' -%}{%- endif -%}
             {%- endif -%}
 
             <li class="pm-pdp__doc">
@@ -691,7 +735,7 @@
                 class="pm-pdp__doc-link"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Download {{ doc.label | escape }}"
+                aria-label="Open {{ _doc_label | escape }}"
               >
                 <span class="pm-pdp__doc-icon pm-pdp__doc-icon--{{ _category }}" aria-hidden="true">
                   {%- case _category -%}
@@ -712,18 +756,13 @@
                   {%- endcase -%}
                 </span>
                 <span class="pm-pdp__doc-main">
-                  <span class="pm-pdp__doc-label">{{ doc.label }}</span>
+                  <span class="pm-pdp__doc-label">{{ _doc_label }}</span>
                   <span class="pm-pdp__doc-meta">
-                    {%- if _ext != '' -%}{{ _ext }}{%- elsif _file_url == '' -%}External link{%- else -%}File{%- endif -%}
-                    {%- if _size_label != '' %} · {{ _size_label }}{%- endif -%}
+                    {%- if _ext != '' -%}{{ _ext }}{%- else -%}Download{%- endif -%}
                   </span>
                 </span>
                 <span class="pm-pdp__doc-arrow" aria-hidden="true">
-                  {%- if _file_url != '' -%}
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                  {%- else -%}
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-                  {%- endif -%}
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                 </span>
               </a>
             </li>

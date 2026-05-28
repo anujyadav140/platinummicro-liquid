@@ -5879,10 +5879,11 @@ a.pm-lists__row-name:hover { color: var(--pm-navy-mid); }
 
 /* ─────────────────────────────────────────────────────────────────────────
    PDP — Documentation band
-   Reads product.metafields.custom.documents (list of pm_document
-   metaobjects). Renders below Description/Specs as a clean download
-   grid. Category drives the icon tint so buyers can scan for the right
-   doc type at a glance.
+   Auto-parses PDF / datasheet / firmware / driver / manual / warranty
+   links from product.description HTML — zero admin overhead at catalog
+   scale. Renders below Description/Specs as a clean download grid;
+   category drives the icon tint so buyers can scan for the right doc
+   type at a glance.
    ─────────────────────────────────────────────────────────────────── */
 
 .pm-pdp__docs {
