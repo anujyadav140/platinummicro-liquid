@@ -4454,6 +4454,14 @@ body:has(#pm-compare-bar:not([hidden])) { padding-bottom: 96px; }
 .pm-pdp__cta[aria-expanded="true"] .pm-pdp__cta-caret { transform: rotate(180deg); }
 .pm-pdp__cta-caret { transition: transform 120ms var(--pm-ease-standard); }
 
+/* Star polygon's visible bounding box sits y=2 → y=21 inside a 24-tall
+   viewBox, so it renders ~1px above the geometric center. Nudge it down
+   so it lines up with the "In Your List" text in the trigger button. */
+.pm-pdp__cta svg[data-pm-add-icon-star] {
+  position: relative;
+  top: 1px;
+}
+
 .pm-list-popover {
   position: fixed;
   display: none;
@@ -4542,6 +4550,12 @@ body:has(#pm-compare-bar:not([hidden])) { padding-bottom: 96px; }
   flex-shrink: 0;
 }
 .pm-list-popover__item-plus { color: var(--pm-ink-400); flex-shrink: 0; }
+.pm-list-popover__check {
+  display: inline-flex;
+  align-items: center;
+  color: var(--pm-success);
+  flex-shrink: 0;
+}
 .pm-list-popover__added {
   display: inline-flex;
   align-items: center;
@@ -4550,6 +4564,22 @@ body:has(#pm-compare-bar:not([hidden])) { padding-bottom: 96px; }
   font-weight: 600;
   color: var(--pm-success);
   flex-shrink: 0;
+}
+
+/* Row state when this list already contains the trigger's SKU.
+   Subtle navy-tint background + bolder name color reads as "yes, it's
+   in here — click to remove" without needing extra text. */
+.pm-list-popover__item.is-in-list {
+  background: rgba(27, 58, 107, 0.04);
+}
+.pm-list-popover__item.is-in-list:hover {
+  background: rgba(166, 61, 47, 0.06);
+}
+.pm-list-popover__item.is-in-list .pm-list-popover__item-name {
+  color: var(--pm-navy-mid);
+}
+.pm-list-popover__item.is-in-list:hover .pm-list-popover__check {
+  color: var(--pm-danger);
 }
 
 .pm-list-popover__footer {

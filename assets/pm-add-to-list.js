@@ -112,6 +112,33 @@
     return false;
   }
 
+  // Is this SKU present in this specific list?
+  function isSkuInList(listId, sku) {
+    if (!sku || !listId) return false;
+    var lists = readStore();
+    for (var i = 0; i < lists.length; i++) {
+      if (lists[i].id !== listId) continue;
+      for (var j = 0; j < lists[i].items.length; j++) {
+        if (lists[i].items[j].sku === sku) return true;
+      }
+      return false;
+    }
+    return false;
+  }
+
+  // Drop a single SKU from a specific list.
+  function removeItemFromList(listId, sku) {
+    if (!listId || !sku) return;
+    var lists = readStore();
+    for (var i = 0; i < lists.length; i++) {
+      if (lists[i].id !== listId) continue;
+      lists[i].items = lists[i].items.filter(function (it) { return it.sku !== sku; });
+      lists[i].updatedAt = Date.now();
+      break;
+    }
+    writeStore(lists);
+  }
+
   // ─────────────────────────── Helpers ─────────────────────────────
   function escapeHtml(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
@@ -160,7 +187,10 @@
   var ADDED_FLASH_MS = 800;
   var popover = null;
   var currentTrigger = null;
-  var recentlyAddedListId = null;
+  // Track the last list the user mutated + which way it went, so the
+  // popover can flash "Added" / "Removed" briefly on that row.
+  var recentlyChangedListId = null;
+  var recentlyChangedAction = null; // 'added' | 'removed' | null
 
   function ensurePopover() {
     if (popover) return popover;
@@ -198,25 +228,51 @@
       return;
     }
     body.className = 'pm-list-popover__body';
+    // Look up the trigger's SKU once so each row knows whether it
+    // already contains this product. That decides both the trailing
+    // icon (plus vs. check) AND the click action (add vs. remove).
+    var triggerSku = currentTrigger ? currentTrigger.getAttribute('data-item-sku') || '' : '';
     var html = '<ul class="pm-list-popover__list">';
     for (var i = 0; i < lists.length; i++) {
       var l = lists[i];
-      var justAdded = recentlyAddedListId === l.id;
+      var justChanged = recentlyChangedListId === l.id;
+      var inThisList = isSkuInList(l.id, triggerSku);
       var count = l.items.length;
+
+      // Trailing slot: shows "Added" / "Removed" flash after a click,
+      // otherwise a check (if the SKU is already in this list) or a
+      // plus (if it's not).
+      var trailing;
+      if (justChanged) {
+        trailing =
+          '<span class="pm-list-popover__added">' +
+            (recentlyChangedAction === 'removed'
+              ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>Removed'
+              : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Added') +
+          '</span>';
+      } else if (inThisList) {
+        trailing =
+          '<span class="pm-list-popover__check" aria-label="In this list — click to remove">' +
+            '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' +
+          '</span>';
+      } else {
+        trailing =
+          '<svg class="pm-list-popover__item-plus" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>';
+      }
+
       html +=
         '<li>' +
-          '<button type="button" class="pm-list-popover__item" data-list-id="' + escapeHtml(l.id) + '">' +
+          '<button type="button" ' +
+            'class="pm-list-popover__item' + (inThisList ? ' is-in-list' : '') + '" ' +
+            'data-list-id="' + escapeHtml(l.id) + '" ' +
+            'data-in-list="' + (inThisList ? '1' : '0') + '" ' +
+            'title="' + (inThisList ? 'Click to remove from this list' : 'Click to add to this list') + '"' +
+          '>' +
             '<span class="pm-list-popover__item-main">' +
               '<span class="pm-list-popover__item-name">' + escapeHtml(l.name) + '</span>' +
               '<span class="pm-list-popover__item-count">' + count + ' ' + (count === 1 ? 'item' : 'items') + '</span>' +
             '</span>' +
-            (justAdded
-              ? '<span class="pm-list-popover__added">' +
-                  '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' +
-                  'Added' +
-                '</span>'
-              : '<svg class="pm-list-popover__item-plus" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>'
-            ) +
+            trailing +
           '</button>' +
         '</li>';
     }
@@ -259,7 +315,7 @@
           var item = readItemFromTrigger(currentTrigger);
           if (item.sku) addItemToList(newList.id, item);
         }
-        flashAdded(newList.id);
+        flashChange(newList.id, 'added');
       });
       footer.querySelector('[data-cancel-create]').addEventListener('click', function () {
         renderPopoverFooter(false);
@@ -276,13 +332,16 @@
     }
   }
 
-  function flashAdded(listId) {
-    recentlyAddedListId = listId;
+  // Flash the row + auto-close. action: 'added' | 'removed'.
+  function flashChange(listId, action) {
+    recentlyChangedListId = listId;
+    recentlyChangedAction = action;
     renderPopoverBody();
     renderPopoverFooter(false);
     syncAllTriggers();
     setTimeout(function () {
-      recentlyAddedListId = null;
+      recentlyChangedListId = null;
+      recentlyChangedAction = null;
       closePopover();
     }, ADDED_FLASH_MS);
   }
@@ -319,16 +378,24 @@
       }
       return;
     }
-    // List-row click → add item to that list
+    // List-row click → TOGGLE this product in that list. If the SKU
+    // is already present we remove it; if not, we add it. Visual cue
+    // is the check icon next to the list name (rendered by
+    // renderPopoverBody when isSkuInList returns true).
     if (popover && popover.classList.contains('is-open')) {
       var row = e.target.closest('.pm-list-popover__item');
       if (row && currentTrigger) {
         e.preventDefault();
         var listId = row.getAttribute('data-list-id');
+        var inList = row.getAttribute('data-in-list') === '1';
         var item = readItemFromTrigger(currentTrigger);
-        if (item.sku) {
+        if (!item.sku) return;
+        if (inList) {
+          removeItemFromList(listId, item.sku);
+          flashChange(listId, 'removed');
+        } else {
           addItemToList(listId, item);
-          flashAdded(listId);
+          flashChange(listId, 'added');
         }
       }
     }
