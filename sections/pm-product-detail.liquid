@@ -83,6 +83,64 @@
 {%- endfor -%}
 
 <main class="pm-pdp">
+  {%- comment -%}
+    ── PDF datasheet payload ──
+    Structured JSON island the "Download datasheet (PDF)" button reads
+    from. Keeps the JS asset decoupled from rendered DOM markup —
+    swap the markup, the PDF still builds correctly from this data.
+
+    `description_html` is the raw HTML; the JS strips it client-side
+    via DOMParser so paragraph / list breaks survive. Specs come out
+    of the same `_specs_encoded` capture that drives the on-page
+    spec table, so the PDF matches what the buyer sees.
+  {%- endcomment -%}
+  {%- capture _specs_json -%}[
+  {%- assign _first_s = true -%}
+  {%- for pair in _spec_pairs -%}
+    {%- assign _kv = pair | split: '<<KV>>' -%}
+    {%- if _kv.size >= 2 -%}
+      {%- assign _kvn = _kv[0] | strip -%}
+      {%- assign _kvv = _kv[1] | strip -%}
+      {%- if _kvn != '' and _kvv != '' -%}
+        {%- unless _first_s %},{% endunless -%}
+        {%- assign _first_s = false -%}
+        {"name":{{ _kvn | json }},"value":{{ _kvv | json }}}
+      {%- endif -%}
+    {%- endif -%}
+  {%- endfor -%}
+  ]{%- endcapture -%}
+
+  {%- capture _features_json -%}[
+  {%- assign _first_f = true -%}
+  {%- for f in _features -%}
+    {%- assign _ft = f | strip -%}
+    {%- if _ft != '' -%}
+      {%- unless _first_f %},{% endunless -%}
+      {%- assign _first_f = false -%}
+      {{ _ft | json }}
+    {%- endif -%}
+  {%- endfor -%}
+  ]{%- endcapture -%}
+
+  <script id="pm-pdp-pdf-data" type="application/json">
+  {
+    "title": {{ product.title | json }},
+    "vendor": {{ product.vendor | default: '' | json }},
+    "sku": {{ _sku | default: '' | json }},
+    "mpn": {{ _mpn | default: '' | json }},
+    "upc": {{ _upc | default: '' | json }},
+    "price": {{ product.price | money | json }},
+    "url": {{ shop.url | append: product.url | json }},
+    "shop": {{ shop.name | json }},
+    "available": {% if _instock %}true{% else %}false{% endif %},
+    "stock": {{ _stock | default: 0 }},
+    "image": {% if product.featured_image %}{{ product.featured_image | image_url: width: 1200 | json }}{% else %}""{% endif %},
+    "description_html": {{ product.description | default: '' | json }},
+    "features": {{ _features_json }},
+    "specs": {{ _specs_json }}
+  }
+  </script>
+
   <div class="pm-container pm-pdp__top">
 
     {%- comment -%} ── Breadcrumb ───────────────────────────────────────────── {%- endcomment -%}
@@ -482,6 +540,30 @@
           >
             <svg width="{{ _quote_svg_size }}" height="{{ _quote_svg_size }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
             <span>Add to Quote</span>
+          </button>
+
+          {%- comment -%}
+            ── Download datasheet (PDF) ──
+            Client-side jsPDF build. Reads the #pm-pdp-pdf-data JSON
+            island and composes a branded one-/multi-page PDF with the
+            product's title, image, price, SKU/MPN/UPC, description,
+            key features, and full specs table. No vendor dependencies,
+            no Google search — the PDF is self-contained so buyers
+            can forward it to procurement / IT teams.
+          {%- endcomment -%}
+          <button
+            type="button"
+            class="pm-pdp__cta pm-pdp__cta--ghost pm-pdp__cta--pdf"
+            data-pm-pdp-pdf
+            aria-label="Download {{ product.title | escape }} datasheet as PDF"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <polyline points="14 2 14 8 20 8"/>
+              <polyline points="9 14 12 17 15 14"/>
+              <line x1="12" y1="11" x2="12" y2="17"/>
+            </svg>
+            <span data-pm-pdp-pdf-label>Download datasheet (PDF)</span>
           </button>
 
           <label class="pm-pdp__compare">
