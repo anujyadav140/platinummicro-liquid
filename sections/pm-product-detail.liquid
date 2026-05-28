@@ -34,6 +34,37 @@
 {%- endif -%}
 
 {%- comment -%}
+  ── Bundle modifiers (1:1 port of Hydrogen pm-bundle-options) ──
+  Admin contract — Shopify product metafields under the `pmb` namespace:
+    pmb.bundle_label            single_line_text   custom header text
+    pmb.bundle_max_quantity     number_integer     caps the total qty
+    pmb.bundle_discount_percent number_integer     % off base when ANY
+                                                   add-on is selected
+    pmb.bundle_products         list.product_reference  the catalog of
+                                                       pickable add-ons
+  When `bundle_products` is empty or unset, the bundle block doesn't
+  render at all — the buy-box reads as a non-bundle PDP.
+{%- endcomment -%}
+{%- assign _bundle_products = product.metafields.pmb.bundle_products.value -%}
+{%- assign _bundle_discount = product.metafields.pmb.bundle_discount_percent.value | default: 0 -%}
+{%- assign _bundle_max_qty  = product.metafields.pmb.bundle_max_quantity.value -%}
+{%- assign _bundle_label    = product.metafields.pmb.bundle_label.value -%}
+{%- assign _has_bundle = false -%}
+{%- if _bundle_products and _bundle_products.size > 0 -%}
+  {%- assign _has_bundle = true -%}
+{%- endif -%}
+
+{%- comment -%} Display title: admin label > auto label > generic fallback {%- endcomment -%}
+{%- assign _bundle_title = _bundle_label -%}
+{%- if _bundle_title == blank -%}
+  {%- if _bundle_discount > 0 -%}
+    {%- assign _bundle_title = 'BUNDLE AND GET ' | append: _bundle_discount | append: '% OFF' -%}
+  {%- else -%}
+    {%- assign _bundle_title = 'BUNDLE WITH ADD-ONS' -%}
+  {%- endif -%}
+{%- endif -%}
+
+{%- comment -%}
   ── Specs sourcing ──
   Delegate to `pm-pdp-specs-build` (ports the Hydrogen pm-product-by-slug
   extractor). It probes BC-style aggregate metafields, Shopify category
@@ -211,6 +242,11 @@
             {%- else -%}
               <div class="pm-pdp__price" id="pm-pdp-price">{{ product.price | money }}</div>
             {%- endif -%}
+            {%- if _has_bundle -%}
+              <div class="pm-pdp__price-bundle-note" data-pm-pdp-bundle-note hidden>
+                Includes {{ product.price | money }} base + bundle add-ons
+              </div>
+            {%- endif -%}
           </div>
 
           {%- if _upc != blank -%}
@@ -234,6 +270,112 @@
 
         {%- comment -%} ── Buy-box card ──────────────────────────────── {%- endcomment -%}
         <aside class="pm-pdp__buybox">
+
+          {%- comment -%}
+            ── Bundle modifiers (top of buy-box) ──
+            Server renders the option rows; JS in the inline script
+            below handles selection state, qty stepping, live total
+            recompute, and threading the add-on into the cart-add
+            payload. Hidden entirely when no bundle metafields set.
+          {%- endcomment -%}
+          {%- if _has_bundle -%}
+            <div
+              class="pm-pdp__bundle"
+              data-pm-pdp-bundle
+              data-base-variant-id="{{ _v.id }}"
+              data-base-price-cents="{{ product.price }}"
+              data-discount-pct="{{ _bundle_discount }}"
+              {%- if _bundle_max_qty %} data-max-qty="{{ _bundle_max_qty }}"{%- endif %}
+            >
+              <header class="pm-pdp__bundle-head">
+                <h3 class="pm-pdp__bundle-eyebrow">{{ _bundle_title }}</h3>
+              </header>
+              <ul class="pm-pdp__bundle-list" role="radiogroup" aria-label="Bundle options">
+                {%- comment -%} "None" row — base product only, no add-on {%- endcomment -%}
+                <li class="pm-pdp__bundle-row is-selected" data-pm-bundle-row data-value-id="none">
+                  <button
+                    type="button"
+                    class="pm-pdp__bundle-btn"
+                    data-pm-bundle-select
+                    role="radio"
+                    aria-checked="true"
+                  >
+                    <span class="pm-pdp__bundle-indicator" aria-hidden="true">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                    </span>
+                    <div class="pm-pdp__bundle-info">
+                      <span class="pm-pdp__bundle-name">None</span>
+                      <span class="pm-pdp__bundle-sub">Just the base product</span>
+                    </div>
+                  </button>
+                </li>
+
+                {%- for ref in _bundle_products -%}
+                  {%- assign _ref_v = ref.selected_or_first_available_variant -%}
+                  {%- if _ref_v -%}
+                    <li
+                      class="pm-pdp__bundle-row"
+                      data-pm-bundle-row
+                      data-value-id="{{ ref.id }}"
+                      data-add-on-variant-id="{{ _ref_v.id }}"
+                      data-add-on-price-cents="{{ _ref_v.price }}"
+                      data-add-on-sku="{{ _ref_v.sku | escape }}"
+                      data-add-on-name="{{ ref.title | escape }}"
+                    >
+                      <button
+                        type="button"
+                        class="pm-pdp__bundle-btn"
+                        data-pm-bundle-select
+                        role="radio"
+                        aria-checked="false"
+                      >
+                        <span class="pm-pdp__bundle-indicator" aria-hidden="true">
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>
+                        </span>
+                        {%- if ref.featured_image -%}
+                          <span class="pm-pdp__bundle-img">
+                            <img src="{{ ref.featured_image | image_url: width: 80 }}" alt="" width="40" height="40" loading="lazy">
+                          </span>
+                        {%- endif -%}
+                        <div class="pm-pdp__bundle-info">
+                          <span class="pm-pdp__bundle-name">{{ ref.title }}</span>
+                          <div class="pm-pdp__bundle-meta">
+                            {%- if _ref_v.sku != blank -%}
+                              <span class="pm-pdp__bundle-sub">{{ _ref_v.sku }}{% unless _ref_v.available %} · <span class="pm-pdp__bundle-oos">Out of stock</span>{% endunless %}</span>
+                            {%- endif -%}
+                            <span class="pm-pdp__bundle-price">{{ _ref_v.price | money }} each</span>
+                          </div>
+                        </div>
+                      </button>
+
+                      {%- comment -%}
+                        Qty expansion — hidden until the row is selected.
+                        JS toggles the `is-open` class on the parent row
+                        which reveals this block via CSS.
+                      {%- endcomment -%}
+                      <div class="pm-pdp__bundle-expand">
+                        <div class="pm-pdp__bundle-qty-wrap">
+                          <span class="pm-pdp__bundle-qty-label">Quantity</span>
+                          <div class="pm-pdp__bundle-qty">
+                            <button type="button" data-pm-bundle-qty="-1" aria-label="Decrease bundle quantity">−</button>
+                            <input type="number" min="1" value="1" data-pm-bundle-qty-input aria-label="Bundle quantity">
+                            <button type="button" data-pm-bundle-qty="1" aria-label="Increase bundle quantity">+</button>
+                          </div>
+                          {%- if _bundle_max_qty -%}
+                            <span class="pm-pdp__bundle-qty-cap">of {{ _bundle_max_qty }}</span>
+                          {%- endif -%}
+                        </div>
+                        <div class="pm-pdp__bundle-addon">
+                          <div class="pm-pdp__bundle-addon-label">Add-on</div>
+                          <div class="pm-pdp__bundle-addon-total" data-pm-bundle-addon-total>+{{ _ref_v.price | money }}</div>
+                        </div>
+                      </div>
+                    </li>
+                  {%- endif -%}
+                {%- endfor -%}
+              </ul>
+            </div>
+          {%- endif -%}
 
           {%- if product.has_only_default_variant == false -%}
             <div class="pm-pdp__options" id="pm-pdp-options">
@@ -556,39 +698,221 @@
     });
   }
 
-  // ── Add to cart: respect the PDP quantity (pm-add-to-cart.js posts qty=1) ──
+  // ─────────────────────────────────────────────────────────────────
+  // BUNDLE MODIFIERS — 1:1 port of Hydrogen pm-bundle-options
+  // ─────────────────────────────────────────────────────────────────
+  // Reads the `pmb.*` metafields rendered into data-attrs on the
+  // .pm-pdp__bundle root. Tracks selected add-on + its quantity, and
+  // recomputes the live PDP price as:
+  //   discounted base + (addOnPrice × qty)
+  // On Add-to-Cart, the picked add-on is appended as a second cart
+  // line so checkout sees both base and add-on as discrete items.
+  var bundleRoot = document.querySelector('[data-pm-pdp-bundle]');
+  var bundleState = { row: null }; // selected row element, null = None
+  var bundleNote  = document.querySelector('[data-pm-pdp-bundle-note]');
+  var priceEl     = document.getElementById('pm-pdp-price');
+
+  function moneyFmt(cents) {
+    try {
+      return new Intl.NumberFormat(undefined, {
+        style: 'currency',
+        currency: (window.Shopify && Shopify.currency && Shopify.currency.active) || 'USD'
+      }).format(cents / 100);
+    } catch (e) { return '$' + (cents / 100).toFixed(2); }
+  }
+
+  function basePriceCents() {
+    if (!bundleRoot) return null;
+    return parseInt(bundleRoot.getAttribute('data-base-price-cents'), 10) || 0;
+  }
+  function discountPct() {
+    if (!bundleRoot) return 0;
+    return parseFloat(bundleRoot.getAttribute('data-discount-pct')) || 0;
+  }
+  function bundleMaxQty() {
+    if (!bundleRoot) return null;
+    var m = parseInt(bundleRoot.getAttribute('data-max-qty'), 10);
+    return isNaN(m) ? null : m;
+  }
+  function getRowQty(row) {
+    if (!row) return 0;
+    var input = row.querySelector('[data-pm-bundle-qty-input]');
+    return input ? Math.max(1, parseInt(input.value, 10) || 1) : 1;
+  }
+  function getRowAddOnCents(row) {
+    if (!row) return 0;
+    return parseInt(row.getAttribute('data-add-on-price-cents'), 10) || 0;
+  }
+
+  // Picked add-on as { variantId, sku, name, qty, lineCents } or null
+  function currentBundlePick() {
+    if (!bundleRoot || !bundleState.row) return null;
+    var row = bundleState.row;
+    if (row.getAttribute('data-value-id') === 'none') return null;
+    var qty = getRowQty(row);
+    var unitCents = getRowAddOnCents(row);
+    return {
+      variantId: row.getAttribute('data-add-on-variant-id'),
+      sku:       row.getAttribute('data-add-on-sku'),
+      name:      row.getAttribute('data-add-on-name'),
+      qty:       qty,
+      unitCents: unitCents,
+      lineCents: unitCents * qty
+    };
+  }
+
+  function recomputeBundlePrice() {
+    if (!bundleRoot || !priceEl) return;
+    var base = basePriceCents();
+    var d    = discountPct();
+    var pick = currentBundlePick();
+    var hasPick = !!pick;
+    // Discount applies to the BASE product only, and only when an
+    // add-on is actually selected (matches Hydrogen semantics).
+    var baseAfter = hasPick ? Math.round(base * (1 - d / 100)) : base;
+    var addOn     = hasPick ? pick.lineCents : 0;
+    priceEl.textContent = moneyFmt(baseAfter + addOn);
+    if (bundleNote) {
+      if (hasPick) bundleNote.removeAttribute('hidden');
+      else bundleNote.setAttribute('hidden', '');
+    }
+    // Update the per-row add-on total label.
+    if (hasPick) {
+      var row = bundleState.row;
+      var totalEl = row.querySelector('[data-pm-bundle-addon-total]');
+      if (totalEl) totalEl.textContent = '+' + moneyFmt(pick.lineCents);
+    }
+  }
+
+  function selectBundleRow(row) {
+    if (!bundleRoot) return;
+    bundleRoot.querySelectorAll('[data-pm-bundle-row]').forEach(function (r) {
+      r.classList.toggle('is-selected', r === row);
+      var btn = r.querySelector('[data-pm-bundle-select]');
+      if (btn) btn.setAttribute('aria-checked', r === row ? 'true' : 'false');
+    });
+    bundleState.row = row;
+    recomputeBundlePrice();
+  }
+
+  if (bundleRoot) {
+    // Default selection = "None" row, already marked .is-selected server-side.
+    bundleState.row = bundleRoot.querySelector('[data-pm-bundle-row].is-selected');
+
+    bundleRoot.addEventListener('click', function (e) {
+      var selectBtn = e.target.closest('[data-pm-bundle-select]');
+      if (selectBtn) {
+        var row = selectBtn.closest('[data-pm-bundle-row]');
+        if (row) selectBundleRow(row);
+        return;
+      }
+      var qBtn = e.target.closest('[data-pm-bundle-qty]');
+      if (qBtn) {
+        var row2 = qBtn.closest('[data-pm-bundle-row]');
+        if (!row2) return;
+        var input = row2.querySelector('[data-pm-bundle-qty-input]');
+        if (!input) return;
+        var d = parseInt(qBtn.getAttribute('data-pm-bundle-qty'), 10) || 0;
+        var v = (parseInt(input.value, 10) || 1) + d;
+        var cap = bundleMaxQty();
+        if (cap != null) v = Math.min(v, cap);
+        v = Math.max(1, v);
+        input.value = v;
+        // Picking qty on an unselected row also selects it.
+        if (row2 !== bundleState.row) selectBundleRow(row2);
+        else recomputeBundlePrice();
+      }
+    });
+
+    bundleRoot.addEventListener('input', function (e) {
+      var input = e.target.closest('[data-pm-bundle-qty-input]');
+      if (!input) return;
+      var row = input.closest('[data-pm-bundle-row]');
+      if (!row) return;
+      var cap = bundleMaxQty();
+      var v = parseInt(input.value, 10) || 1;
+      if (cap != null) v = Math.min(v, cap);
+      v = Math.max(1, v);
+      input.value = v;
+      if (row !== bundleState.row) selectBundleRow(row);
+      else recomputeBundlePrice();
+    });
+  }
+
+  // ─────────────────────────────────────────────────────────────────
+  // Add to cart — bundle-aware. Always intercepts when there's a
+  // bundle pick (multi-line payload) OR qty > 1; otherwise falls
+  // through to pm-add-to-cart.js's universal handler.
+  // ─────────────────────────────────────────────────────────────────
   if (addBtn) {
     addBtn.addEventListener('click', function (e) {
       var n = parseInt(qty && qty.value, 10) || 1;
-      if (n > 1) {
-        e.stopImmediatePropagation();
-        e.preventDefault();
-        addBtn.dataset.busy = '1';
-        addBtn.disabled = true;
-        var label = addBtn.querySelector('span');
-        var orig = label ? label.textContent : '';
-        if (label) label.textContent = 'Adding…';
-        fetch('/cart/add.js', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({ items: [{ id: parseInt(addBtn.getAttribute('data-variant-id'), 10), quantity: n }] })
+      var pick = currentBundlePick();
+      if (n <= 1 && !pick) return; // let pm-add-to-cart.js handle the simple case
+
+      e.stopImmediatePropagation();
+      e.preventDefault();
+      addBtn.dataset.busy = '1';
+      addBtn.disabled = true;
+      var label = addBtn.querySelector('span');
+      var orig = label ? label.textContent : '';
+      if (label) label.textContent = 'Adding…';
+
+      var items = [
+        {
+          id: parseInt(addBtn.getAttribute('data-variant-id'), 10),
+          quantity: n,
+          properties: pick ? { '_bundle': 'base', '_bundle_addon_sku': pick.sku } : undefined
+        }
+      ];
+      if (pick) {
+        items.push({
+          id: parseInt(pick.variantId, 10),
+          // Each base unit gets `pick.qty` of the add-on (matches
+          // Hydrogen behavior — bundles 2 base products with a
+          // 3-pack add-on → 6 add-on units total).
+          quantity: pick.qty * n,
+          properties: { '_bundle': 'addon', '_bundle_base_sku': (addBtn.getAttribute('data-variant-sku') || '') }
+        });
+      }
+
+      var fetchOpts = {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({ items: items })
+      };
+
+      fetch('/cart/add.js', fetchOpts)
+        .then(function (r) { if (!r.ok) throw new Error('fail'); return r.json(); })
+        .then(function () {
+          // If a bundle pick was added, record a cart note so sales
+          // sees the discount intent at order review. Shopify carts
+          // can't natively apply a per-line discount without a
+          // Function/Script; this leaves a clear paper trail.
+          if (pick && discountPct() > 0) {
+            return fetch('/cart/update.js', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+              body: JSON.stringify({
+                note: 'Bundle: apply ' + discountPct() + '% discount on base SKU. Add-on ' + pick.sku + ' × ' + (pick.qty * n) + '.'
+              })
+            });
+          }
         })
-          .then(function (r) { if (!r.ok) throw new Error('fail'); return r.json(); })
-          .then(function () {
-            if (label) label.textContent = 'Added';
-            document.dispatchEvent(new CustomEvent('pm:cart-changed', { detail: { source: 'pdp', addedCount: n } }));
-            setTimeout(function () {
-              if (label) label.textContent = orig || 'Add to Cart';
-              addBtn.disabled = false;
-              addBtn.dataset.busy = '0';
-            }, 900);
-          })
-          .catch(function () {
+        .then(function () {
+          if (label) label.textContent = 'Added';
+          document.dispatchEvent(new CustomEvent('pm:cart-changed', { detail: { source: 'pdp', addedCount: n } }));
+          setTimeout(function () {
             if (label) label.textContent = orig || 'Add to Cart';
             addBtn.disabled = false;
             addBtn.dataset.busy = '0';
-          });
-      }
+          }, 900);
+        })
+        .catch(function () {
+          if (label) label.textContent = orig || 'Add to Cart';
+          addBtn.disabled = false;
+          addBtn.dataset.busy = '0';
+        });
     }, true);
   }
 
