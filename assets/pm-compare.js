@@ -171,10 +171,42 @@
   }
   window.PmCompare.fetchProduct = fetchProduct;
 
+  // ── Spec map (sidecar JSON, same source PDP uses) ────────────────────
+  // Keyed by product handle → array of {name, value} pairs. Loaded once
+  // per page, cached in sessionStorage across navigations.
+  var specMap = null;
+  var specMapPromise = null;
+  function loadSpecMap(url) {
+    if (specMap !== null) return Promise.resolve(specMap);
+    if (specMapPromise) return specMapPromise;
+    if (!url) { specMap = {}; return Promise.resolve({}); }
+    var cacheKey = 'pm-specs-v1:' + url;
+    try {
+      var raw = sessionStorage.getItem(cacheKey);
+      if (raw) { specMap = JSON.parse(raw); return Promise.resolve(specMap); }
+    } catch (e) { /* ignore */ }
+    specMapPromise = fetch(url, { cache: 'force-cache' })
+      .then(function (r) { return r.ok ? r.json() : {}; })
+      .then(function (map) {
+        specMap = (map && typeof map === 'object') ? map : {};
+        try { sessionStorage.setItem(cacheKey, JSON.stringify(specMap)); } catch (e) {}
+        return specMap;
+      })
+      .catch(function () { specMap = {}; return {}; });
+    return specMapPromise;
+  }
+  function specsForHandle(handle) {
+    var arr = (specMap && specMap[handle]) || [];
+    if (!Array.isArray(arr)) return [];
+    return arr.filter(function (s) { return s && s.name && s.value; });
+  }
+
   // ── /pages/compare page renderer ─────────────────────────────────────
   function initComparePage() {
     var grid = document.getElementById('pm-cmp-grid');
     if (!grid) return;
+    var root = document.getElementById('pm-cmp');
+    var specsAsset = root ? root.getAttribute('data-specs-asset') : '';
 
     function moneyFmt(cents) {
       if (cents == null) return '';
@@ -211,8 +243,15 @@
       );
     }
 
+    // Build the comparison rows. Combines the always-rendered base rows
+    // (Brand/SKU/Price/etc.) with the rich spec rows pulled out of the
+    // pm-product-specs.json sidecar — the same source the PDP uses for
+    // its Specifications table. The union below preserves spec ORDER
+    // from whichever product introduced each name first, so server
+    // gear lines up its CPU / Memory / Storage in the natural reading
+    // sequence rather than alphabetically.
     function specRows(products) {
-      var rows = [
+      var base = [
         { label: 'Brand',        values: products.map(function (p) { return p.vendor || '—'; }) },
         { label: 'SKU',          values: products.map(function (p) { var v = (p.variants || [])[0] || {}; return v.sku || '—'; }) },
         { label: 'Price',        values: products.map(function (p) { var v = (p.variants || [])[0] || {}; return moneyFmt(p.price || v.price); }) },
@@ -220,7 +259,46 @@
         { label: 'Type',         values: products.map(function (p) { return p.type || '—'; }) },
         { label: 'Tags',         values: products.map(function (p) { return (p.tags || []).slice(0, 5).join(', ') || '—'; }) }
       ];
-      // Strip rows where everything is "—"
+
+      // Per-product specs, normalized once so the inner loop stays cheap.
+      var perProductSpecs = products.map(function (p) {
+        return specsForHandle(p.handle);
+      });
+
+      // Union of spec names across all compared products, preserving
+      // first-seen order. Match keys are lowercased + collapsed-space so
+      // "CPU Cores" and "Cpu  cores" merge into one row.
+      var seen = {};
+      var orderedNames = [];
+      perProductSpecs.forEach(function (specs) {
+        specs.forEach(function (s) {
+          var key = String(s.name).toLowerCase().replace(/\s+/g, ' ').trim();
+          if (!seen[key]) {
+            seen[key] = s.name; // remember the canonical casing from the first occurrence
+            orderedNames.push(key);
+          }
+        });
+      });
+
+      // For each unique spec name, build a row of N values (one per
+      // compared product). Missing → "—".
+      var specOnly = orderedNames.map(function (key) {
+        var label = seen[key];
+        var values = perProductSpecs.map(function (specs) {
+          var match = null;
+          for (var i = 0; i < specs.length; i++) {
+            var k = String(specs[i].name).toLowerCase().replace(/\s+/g, ' ').trim();
+            if (k === key) { match = specs[i]; break; }
+          }
+          return match ? match.value : '—';
+        });
+        return { label: label, values: values };
+      });
+
+      var rows = base.concat(specOnly);
+
+      // Strip rows where every value is "—" (otherwise we'd render
+      // empty placeholder rows for fields no compared product carries).
       return rows.filter(function (r) {
         return r.values.some(function (v) { return v && v !== '—'; });
       });
@@ -237,8 +315,11 @@
         return;
       }
       if (empty) empty.setAttribute('hidden', '');
-      Promise.all(items.map(fetchProduct)).then(function (products) {
-        products = products.filter(Boolean);
+      Promise.all([
+        Promise.all(items.map(fetchProduct)),
+        loadSpecMap(specsAsset)
+      ]).then(function (resolved) {
+        var products = resolved[0].filter(Boolean);
         if (title) {
           title.textContent = 'Compare ' + products.length + ' product' + (products.length === 1 ? '' : 's');
         }
