@@ -448,17 +448,41 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" class="pm-pdp__cta-caret"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
 
-          {%- if _instock -%}
-            <button type="button" class="pm-pdp__cta pm-pdp__cta--ghost" data-pm-add-to-quote title="Quote requests — coming with B2B Ninja">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-              <span>Add to Quote</span>
-            </button>
-          {%- else -%}
-            <button type="button" class="pm-pdp__cta pm-pdp__cta--quote" data-pm-add-to-quote title="Quote requests — coming with B2B Ninja">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-              <span>Add to Quote</span>
-            </button>
-          {%- endif -%}
+          {%- comment -%}
+            ── Add to Quote ──
+            Routes through pm-quote.js → drops into the local
+            pm:quote:v1 store → renders in the cart drawer as a Quote
+            line. Same `data-pm-quote-add` mechanism the OOS product
+            card uses (pm-product-card.liquid), so the PDP and PLP
+            paths are unified.
+
+            Quantity is read live from #pm-pdp-qty by pm-quote.js at
+            click time, so the buyer's selected qty applies.
+          {%- endcomment -%}
+          {%- assign _quote_btn_class = 'pm-pdp__cta pm-pdp__cta--ghost' -%}
+          {%- assign _quote_svg_size  = '14' -%}
+          {%- unless _instock -%}
+            {%- assign _quote_btn_class = 'pm-pdp__cta pm-pdp__cta--quote' -%}
+            {%- assign _quote_svg_size  = '15' -%}
+          {%- endunless -%}
+          <button
+            type="button"
+            class="{{ _quote_btn_class }}"
+            data-pm-quote-add
+            data-quote-sku="{{ _sku | escape }}"
+            data-quote-variant-id="{{ _v.id }}"
+            data-quote-product-id="{{ product.id }}"
+            data-quote-name="{{ product.title | escape }}"
+            data-quote-brand="{{ product.vendor | escape }}"
+            data-quote-image="{% if product.featured_image %}{{ product.featured_image | image_url: width: 200 }}{% endif %}"
+            data-quote-price="{{ product.price | money }}"
+            data-quote-price-cents="{{ product.price }}"
+            data-quote-href="{{ product.url }}"
+            aria-label="Add {{ product.title | escape }} to quote"
+          >
+            <svg width="{{ _quote_svg_size }}" height="{{ _quote_svg_size }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            <span>Add to Quote</span>
+          </button>
 
           <label class="pm-pdp__compare">
             <input type="checkbox" data-pm-compare data-product-handle="{{ product.handle }}">
@@ -580,6 +604,134 @@
       </div>
     </div>
   </section>
+
+  {%- comment -%}
+    ── Documentation band ──
+    Renders downloadable assets attached via the
+    `product.metafields.custom.documents` metafield (a list of
+    `pm_document` metaobject references — see admin setup notes
+    in the section comment header).
+
+    Each entry resolves to a URL (uploaded file wins over an
+    external link when both are set) and a category icon. Category
+    can be set explicitly on the metaobject (e.g. "datasheet",
+    "firmware") or inferred from the filename when blank.
+
+    Hidden entirely when no documents are attached.
+  {%- endcomment -%}
+  {%- assign _docs = product.metafields.custom.documents.value -%}
+  {%- if _docs and _docs.size > 0 -%}
+    <section class="pm-pdp__docs">
+      <div class="pm-container pm-pdp__docs-inner">
+        <header class="pm-pdp__docs-head">
+          <div>
+            <div class="pm-pdp__docs-eyebrow">Documentation</div>
+            <h2 class="pm-pdp__docs-title">Datasheets, manuals &amp; downloads</h2>
+          </div>
+          <span class="pm-pdp__docs-count">{{ _docs.size }} {% if _docs.size == 1 %}file{% else %}files{% endif %}</span>
+        </header>
+
+        <ul class="pm-pdp__docs-grid">
+          {%- for doc in _docs -%}
+            {%- comment -%}
+              Resolve URL: prefer uploaded file, fall back to external URL.
+              The file_reference Drop exposes .url + .size + .original_name;
+              external_url is a plain string.
+            {%- endcomment -%}
+            {%- assign _file     = doc.file -%}
+            {%- assign _file_url = '' -%}
+            {%- assign _file_size = 0 -%}
+            {%- assign _file_name = '' -%}
+            {%- if _file -%}
+              {%- assign _file_url  = _file.url -%}
+              {%- assign _file_size = _file.size | default: 0 -%}
+              {%- assign _file_name = _file.original_name | default: '' -%}
+            {%- endif -%}
+            {%- assign _ext_url   = doc.external_url -%}
+            {%- assign _doc_url   = _file_url | default: _ext_url -%}
+            {%- if _doc_url == blank -%}{%- continue -%}{%- endif -%}
+
+            {%- comment -%} Category — explicit field wins; otherwise sniff filename. {%- endcomment -%}
+            {%- assign _category = doc.category | downcase -%}
+            {%- if _category == blank -%}
+              {%- assign _name_lc = _file_name | append: ' ' | append: doc.label | downcase -%}
+              {%- if _name_lc contains 'datasheet' -%}{%- assign _category = 'datasheet' -%}
+              {%- elsif _name_lc contains 'firmware' -%}{%- assign _category = 'firmware' -%}
+              {%- elsif _name_lc contains 'driver' -%}{%- assign _category = 'driver' -%}
+              {%- elsif _name_lc contains 'manual' -%}{%- assign _category = 'manual' -%}
+              {%- elsif _name_lc contains 'warranty' -%}{%- assign _category = 'warranty' -%}
+              {%- elsif _name_lc contains 'compat' -%}{%- assign _category = 'compatibility' -%}
+              {%- elsif _name_lc contains 'quickspec' -%}{%- assign _category = 'datasheet' -%}
+              {%- else -%}{%- assign _category = 'other' -%}
+              {%- endif -%}
+            {%- endif -%}
+
+            {%- comment -%} Human-friendly file size if a Shopify file. {%- endcomment -%}
+            {%- assign _size_label = '' -%}
+            {%- if _file_size > 0 -%}
+              {%- if _file_size >= 1048576 -%}
+                {%- assign _mb = _file_size | divided_by: 104857.6 | round | divided_by: 10.0 -%}
+                {%- assign _size_label = _mb | append: ' MB' -%}
+              {%- elsif _file_size >= 1024 -%}
+                {%- assign _kb = _file_size | divided_by: 1024 -%}
+                {%- assign _size_label = _kb | append: ' KB' -%}
+              {%- endif -%}
+            {%- endif -%}
+
+            {%- comment -%} Extension for the secondary line. {%- endcomment -%}
+            {%- assign _ext = '' -%}
+            {%- if _file_name contains '.' -%}
+              {%- assign _ext_parts = _file_name | split: '.' -%}
+              {%- assign _ext = _ext_parts | last | upcase -%}
+            {%- endif -%}
+
+            <li class="pm-pdp__doc">
+              <a
+                href="{{ _doc_url }}"
+                class="pm-pdp__doc-link"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Download {{ doc.label | escape }}"
+              >
+                <span class="pm-pdp__doc-icon pm-pdp__doc-icon--{{ _category }}" aria-hidden="true">
+                  {%- case _category -%}
+                  {%- when 'datasheet' -%}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/><line x1="8" y1="9" x2="11" y2="9"/></svg>
+                  {%- when 'firmware' -%}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="2" x2="9" y2="4"/><line x1="15" y1="2" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="22"/><line x1="15" y1="20" x2="15" y2="22"/><line x1="20" y1="9" x2="22" y2="9"/><line x1="20" y1="14" x2="22" y2="14"/><line x1="2" y1="9" x2="4" y2="9"/><line x1="2" y1="14" x2="4" y2="14"/></svg>
+                  {%- when 'driver' -%}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4z"/></svg>
+                  {%- when 'manual' -%}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+                  {%- when 'warranty' -%}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>
+                  {%- when 'compatibility' -%}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                  {%- else -%}
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                  {%- endcase -%}
+                </span>
+                <span class="pm-pdp__doc-main">
+                  <span class="pm-pdp__doc-label">{{ doc.label }}</span>
+                  <span class="pm-pdp__doc-meta">
+                    {%- if _ext != '' -%}{{ _ext }}{%- elsif _file_url == '' -%}External link{%- else -%}File{%- endif -%}
+                    {%- if _size_label != '' %} · {{ _size_label }}{%- endif -%}
+                  </span>
+                </span>
+                <span class="pm-pdp__doc-arrow" aria-hidden="true">
+                  {%- if _file_url != '' -%}
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                  {%- else -%}
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                  {%- endif -%}
+                </span>
+              </a>
+            </li>
+          {%- endfor -%}
+        </ul>
+      </div>
+    </section>
+  {%- endif -%}
 
   {%- comment -%}
     ── Recently viewed strip ──
@@ -1089,17 +1241,8 @@
     }
   }
 
-  // ── Add to Quote — stub feedback until the B2B Ninja flow ships ──
-  // (Add to List has its own real flow in pm-add-to-list.js)
-  document.querySelectorAll('[data-pm-add-to-quote]').forEach(function (b) {
-    b.addEventListener('click', function () {
-      var s = b.querySelector('span');
-      if (!s) return;
-      var orig = s.textContent;
-      s.textContent = 'Saved';
-      setTimeout(function () { s.textContent = orig; }, 1200);
-    });
-  });
+  // Add to Quote is wired via the global pm-quote.js delegated
+  // [data-pm-quote-add] click handler — no per-PDP handler needed.
 })();
 </script>
 
