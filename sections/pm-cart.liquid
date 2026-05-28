@@ -431,10 +431,22 @@
   padding: 0 4px;
 }
 .pm-cart-row__remove {
+  /* Reset native button chrome so the <button> renders identical to
+     the <a> sibling on the stocked-items side. (When the JS-rendered
+     quote rows changed from <a href="#"> to <button> for a11y, the
+     browser's default button border + grey background became visible.) */
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
   font-size: 13px;
   color: var(--pm-ink-400);
   text-decoration: none;
   border-bottom: 1px solid var(--pm-ink-300);
+  line-height: 1.2;
 }
 .pm-cart-row__remove:hover { color: var(--pm-danger); border-bottom-color: var(--pm-danger); }
 
