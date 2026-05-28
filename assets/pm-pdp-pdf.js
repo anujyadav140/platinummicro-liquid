@@ -76,6 +76,70 @@
     return out;
   }
 
+  // Description HTML → spec rows by walking <strong>/<b>/headings as
+  // labels and collecting following sibling text as the value. Lets
+  // the PDF surface a spec table for products that don't have
+  // structured metafield specs but DO have label/value structure
+  // embedded in their description copy (very common for vendor feeds).
+  function extractSpecsFromHTML(html) {
+    if (!html) return [];
+    var docp;
+    try { docp = new DOMParser().parseFromString(html, 'text/html'); }
+    catch (e) { return []; }
+
+    var specs = [];
+    var seen  = {};
+    var BLOCK_RX = /^(STRONG|B|BR|HR|P|LI|UL|OL|H[1-6])$/;
+
+    var labels = docp.body.querySelectorAll('strong, b, h2, h3, h4, h5, h6');
+    labels.forEach(function (el) {
+      var rawLabel = (el.textContent || '').replace(/\s+/g, ' ').trim();
+      if (!rawLabel) return;
+      var label = rawLabel.replace(/[:：\-–—]+\s*$/, '').trim();
+      // Reject things that aren't spec labels.
+      if (label.length < 2 || label.length > 80) return;
+      if (/[.!?]\s/.test(label)) return;   // sentences
+      if (/^\d+$/.test(label))   return;   // pure numbers
+
+      // Walk siblings after the label until we hit another label/
+      // block break, collecting their text content as the value.
+      var value = '';
+      var node = el.nextSibling;
+      while (node) {
+        if (node.nodeType === 1 && BLOCK_RX.test(node.tagName)) break;
+        value += (node.textContent || '');
+        node = node.nextSibling;
+      }
+      value = value
+        .replace(/^[:：\s\-–—]+/, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (!value || value.length < 3 || value.length > 600) return;
+
+      var key = label.toLowerCase();
+      if (seen[key]) return;
+      seen[key] = true;
+      specs.push({ name: label, value: value });
+    });
+
+    return specs;
+  }
+
+  // Merge metafield-driven specs (high quality) with description-extracted
+  // specs (fallback). Metafield wins on duplicate labels.
+  function mergeSpecs(primary, fallback) {
+    var out  = primary.slice();
+    var seen = {};
+    primary.forEach(function (s) { if (s && s.name) seen[s.name.toLowerCase()] = true; });
+    fallback.forEach(function (s) {
+      if (s && s.name && !seen[s.name.toLowerCase()]) {
+        out.push(s);
+        seen[s.name.toLowerCase()] = true;
+      }
+    });
+    return out;
+  }
+
   // ── Image loader (canvas → data URL, handles CORS + transparency) ─────
   function fetchImageAsDataURL(url) {
     if (!url) return Promise.resolve(null);
@@ -143,14 +207,79 @@
   }
 
   function sectionHeader(doc, label, y, M, W) {
+    // Thin navy rule above the section title.
+    setRGB(doc, 'setDrawColor', NAVY);
+    doc.setLineWidth(1.1);
+    doc.line(M, y, W - M, y);
     doc.setFont('helvetica', 'bold');
-    doc.setFontSize(10);
+    doc.setFontSize(10.5);
     setRGB(doc, 'setTextColor', NAVY);
-    doc.text(label.toUpperCase(), M, y);
-    setRGB(doc, 'setDrawColor', INK_300);
-    doc.setLineWidth(0.5);
-    doc.line(M, y + 4, W - M, y + 4);
-    return y + 18;
+    doc.text(label.toUpperCase(), M, y + 16);
+    return y + 26;
+  }
+
+  // Modern, datasheet-style spec table.
+  // Uppercase navy label column on the left, value column on the right,
+  // alternating row tint + hairline dividers, navy rule top & bottom.
+  function renderSpecsTable(doc, specs, y, M, W, H) {
+    if (!specs.length) return y;
+
+    var labelW = Math.round((W - 2 * M) * 0.34);
+    var labelX = M + 10;
+    var valueX = M + labelW + 18;
+    var valueW = W - M - valueX - 8;
+
+    specs.forEach(function (s, i) {
+      var name  = String(s.name  || '').toUpperCase();
+      var value = String(s.value || '');
+
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      var nameLines = doc.splitTextToSize(name, labelW - 10);
+
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      var valueLines = doc.splitTextToSize(value, valueW);
+
+      var lineH = 13;
+      var rowH  = Math.max(nameLines.length, valueLines.length) * lineH + 14;
+
+      y = ensureSpace(doc, y, rowH + 2, M, H);
+
+      // Alternating tint on odd rows.
+      if (i % 2 === 1) {
+        setRGB(doc, 'setFillColor', ZEBRA);
+        doc.rect(M, y, W - 2 * M, rowH, 'F');
+      }
+
+      // Hairline above each row (except the first — the section
+      // header already drew the top rule).
+      if (i > 0) {
+        setRGB(doc, 'setDrawColor', INK_300);
+        doc.setLineWidth(0.3);
+        doc.line(M, y, W - M, y);
+      }
+
+      // Label
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(8.5);
+      setRGB(doc, 'setTextColor', NAVY);
+      doc.text(nameLines, labelX, y + 12);
+
+      // Value
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(10);
+      setRGB(doc, 'setTextColor', INK_700);
+      doc.text(valueLines, valueX, y + 12);
+
+      y += rowH;
+    });
+
+    // Thick navy bottom rule closes the table.
+    setRGB(doc, 'setDrawColor', NAVY);
+    doc.setLineWidth(0.8);
+    doc.line(M, y, W - M, y);
+    return y + 16;
   }
 
   // ── Main PDF build ────────────────────────────────────────────────────
@@ -253,21 +382,39 @@
         y = Math.max(afterAvailY + 8, y + (imgData ? imgBoxH : 0) + 12);
         y += 8;
 
+        // ── Resolve specs ──
+        // 1. Metafield-driven specs (highest quality, admin-curated).
+        // 2. <strong>/heading-extracted specs from description copy
+        //    (fallback for products like vendor-fed Asustor / NAS items
+        //    that wear their specs as bold-labelled marketing bullets).
+        var metafieldSpecs = (Array.isArray(data.specs) ? data.specs : []).filter(function (s) {
+          return s && s.name && s.value;
+        });
+        var descSpecs = (metafieldSpecs.length === 0)
+          ? extractSpecsFromHTML(data.description_html || '')
+          : [];
+        var allSpecs = mergeSpecs(metafieldSpecs, descSpecs);
+        // If the spec table was built from the description, skip rendering
+        // the description block to avoid showing the same content twice.
+        var descUsedForSpecs = descSpecs.length > 0 && metafieldSpecs.length === 0;
+
         // ── Description ──
-        var paras = parseDescriptionHTML(data.description_html || '');
-        if (paras.length) {
-          y = ensureSpace(doc, y, 60, M, H);
-          y = sectionHeader(doc, 'Description', y, M, W);
-          doc.setFont('helvetica', 'normal');
-          doc.setFontSize(10);
-          setRGB(doc, 'setTextColor', INK_700);
-          paras.forEach(function (p) {
-            var lines = doc.splitTextToSize(p, W - 2 * M);
-            y = ensureSpace(doc, y, lines.length * 13 + 6, M, H);
-            doc.text(lines, M, y);
-            y += lines.length * 13 + 6;
-          });
-          y += 8;
+        if (!descUsedForSpecs) {
+          var paras = parseDescriptionHTML(data.description_html || '');
+          if (paras.length) {
+            y = ensureSpace(doc, y, 60, M, H);
+            y = sectionHeader(doc, 'Description', y, M, W);
+            doc.setFont('helvetica', 'normal');
+            doc.setFontSize(10);
+            setRGB(doc, 'setTextColor', INK_700);
+            paras.forEach(function (p) {
+              var lines = doc.splitTextToSize(p, W - 2 * M);
+              y = ensureSpace(doc, y, lines.length * 13 + 6, M, H);
+              doc.text(lines, M, y);
+              y += lines.length * 13 + 6;
+            });
+            y += 8;
+          }
         }
 
         // ── Key features ──
@@ -286,32 +433,11 @@
           y += 8;
         }
 
-        // ── Specifications table ──
-        if (Array.isArray(data.specs) && data.specs.length) {
-          y = ensureSpace(doc, y, 60, M, H);
+        // ── Specifications (modern table) ──
+        if (allSpecs.length) {
+          y = ensureSpace(doc, y, 80, M, H);
           y = sectionHeader(doc, 'Specifications', y, M, W);
-          doc.setFont('helvetica', 'normal');
-          doc.setFontSize(10);
-          var col1X = M + 6;
-          var col2X = M + Math.round((W - 2 * M) * 0.40);
-          var col2W = W - M - col2X - 6;
-          data.specs.forEach(function (s, i) {
-            var nameLines  = doc.splitTextToSize(String(s.name  || ''), col2X - col1X - 8);
-            var valueLines = doc.splitTextToSize(String(s.value || ''), col2W);
-            var rowLines = Math.max(nameLines.length, valueLines.length);
-            var rowH = rowLines * 13 + 10;
-            y = ensureSpace(doc, y, rowH, M, H);
-            if (i % 2 === 0) {
-              setRGB(doc, 'setFillColor', ZEBRA);
-              doc.rect(M, y - 10, W - 2 * M, rowH, 'F');
-            }
-            setRGB(doc, 'setTextColor', INK_500);
-            doc.text(nameLines, col1X, y);
-            setRGB(doc, 'setTextColor', INK_700);
-            doc.text(valueLines, col2X, y);
-            y += rowH;
-          });
-          y += 12;
+          y = renderSpecsTable(doc, allSpecs, y, M, W, H);
         }
 
         // ── Footer on every page ──
