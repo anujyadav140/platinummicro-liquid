@@ -27,6 +27,31 @@
   templates/page.json, templates/index.json, brand pages, etc.).
 {%- endcomment -%}
 
+{%- comment -%}
+  ── Visibility filter ──
+  When `show_on_search_terms` is set, this section ONLY renders on the
+  search results page AND only when the search query contains that
+  text (case-insensitive). Lets one section instance be scoped to a
+  single brand (e.g. HEWLETT PACKARD ENTERPRISE) without polluting
+  other searches.
+
+  When the setting is blank, the section renders wherever it's placed
+  (homepage / pages / etc.) with no filter.
+{%- endcomment -%}
+{%- assign _scope = section.settings.show_on_search_terms | strip -%}
+{%- assign _render = true -%}
+{%- if _scope != blank -%}
+  {%- assign _render = false -%}
+  {%- if template == 'search' -%}
+    {%- assign _terms_lower = search.terms | default: '' | downcase -%}
+    {%- assign _scope_lower = _scope | downcase -%}
+    {%- if _terms_lower contains _scope_lower -%}
+      {%- assign _render = true -%}
+    {%- endif -%}
+  {%- endif -%}
+{%- endif -%}
+
+{%- if _render -%}
 <section class="pm-pbnr" style="{% if section.settings.section_bg != blank %}background:{{ section.settings.section_bg }};{% endif %}">
 
   {%- for block in section.blocks -%}
@@ -221,6 +246,7 @@
   {%- endfor -%}
 
 </section>
+{%- endif -%}
 
 <style>
 /* ─────────────────────────────────────────────────────────────────
@@ -543,6 +569,17 @@
       "id": "section_bg",
       "label": "Outer background (between bands)",
       "info": "Optional. Leave blank for default."
+    },
+    {
+      "type": "header",
+      "content": "Visibility"
+    },
+    {
+      "type": "text",
+      "id": "show_on_search_terms",
+      "label": "Only show on search results containing",
+      "info": "Optional. Leave blank to always show. When set, this section ONLY renders on /search results whose query contains this text (case-insensitive). Example: \"HEWLETT PACKARD ENTERPRISE\" scopes this banner to HPE-tagged product searches only.",
+      "default": ""
     }
   ],
   "blocks": [

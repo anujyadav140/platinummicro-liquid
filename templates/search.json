@@ -37,7 +37,9 @@
         "hero",
         "feature_partner"
       ],
-      "settings": {}
+      "settings": {
+        "show_on_search_terms": "HEWLETT PACKARD ENTERPRISE"
+      }
     },
     "pm-search": {
       "type": "pm-search",
