@@ -3459,13 +3459,58 @@ ul, ol { list-style: none; }
     padding: 0;
     margin: 0;
     width: 62px;
-    /* Sized to the new 4:3 hero so all 4–6 thumbs are visible without
-       clipping. Hero width ≈ 414px (488 gallery cap − 62 thumb col − 12
-       gap), so hero height at 4:3 ≈ 310px. Six 56px thumbs + 8px gaps =
-       6×56 + 5×8 = 376px, so we cap a touch tighter and let overflow-y
-       scroll the rest gracefully. */
-    max-height: 384px;
+    /* Sized to the 4:3 hero (~310px tall). Beyond 5 thumbs, the up/down
+       chevrons in .pm-pdp__thumbs-wrap take over so the buyer never sees
+       a clipped image — overflow-y: auto still works for wheel/keyboard. */
+    max-height: 312px;
   }
+}
+
+/* ── Thumb slider wrapper (chevron-controlled vertical scroll) ──
+   Wraps the thumb track on tablet+ so we can dock up/down arrows
+   above and below it. JS shows/hides each chevron based on the
+   track's current scroll position. On mobile the wrapper is
+   invisible (the chevrons are hidden) and the track scrolls
+   horizontally as before. */
+.pm-pdp__thumbs-wrap {
+  display: contents;
+}
+@media (min-width: 640px) {
+  .pm-pdp__thumbs-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+}
+.pm-pdp__thumbs-nav {
+  display: none;
+}
+@media (min-width: 640px) {
+  .pm-pdp__thumbs-nav {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 24px;
+    border: 1px solid var(--pm-ink-200);
+    border-radius: 6px;
+    background: #fff;
+    color: var(--pm-ink-600);
+    cursor: pointer;
+    transition: background var(--pm-dur-fast), border-color var(--pm-dur-fast), color var(--pm-dur-fast);
+  }
+  .pm-pdp__thumbs-nav:hover {
+    background: var(--pm-ink-100);
+    border-color: var(--pm-ink-300);
+    color: var(--pm-ink-900);
+  }
+  .pm-pdp__thumbs-nav:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+  }
+  .pm-pdp__thumbs-nav[hidden] { display: none; }
 }
 .pm-pdp__thumb {
   flex-shrink: 0;
