@@ -118,52 +118,23 @@
         {%- endcomment -%}
         <div class="pm-pdp__gallery-frame">
           {%- if product.images.size > 1 -%}
-            {%- comment -%}
-              Wrapper with chevron navigation. The thumbs container scrolls
-              naturally (mouse wheel, keyboard) and the buttons are a
-              click-friendly shortcut. JS hides each chevron at the edge
-              of its scroll range so users get a clean affordance for
-              "there's more this way / not this way".
-            {%- endcomment -%}
-            <div class="pm-pdp__thumbs-wrap" data-pm-pdp-thumbs-wrap>
-              <button
-                type="button"
-                class="pm-pdp__thumbs-nav pm-pdp__thumbs-nav--up"
-                data-pm-pdp-thumbs-scroll="-1"
-                aria-label="Scroll thumbnails up"
-                hidden
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
-              </button>
-
-              <div class="pm-pdp__thumbs" data-pm-pdp-thumbs-track>
-                {%- for image in product.images limit: 12 -%}
-                  <button
-                    type="button"
-                    class="pm-pdp__thumb{% if forloop.first %} is-active{% endif %}"
-                    data-pm-pdp-thumb="{{ image | image_url: width: 900 }}"
-                    aria-label="View image {{ forloop.index }}"
+            <div class="pm-pdp__thumbs">
+              {%- for image in product.images limit: 12 -%}
+                <button
+                  type="button"
+                  class="pm-pdp__thumb{% if forloop.first %} is-active{% endif %}"
+                  data-pm-pdp-thumb="{{ image | image_url: width: 900 }}"
+                  aria-label="View image {{ forloop.index }}"
+                >
+                  <img
+                    src="{{ image | image_url: width: 160 }}"
+                    alt="{{ image.alt | default: product.title | escape }}"
+                    loading="lazy"
+                    width="62"
+                    height="62"
                   >
-                    <img
-                      src="{{ image | image_url: width: 160 }}"
-                      alt="{{ image.alt | default: product.title | escape }}"
-                      loading="lazy"
-                      width="62"
-                      height="62"
-                    >
-                  </button>
-                {%- endfor -%}
-              </div>
-
-              <button
-                type="button"
-                class="pm-pdp__thumbs-nav pm-pdp__thumbs-nav--down"
-                data-pm-pdp-thumbs-scroll="1"
-                aria-label="Scroll thumbnails down"
-                hidden
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-              </button>
+                </button>
+              {%- endfor -%}
             </div>
           {%- endif -%}
 
@@ -630,41 +601,6 @@
     btn.addEventListener('mouseenter', swap);
   });
 
-  // ── Thumb slider chevrons (vertical scroll shortcut) ──
-  // Native overflow-y still works (mouse wheel, keyboard), the buttons
-  // are a click-friendly affordance for users who don't realize the
-  // column scrolls. Updates each chevron's `hidden` attr based on
-  // whether the track can scroll further in that direction.
-  var thumbsTrack = document.querySelector('[data-pm-pdp-thumbs-track]');
-  var thumbsUp    = document.querySelector('[data-pm-pdp-thumbs-scroll="-1"]');
-  var thumbsDown  = document.querySelector('[data-pm-pdp-thumbs-scroll="1"]');
-  if (thumbsTrack) {
-    var THUMB_STEP = 64; // one thumb height (56) + gap (8)
-
-    function syncThumbChevrons() {
-      var canScrollUp   = thumbsTrack.scrollTop > 4;
-      var canScrollDown = (thumbsTrack.scrollTop + thumbsTrack.clientHeight) < (thumbsTrack.scrollHeight - 4);
-      // The buttons are only relevant when the track actually overflows
-      // (more thumbs than the visible window). If no overflow, hide both.
-      var hasOverflow   = thumbsTrack.scrollHeight > thumbsTrack.clientHeight + 4;
-      if (thumbsUp)   thumbsUp.toggleAttribute('hidden',   !hasOverflow || !canScrollUp);
-      if (thumbsDown) thumbsDown.toggleAttribute('hidden', !hasOverflow || !canScrollDown);
-    }
-
-    [thumbsUp, thumbsDown].forEach(function (btn) {
-      if (!btn) return;
-      btn.addEventListener('click', function () {
-        var dir = parseInt(btn.getAttribute('data-pm-pdp-thumbs-scroll'), 10) || 1;
-        thumbsTrack.scrollBy({ top: dir * THUMB_STEP * 2, behavior: 'smooth' });
-      });
-    });
-
-    thumbsTrack.addEventListener('scroll', syncThumbChevrons);
-    window.addEventListener('resize', syncThumbChevrons);
-    // Initial sync after images load + layout settles.
-    setTimeout(syncThumbChevrons, 50);
-    window.addEventListener('load', syncThumbChevrons);
-  }
 
   // ── Hero hover-zoom (Amazon-style, cursor-tracked transform-origin) ──
   // Match the Hydrogen PmProductGallery: 2x scale on the <img>, origin
