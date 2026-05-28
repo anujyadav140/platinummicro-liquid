@@ -74,6 +74,13 @@
 
 <body class="pm-body" data-pm-customer="{{ customer.id | default: '' }}" data-pm-customer-name="{{ customer.first_name | default: '' | escape }}">
 
+  {%- comment -%}
+    Skip-to-main link — first focusable element on every page so keyboard
+    users can bypass the header + top-bar + mega-menu chrome on every
+    navigation. Visually hidden until focused; CSS in pm-theme.css.
+  {%- endcomment -%}
+  <a href="#MainContent" class="pm-skip-link">Skip to main content</a>
+
   {%- section 'pm-top-bar' -%}
 
   {%- section 'pm-header' -%}
@@ -105,7 +112,7 @@
           <a class="pm-mobile-nav__link" href="{{ link.url }}">{{ link.title }}</a>
         {%- endfor -%}
         <a class="pm-mobile-nav__link" href="/account" style="border-top: 2px solid var(--pm-ink-200);margin-top:8px;">Sign in</a>
-        <a class="pm-mobile-nav__link" href="#" data-cart-open>Cart ({{ cart.item_count }})</a>
+        <button type="button" class="pm-mobile-nav__link" data-cart-open>Cart ({{ cart.item_count }})</button>
       </div>
     </nav>
   </div>

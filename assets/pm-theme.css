@@ -5088,8 +5088,347 @@ a.pm-lists__row-name:hover { color: var(--pm-navy-mid); }
 .pm-lists__row-remove:hover { background: rgba(166, 61, 47, 0.1); color: var(--pm-danger); }
 
 /* ─────────────────────────────────────────────────────────────────────────
-   Customer auth pages — hover states (replaces inline onmouseover/onmouseout
-   handlers for CSP compliance + maintainability)
+   Customer auth pages (login / register / forgot-password)
+   Full CSS layer replacing inline styles in the auth section files.
+   Visual rules ONLY here — sections still own structural markup.
    ─────────────────────────────────────────────────────────────────── */
+
+/* Page wrapper */
+.pm-auth {
+  min-height: 100vh;
+  background: var(--pm-paper, #F5F3EF);
+  padding: 80px 16px;
+}
+.pm-auth--wide { padding: 48px 16px 80px; }
+.pm-auth__inner {
+  max-width: 480px;
+  margin: 0 auto;
+}
+.pm-auth__inner--wide { max-width: 720px; }
+
+/* Header block */
+.pm-auth__head { text-align: center; margin-bottom: 28px; }
+.pm-auth__head--lg { margin-bottom: 32px; }
+.pm-auth__eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--pm-tan, #C9A96E);
+  margin-bottom: 10px;
+}
+.pm-auth__title {
+  margin: 0 0 12px;
+  font-size: 28px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--pm-ink-900, #071525);
+}
+.pm-auth__title--lg { font-size: 30px; }
+.pm-auth__lead {
+  margin: 0 auto;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--pm-ink-500, #6B7280);
+  max-width: 560px;
+}
+.pm-auth__lead--lg { font-size: 15px; }
+
+/* Card container */
+.pm-auth__card {
+  background: #fff;
+  border: 1.5px solid var(--pm-ink-200, #E5E7EB);
+  border-radius: 16px;
+  padding: 36px 32px;
+  box-shadow: 0 4px 24px rgba(7, 21, 37, 0.06);
+}
+.pm-auth__card--lg { padding: 40px 36px; }
+
+/* Form sections + heads */
+.pm-auth__section { margin-bottom: 28px; }
+.pm-auth__section-head {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--pm-tan, #C9A96E);
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--pm-ink-100, #F3F4F6);
+}
+.pm-auth__stack { display: flex; flex-direction: column; gap: 16px; }
+.pm-auth__field-group { display: flex; flex-direction: column; gap: 6px; }
+.pm-auth__field-label {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--pm-ink-500, #6B7280);
+}
+
+/* Native select with arrow + :focus replaces onfocus/onblur */
+.pm-auth__select {
+  min-height: 44px;
+  width: 100%;
+  border-radius: 6px;
+  border: 1.5px solid var(--pm-ink-300, #D1D5DB);
+  background: #fff;
+  padding: 10px 36px 10px 16px;
+  font-size: 15px;
+  color: var(--pm-ink-900, #071525);
+  outline: none;
+  box-sizing: border-box;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.pm-auth__select:focus {
+  border-color: var(--pm-navy-light, #2E6DB4);
+  box-shadow: 0 0 0 3px rgba(46, 109, 180, 0.15);
+}
+
+/* Checkbox rows */
+.pm-auth__checks { display: flex; flex-direction: column; gap: 12px; margin-bottom: 28px; }
+.pm-auth__check-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+.pm-auth__check {
+  width: 16px;
+  height: 16px;
+  margin-top: 2px;
+  accent-color: var(--pm-terracotta, #C0392B);
+  flex-shrink: 0;
+}
+.pm-auth__check-text {
+  font-size: 13px;
+  color: var(--pm-ink-600, #4B5563);
+  line-height: 1.5;
+}
+.pm-auth__inline-link {
+  color: var(--pm-terracotta, #C0392B);
+  text-decoration: underline;
+}
+.pm-auth__req { color: var(--pm-danger, #DC2626); }
+
+/* Alert banners (success / error) */
+.pm-auth__alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border-radius: 8px;
+  padding: 14px 16px;
+  margin-bottom: 24px;
+  border: 1.5px solid transparent;
+}
+.pm-auth__alert--lg { padding: 16px 18px; }
+.pm-auth__alert--error   { background: #FEF2F2; border-color: #FCA5A5; }
+.pm-auth__alert--success { background: #F0FDF4; border-color: #86EFAC; }
+.pm-auth__alert-icon { flex-shrink: 0; margin-top: 1px; }
+.pm-auth__alert--error   .pm-auth__alert-icon   { color: #DC2626; }
+.pm-auth__alert--success .pm-auth__alert-icon   { color: #16A34A; }
+.pm-auth__alert-title { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.pm-auth__alert--error   .pm-auth__alert-title  { color: #B91C1C; }
+.pm-auth__alert--success .pm-auth__alert-title  { color: #15803D; font-size: 14px; margin-bottom: 2px; }
+.pm-auth__alert-msg { font-size: 13px; }
+.pm-auth__alert--error   .pm-auth__alert-msg    { color: #991B1B; }
+.pm-auth__alert--success .pm-auth__alert-msg    { color: #166534; }
+
+/* Submit button — base styles, branded variants for terracotta + navy */
+.pm-auth__submit {
+  width: 100%;
+  border: none;
+  border-radius: 8px;
+  padding: 14px 24px;
+  font-size: 15px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #fff;
+  transition: opacity 0.15s;
+}
 .pm-auth__submit:hover { opacity: 0.88; }
-.pm-auth__sign-in-link:hover { border-bottom-color: var(--pm-terracotta, #C0392B) !important; }
+.pm-auth__submit:focus-visible {
+  outline: 3px solid rgba(46, 109, 180, 0.4);
+  outline-offset: 2px;
+}
+.pm-auth__submit--navy       { background: var(--pm-navy, #071525); }
+.pm-auth__submit--terracotta { background: var(--pm-terracotta, #C0392B); }
+
+/* Small print + footer link */
+.pm-auth__small {
+  font-size: 12px;
+  color: var(--pm-ink-400, #9CA3AF);
+  text-align: center;
+  margin-top: 12px;
+  line-height: 1.5;
+}
+.pm-auth__footer-block {
+  text-align: center;
+  padding-top: 24px;
+  border-top: 1px solid var(--pm-ink-100, #F3F4F6);
+  margin-top: 8px;
+}
+.pm-auth__footer-block--bare { padding-top: 0; border-top: 0; margin-top: 20px; }
+.pm-auth__footer-text {
+  font-size: 13px;
+  color: var(--pm-ink-500, #6B7280);
+}
+.pm-auth__footer-text--lg { font-size: 14px; }
+.pm-auth__sign-in-link {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pm-terracotta, #C0392B);
+  text-decoration: none;
+  margin-left: 6px;
+  border-bottom: 1.5px solid transparent;
+  transition: border-color 0.15s;
+}
+.pm-auth__sign-in-link--lg { font-size: 14px; }
+.pm-auth__sign-in-link:hover { border-bottom-color: var(--pm-terracotta, #C0392B); }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   A11y — keyboard-focus rings
+   Using :focus-visible (not :focus) so the ring only appears for keyboard
+   navigation, not on mouse click. Layered below other styles so the
+   element's own focus style still wins when one exists.
+   ─────────────────────────────────────────────────────────────────── */
+:where(a, button, [role="button"], [role="menuitem"], [tabindex]):focus-visible {
+  outline: 3px solid rgba(46, 109, 180, 0.55);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+:where(input, select, textarea):focus-visible {
+  outline: 3px solid rgba(46, 109, 180, 0.35);
+  outline-offset: 1px;
+}
+/* Drop the default focus ring on these elements when mouse-clicked
+   (most browsers do this already; this is belt + suspenders). */
+:where(button, [role="button"]):focus:not(:focus-visible) {
+  outline: none;
+}
+/* High-contrast bump for dark backgrounds */
+.pm-static__hero :focus-visible,
+.pm-pbnr-hero :focus-visible,
+.pm-pbnr-ctab :focus-visible,
+.pm-pdp__buybox :focus-visible {
+  outline-color: rgba(255, 255, 255, 0.85);
+}
+/* Skip-link style — make our mobile-nav cart trigger render like the
+   other nav links rather than a default button. */
+.pm-mobile-nav__link {
+  background: none;
+  border: none;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  padding: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Skip-to-main link (visible on keyboard focus only)
+   ─────────────────────────────────────────────────────────────────── */
+.pm-skip-link {
+  position: absolute;
+  top: -64px;
+  left: 16px;
+  z-index: 9999;
+  background: var(--pm-navy-deep, #0D2340);
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: top 120ms;
+}
+.pm-skip-link:focus,
+.pm-skip-link:focus-visible {
+  top: 12px;
+  outline: 3px solid rgba(255, 255, 255, 0.85);
+  outline-offset: 2px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Form field snippet (snippets/pm-form-field.liquid)
+   Replaces inline styles + onfocus/onblur. Error / hint / focus states
+   handled in CSS so the snippet markup stays clean.
+   ─────────────────────────────────────────────────────────────────── */
+.pm-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.pm-field__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.pm-field__label {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--pm-ink-500);
+}
+.pm-field__required {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--pm-tan);
+}
+.pm-field__input,
+.pm-field__textarea {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 6px;
+  border: 1.5px solid var(--pm-ink-300);
+  background: #fff;
+  padding: 10px 16px;
+  font-size: 15px;
+  color: var(--pm-ink-900);
+  outline: none;
+  box-sizing: border-box;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  font-family: inherit;
+}
+.pm-field__textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+.pm-field__input:focus,
+.pm-field__textarea:focus {
+  border-color: var(--pm-navy-light, #2E6DB4);
+  box-shadow: 0 0 0 3px rgba(46, 109, 180, 0.15);
+}
+.pm-field__input[aria-invalid="true"],
+.pm-field__textarea[aria-invalid="true"] { border-color: var(--pm-danger); }
+.pm-field__input[aria-invalid="true"]:focus,
+.pm-field__textarea[aria-invalid="true"]:focus {
+  border-color: var(--pm-danger);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.18);
+}
+.pm-field__error {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: var(--pm-danger);
+}
+.pm-field__hint {
+  margin: 2px 0 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--pm-ink-500);
+}

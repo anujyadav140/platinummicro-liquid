@@ -1,17 +1,24 @@
 {%- comment -%}
-  PM Form Field snippet — direct port of PmFormField React component.
+  PM Form Field snippet — accessible, class-driven form input.
   Usage:
     {%- render 'pm-form-field',
-        label:       'Email address',
-        name:        'customer[email]',
-        type:        'email',
-        required:    true,
-        placeholder: 'you@company.com',
+        label:        'Email address',
+        name:         'customer[email]',
+        type:         'email',
+        required:     true,
+        placeholder:  'you@company.com',
         autocomplete: 'email',
-        value:       '',
-        error:       form.errors.messages['email'],
-        hint:        ''
+        value:        '',
+        error:        form.errors.messages['email'],
+        hint:         ''
     -%}
+  Styling: .pm-field-* classes in pm-theme.css.
+  ARIA:
+    - label[for] ↔ input[id]
+    - aria-required when required
+    - aria-invalid when error
+    - aria-describedby linking the input to its hint OR error message
+      so screen readers announce it on focus.
 {%- endcomment -%}
 
 {%- assign _type        = type        | default: 'text' -%}
@@ -21,15 +28,18 @@
 {%- assign _error       = error       | default: '' -%}
 {%- assign _hint        = hint        | default: '' -%}
 {%- assign _fieldId     = 'pm-field-' | append: name | replace: '[', '-' | replace: ']', '' -%}
+{%- assign _hintId      = _fieldId | append: '-hint' -%}
+{%- assign _errId       = _fieldId | append: '-err' -%}
+{%- assign _describedBy = '' -%}
+{%- if _error != '' -%}{%- assign _describedBy = _errId -%}
+{%- elsif _hint != '' -%}{%- assign _describedBy = _hintId -%}
+{%- endif -%}
 
-<div style="display:flex;flex-direction:column;gap:6px;">
-  <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px;">
-    <label
-      for="{{ _fieldId }}"
-      style="font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:0.06em;color:var(--pm-ink-500);"
-    >{{ label }}</label>
+<div class="pm-field">
+  <div class="pm-field__head">
+    <label for="{{ _fieldId }}" class="pm-field__label">{{ label }}</label>
     {%- if _required and _error == '' -%}
-      <span style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.14em;color:var(--pm-tan);">Required</span>
+      <span class="pm-field__required" aria-hidden="true">Required</span>
     {%- endif -%}
   </div>
 
@@ -38,33 +48,31 @@
       id="{{ _fieldId }}"
       name="{{ name }}"
       rows="3"
-      {%- if _required %} required{%- endif %}
-      placeholder="{{ _placeholder }}"
+      class="pm-field__textarea"
+      placeholder="{{ _placeholder | escape }}"
+      {%- if _required %} required aria-required="true"{%- endif %}
       {%- if autocomplete != blank %} autocomplete="{{ autocomplete }}"{%- endif %}
       {%- if _error != '' %} aria-invalid="true"{%- endif %}
-      style="min-height:80px;width:100%;border-radius:6px;border:1.5px solid {% if _error != '' %}var(--pm-danger){% else %}var(--pm-ink-300){% endif %};background:white;padding:10px 16px;font-size:15px;color:var(--pm-ink-900);outline:none;font-family:inherit;resize:vertical;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s;"
-      onfocus="this.style.borderColor='{% if _error != "" %}var(--pm-danger){% else %}var(--pm-navy-light){% endif %}';this.style.boxShadow='0 0 0 3px rgba(46,109,180,0.15)';"
-      onblur="this.style.borderColor='{% if _error != "" %}var(--pm-danger){% else %}var(--pm-ink-300){% endif %}';this.style.boxShadow='';"
+      {%- if _describedBy != '' %} aria-describedby="{{ _describedBy }}"{%- endif %}
     >{{ _value }}</textarea>
   {%- else -%}
     <input
       id="{{ _fieldId }}"
       name="{{ name }}"
       type="{{ _type }}"
-      {%- if _required %} required{%- endif %}
-      placeholder="{{ _placeholder }}"
-      {%- if autocomplete != blank %} autocomplete="{{ autocomplete }}"{%- endif %}
+      class="pm-field__input"
       value="{{ _value | escape }}"
+      placeholder="{{ _placeholder | escape }}"
+      {%- if _required %} required aria-required="true"{%- endif %}
+      {%- if autocomplete != blank %} autocomplete="{{ autocomplete }}"{%- endif %}
       {%- if _error != '' %} aria-invalid="true"{%- endif %}
-      style="min-height:44px;width:100%;border-radius:6px;border:1.5px solid {% if _error != '' %}var(--pm-danger){% else %}var(--pm-ink-300){% endif %};background:white;padding:10px 16px;font-size:15px;color:var(--pm-ink-900);outline:none;box-sizing:border-box;transition:border-color 0.15s,box-shadow 0.15s;"
-      onfocus="this.style.borderColor='{% if _error != "" %}var(--pm-danger){% else %}var(--pm-navy-light){% endif %}';this.style.boxShadow='0 0 0 3px rgba(46,109,180,0.15)';"
-      onblur="this.style.borderColor='{% if _error != "" %}var(--pm-danger){% else %}var(--pm-ink-300){% endif %}';this.style.boxShadow='';"
+      {%- if _describedBy != '' %} aria-describedby="{{ _describedBy }}"{%- endif %}
     >
   {%- endif -%}
 
   {%- if _error != '' -%}
-    <p style="font-size:13px;color:var(--pm-danger);margin-top:2px;">{{ _error | escape }}</p>
+    <p id="{{ _errId }}" class="pm-field__error">{{ _error | escape }}</p>
   {%- elsif _hint != '' -%}
-    <p style="font-size:12px;color:var(--pm-ink-500);line-height:1.4;margin-top:2px;">{{ _hint }}</p>
+    <p id="{{ _hintId }}" class="pm-field__hint">{{ _hint }}</p>
   {%- endif -%}
 </div>
