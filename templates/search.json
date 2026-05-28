@@ -20,40 +20,6 @@
             "height_px": 460
           }
         },
-        "feature_records": {
-          "type": "feature",
-          "settings": {
-            "bg_color": "#F4EFE8",
-            "text_color": "#101828",
-            "accent_color": "#A63D2F",
-            "eyebrow": "WORLD-RECORD PERFORMANCE",
-            "title": "30 new world records on Gen11 with AMD EPYC™ 9005",
-            "body": "+41.4% perf and +28.6% price/performance on SQL Server 2025 Enterprise (2P). +10.5% on virtualization workloads. +29.4% on Multi-JVM Critical-jOPS, +24.6% on max-jOPS. Numbers HPE published — not vendor copy.",
-            "brand_logo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/AMD_Logo.svg/1280px-AMD_Logo.svg.png"
-          }
-        },
-        "category_tiles": {
-          "type": "category_tiles",
-          "settings": {
-            "bg_color": "#FFFFFF",
-            "text_color": "#101828",
-            "title": "Pick your form factor",
-            "subtitle": "Four ProLiant Gen11 models, all on AMD EPYC. Same silicon, different chassis density.",
-            "columns": "4",
-            "tile1_title": "DL325 Gen11",
-            "tile1_subtitle": "1U · 1 socket · up to 160 cores · 2 GPUs front",
-            "tile1_link": "/search?q=DL325+Gen11",
-            "tile2_title": "DL345 Gen11",
-            "tile2_subtitle": "2U · 1 socket · up to 160 cores · 4 GPUs front · 36 EDSFF bays",
-            "tile2_link": "/search?q=DL345+Gen11",
-            "tile3_title": "DL365 Gen11",
-            "tile3_subtitle": "1U · 2 sockets · up to 320 cores · dense compute",
-            "tile3_link": "/search?q=DL365+Gen11",
-            "tile4_title": "DL385 Gen11",
-            "tile4_subtitle": "2U · 2 sockets · up to 320 cores · expanded GPU + storage",
-            "tile4_link": "/search?q=DL385+Gen11"
-          }
-        },
         "feature_partner": {
           "type": "feature",
           "settings": {
@@ -63,29 +29,13 @@
             "eyebrow": "WHY US",
             "title": "Authorized HPE distribution. Direct from Sylmar, CA.",
             "body": "Two decades stocking HPE. NASPO-aligned pricing, Net-30 terms on approved application, named account managers — no auction-house pricing theater. Real inventory, real lead times, written quotes.",
-            "brand_logo_url": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/49/Hewlett_Packard_Enterprise_logo.svg/1280px-Hewlett_Packard_Enterprise_logo.svg.png"
-          }
-        },
-        "cta_band": {
-          "type": "cta_band",
-          "settings": {
-            "bg_color": "#071525",
-            "text_color": "#FFFFFF",
-            "accent_color": "#A63D2F",
-            "eyebrow": "READY WHEN YOU ARE",
-            "title": "Need a configured build? Send the spec, get a written quote.",
-            "body": "Same-day quotes on standard SKUs. Configured BTO builds within one business day.",
-            "cta_label": "Request a quote",
-            "cta_href": "/pages/contact"
+            "brand_logo_url": "https://logo.clearbit.com/hpe.com?size=320"
           }
         }
       },
       "block_order": [
         "hero",
-        "feature_records",
-        "category_tiles",
-        "feature_partner",
-        "cta_band"
+        "feature_partner"
       ],
       "settings": {}
     },
