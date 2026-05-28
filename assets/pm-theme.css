@@ -3416,10 +3416,11 @@ ul, ol { list-style: none; }
   background: #fff;
   border: 1px solid var(--pm-ink-200);
   border-radius: 8px;
-  /* 2:1 — half the height of the previous 1:1 square so the
-     At-a-glance bullets can sit underneath without pushing the
-     Description / Specs band off the fold. */
-  aspect-ratio: 2 / 1;
+  /* 4:3 — a middle ground that gives portrait products (NAS, tower
+     chassis) enough vertical room to read without dwarfing the
+     At-a-glance / Description blocks below. Was 2:1 which worked for
+     wide rack servers but made vertical products look tiny. */
+  aspect-ratio: 4 / 3;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3458,10 +3459,12 @@ ul, ol { list-style: none; }
     padding: 0;
     margin: 0;
     width: 62px;
-    /* Matches the new short hero height (≈ half of the gallery's 488px
-       max-width when aspect-ratio is 2:1) so the thumb column never
-       runs taller than the image it's next to. */
-    max-height: 244px;
+    /* Sized to the new 4:3 hero so all 4–6 thumbs are visible without
+       clipping. Hero width ≈ 414px (488 gallery cap − 62 thumb col − 12
+       gap), so hero height at 4:3 ≈ 310px. Six 56px thumbs + 8px gaps =
+       6×56 + 5×8 = 376px, so we cap a touch tighter and let overflow-y
+       scroll the rest gracefully. */
+    max-height: 384px;
   }
 }
 .pm-pdp__thumb {
@@ -3616,11 +3619,11 @@ ul, ol { list-style: none; }
 }
 
 /* When mounted under the gallery (not in the details column), the
-   block doesn't need a divider above it — the hero image is already
-   the visual anchor. Tighter top margin too since the bullets sit
-   flush against the saved space the short hero left behind. */
+   block doesn't need a divider above it — the hero image is the
+   visual anchor. Some breathing room from the gallery so the bullets
+   read as their own section rather than a tail-end of the image. */
 .pm-pdp__glance--under-gallery {
-  margin-top: 0;
+  margin-top: 20px;
   padding-top: 0;
   border-top: 0;
 }
