@@ -19,11 +19,15 @@
       <div class="pm-footer__brand">
         {%- if section.settings.logo != blank -%}
           <img src="{{ section.settings.logo | image_url: height: 112 }}"
-               alt="{{ shop.name }}" height="56"
+               alt="{{ shop.name }}"
+               width="{{ section.settings.logo.width | times: 56 | divided_by: section.settings.logo.height | default: 210 }}"
+               height="56"
                style="height:56px;width:auto;margin-bottom:16px;" loading="lazy">
         {%- elsif shop.brand.logo != blank -%}
           <img src="{{ shop.brand.logo | image_url: height: 112 }}"
-               alt="{{ shop.name }}" height="56"
+               alt="{{ shop.name }}"
+               width="{{ shop.brand.logo.width | times: 56 | divided_by: shop.brand.logo.height | default: 210 }}"
+               height="56"
                style="height:56px;width:auto;margin-bottom:16px;" loading="lazy">
         {%- else -%}
           <div style="font-weight:800;font-size:20px;color:white;margin-bottom:16px;letter-spacing:-0.02em;">{{ shop.name }}</div>

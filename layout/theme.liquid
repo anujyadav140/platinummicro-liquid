@@ -90,7 +90,9 @@
     <nav class="pm-mobile-nav__panel" aria-label="Mobile navigation">
       <div class="pm-mobile-nav__head">
         {%- if settings.logo != blank -%}
-          <img src="{{ settings.logo | image_url: width: 160 }}" alt="{{ shop.name }}" height="32" style="height:32px;width:auto;">
+          {%- assign _lh = 32 -%}
+          {%- assign _lw = _lh | times: settings.logo.width | divided_by: settings.logo.height | default: 120 -%}
+          <img src="{{ settings.logo | image_url: width: 160 }}" alt="{{ shop.name }}" width="{{ _lw }}" height="{{ _lh }}" style="height:32px;width:auto;" loading="eager">
         {%- else -%}
           <span style="font-weight:700;font-size:16px;color:var(--pm-ink-900);">{{ shop.name }}</span>
         {%- endif -%}

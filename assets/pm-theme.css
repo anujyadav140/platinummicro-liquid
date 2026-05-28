@@ -5086,3 +5086,10 @@ a.pm-lists__row-name:hover { color: var(--pm-navy-mid); }
   transition: background var(--pm-dur-fast), color var(--pm-dur-fast);
 }
 .pm-lists__row-remove:hover { background: rgba(166, 61, 47, 0.1); color: var(--pm-danger); }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Customer auth pages — hover states (replaces inline onmouseover/onmouseout
+   handlers for CSP compliance + maintainability)
+   ─────────────────────────────────────────────────────────────────── */
+.pm-auth__submit:hover { opacity: 0.88; }
+.pm-auth__sign-in-link:hover { border-bottom-color: var(--pm-terracotta, #C0392B) !important; }

@@ -68,7 +68,9 @@
               <img
                 src="{{ _logo_url }}"
                 alt="{{ block.settings.name | default: '' }}"
+                width="120"
                 height="56"
+                style="height:56px;width:auto;"
                 loading="lazy"
               >
             {%- elsif block.settings.name != blank -%}

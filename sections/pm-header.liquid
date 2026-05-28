@@ -22,6 +22,7 @@
           src="{{ shop.brand.logo | image_url: height: 96 }}"
           alt="{{ shop.name }}"
           height="48"
+          width="{{ shop.brand.logo.width | times: 48 | divided_by: shop.brand.logo.height | default: 180 }}"
           style="height:48px;width:auto;"
           loading="eager"
         >

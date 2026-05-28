@@ -238,8 +238,8 @@
         {%- comment -%} Submit {%- endcomment -%}
         <button
           type="submit"
+          class="pm-auth__submit"
           style="width:100%;background:var(--pm-terracotta,#C0392B);color:white;border:none;border-radius:8px;padding:14px 24px;font-size:15px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity 0.15s;"
-          onmouseover="this.style.opacity='0.88';" onmouseout="this.style.opacity='1';"
         >
           Create business account
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
@@ -253,8 +253,7 @@
 
       <div style="text-align:center;padding-top:24px;border-top:1px solid var(--pm-ink-100,#F3F4F6);margin-top:8px;">
         <span style="font-size:14px;color:var(--pm-ink-500,#6B7280);">Already have an account?</span>
-        <a href="/account/login" style="font-size:14px;color:var(--pm-terracotta,#C0392B);font-weight:600;text-decoration:none;margin-left:6px;border-bottom:1.5px solid transparent;transition:border-color 0.15s;"
-           onmouseover="this.style.borderBottomColor='var(--pm-terracotta,#C0392B)';" onmouseout="this.style.borderBottomColor='transparent';">Sign in →</a>
+        <a href="/account/login" class="pm-auth__sign-in-link" style="font-size:14px;color:var(--pm-terracotta,#C0392B);font-weight:600;text-decoration:none;margin-left:6px;border-bottom:1.5px solid transparent;transition:border-color 0.15s;">Sign in →</a>
       </div>
 
     </div>

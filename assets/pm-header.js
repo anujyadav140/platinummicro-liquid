@@ -111,4 +111,16 @@
     initMobileNav();
   }
 
+  // ── Top-bar dismiss ──
+  // Replaces the inline onclick handler that previously lived on the X
+  // button. Event-delegated so it survives DOM re-renders, sets a 24h
+  // cookie + drops the bar from the page.
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest('[data-pm-top-bar-dismiss]');
+    if (!btn) return;
+    var bar = document.getElementById('pm-top-bar');
+    if (bar) bar.style.display = 'none';
+    document.cookie = 'pm-top-bar-dismissed=1;path=/;max-age=86400';
+  });
+
 })();
