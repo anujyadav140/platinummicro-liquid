@@ -35,10 +35,17 @@
 
     {%- comment -%} ─────────────────────────────  HERO BAND  ───── {%- endcomment -%}
     {%- when 'hero' -%}
+      {%- comment -%} Prefer the picked image; fall back to the external URL field. {%- endcomment -%}
+      {%- assign _hero_img = '' -%}
+      {%- if b.background_image -%}
+        {%- assign _hero_img = b.background_image | image_url: width: 2400 -%}
+      {%- elsif b.background_image_url != blank -%}
+        {%- assign _hero_img = b.background_image_url -%}
+      {%- endif -%}
       <div
         class="pm-pbnr-hero pm-pbnr-hero--text-{{ b.text_color }}"
         style="
-          {% if b.background_image %}background-image:url({{ b.background_image | image_url: width: 2400 }});{% endif %}
+          {% if _hero_img != '' %}background-image:url({{ _hero_img }});{% endif %}
           background-color:{{ b.bg_color }};
           background-position:{{ b.bg_position }};
           min-height:{{ b.height_px }}px;
@@ -82,9 +89,15 @@
               <p class="pm-pbnr-feat__body">{{ b.body }}</p>
             {%- endif -%}
           </div>
-          {%- if b.brand_logo != blank -%}
+          {%- assign _feat_logo = '' -%}
+          {%- if b.brand_logo -%}
+            {%- assign _feat_logo = b.brand_logo | image_url: width: 320 -%}
+          {%- elsif b.brand_logo_url != blank -%}
+            {%- assign _feat_logo = b.brand_logo_url -%}
+          {%- endif -%}
+          {%- if _feat_logo != '' -%}
             <div class="pm-pbnr-feat__logo">
-              <img src="{{ b.brand_logo | image_url: width: 320 }}" alt="" loading="lazy">
+              <img src="{{ _feat_logo }}" alt="" loading="lazy">
             </div>
           {%- endif -%}
         </div>
@@ -102,19 +115,27 @@
           {%- endif -%}
           <div class="pm-pbnr-cats__grid" data-cols="{{ b.columns | default: 4 }}">
             {%- for n in (1..6) -%}
-              {%- capture _img_key   -%}tile{{ n }}_image{%- endcapture -%}
-              {%- capture _title_key -%}tile{{ n }}_title{%- endcapture -%}
-              {%- capture _sub_key   -%}tile{{ n }}_subtitle{%- endcapture -%}
-              {%- capture _link_key  -%}tile{{ n }}_link{%- endcapture -%}
-              {%- assign _img   = b[_img_key]   -%}
-              {%- assign _title = b[_title_key] -%}
-              {%- assign _sub   = b[_sub_key]   -%}
-              {%- assign _link  = b[_link_key]  -%}
-              {%- if _title != blank or _img != blank -%}
+              {%- capture _img_key     -%}tile{{ n }}_image{%- endcapture -%}
+              {%- capture _img_url_key -%}tile{{ n }}_image_url{%- endcapture -%}
+              {%- capture _title_key   -%}tile{{ n }}_title{%- endcapture -%}
+              {%- capture _sub_key     -%}tile{{ n }}_subtitle{%- endcapture -%}
+              {%- capture _link_key    -%}tile{{ n }}_link{%- endcapture -%}
+              {%- assign _img     = b[_img_key]     -%}
+              {%- assign _img_url = b[_img_url_key] -%}
+              {%- assign _title   = b[_title_key]   -%}
+              {%- assign _sub     = b[_sub_key]     -%}
+              {%- assign _link    = b[_link_key]    -%}
+              {%- assign _tile_img = '' -%}
+              {%- if _img -%}
+                {%- assign _tile_img = _img | image_url: width: 480 -%}
+              {%- elsif _img_url != blank -%}
+                {%- assign _tile_img = _img_url -%}
+              {%- endif -%}
+              {%- if _title != blank or _tile_img != '' -%}
                 <a href="{{ _link | default: '#' }}" class="pm-pbnr-cats__tile" style="color:{{ b.text_color }};">
-                  {%- if _img != blank -%}
+                  {%- if _tile_img != '' -%}
                     <div class="pm-pbnr-cats__tile-img">
-                      <img src="{{ _img | image_url: width: 480 }}" alt="{{ _title | escape }}" loading="lazy">
+                      <img src="{{ _tile_img }}" alt="{{ _title | escape }}" loading="lazy">
                     </div>
                   {%- endif -%}
                   {%- if _title != blank -%}
@@ -532,6 +553,7 @@
       "settings": [
         { "type": "header", "content": "Image + colors" },
         { "type": "image_picker", "id": "background_image", "label": "Background image" },
+        { "type": "text", "id": "background_image_url", "label": "Background image — URL fallback", "info": "Used only when no image is picked above. Useful for referencing external CDN assets." },
         {
           "type": "select",
           "id": "bg_position",
@@ -582,7 +604,8 @@
         { "type": "text",  "id": "eyebrow",  "label": "Eyebrow", "default": "Why it matters" },
         { "type": "text",  "id": "title",    "label": "Title",   "default": "Smart and secure — with AMD EPYC™ performance" },
         { "type": "textarea", "id": "body",  "label": "Body",    "default": "Choose from workload-optimized solutions to fit your business needs." },
-        { "type": "image_picker", "id": "brand_logo", "label": "Brand logo (right side)", "info": "Optional. ~56px tall." }
+        { "type": "image_picker", "id": "brand_logo", "label": "Brand logo (right side)", "info": "Optional. ~56px tall." },
+        { "type": "text", "id": "brand_logo_url", "label": "Brand logo — URL fallback", "info": "Used only when no image is picked above." }
       ]
     },
 
@@ -610,36 +633,42 @@
 
         { "type": "header", "content": "Tile 1" },
         { "type": "image_picker", "id": "tile1_image", "label": "Image" },
+        { "type": "text", "id": "tile1_image_url", "label": "Image URL fallback" },
         { "type": "text", "id": "tile1_title",   "label": "Title", "default": "MicroServers" },
         { "type": "text", "id": "tile1_subtitle","label": "Subtitle" },
         { "type": "url",  "id": "tile1_link",    "label": "Link" },
 
         { "type": "header", "content": "Tile 2" },
         { "type": "image_picker", "id": "tile2_image", "label": "Image" },
+        { "type": "text", "id": "tile2_image_url", "label": "Image URL fallback" },
         { "type": "text", "id": "tile2_title",   "label": "Title", "default": "Tower Servers" },
         { "type": "text", "id": "tile2_subtitle","label": "Subtitle" },
         { "type": "url",  "id": "tile2_link",    "label": "Link" },
 
         { "type": "header", "content": "Tile 3" },
         { "type": "image_picker", "id": "tile3_image", "label": "Image" },
+        { "type": "text", "id": "tile3_image_url", "label": "Image URL fallback" },
         { "type": "text", "id": "tile3_title",   "label": "Title", "default": "Rack Servers" },
         { "type": "text", "id": "tile3_subtitle","label": "Subtitle" },
         { "type": "url",  "id": "tile3_link",    "label": "Link" },
 
         { "type": "header", "content": "Tile 4" },
         { "type": "image_picker", "id": "tile4_image", "label": "Image" },
+        { "type": "text", "id": "tile4_image_url", "label": "Image URL fallback" },
         { "type": "text", "id": "tile4_title",   "label": "Title", "default": "Storage Solutions" },
         { "type": "text", "id": "tile4_subtitle","label": "Subtitle" },
         { "type": "url",  "id": "tile4_link",    "label": "Link" },
 
         { "type": "header", "content": "Tile 5 (optional)" },
         { "type": "image_picker", "id": "tile5_image", "label": "Image" },
+        { "type": "text", "id": "tile5_image_url", "label": "Image URL fallback" },
         { "type": "text", "id": "tile5_title",   "label": "Title" },
         { "type": "text", "id": "tile5_subtitle","label": "Subtitle" },
         { "type": "url",  "id": "tile5_link",    "label": "Link" },
 
         { "type": "header", "content": "Tile 6 (optional)" },
         { "type": "image_picker", "id": "tile6_image", "label": "Image" },
+        { "type": "text", "id": "tile6_image_url", "label": "Image URL fallback" },
         { "type": "text", "id": "tile6_title",   "label": "Title" },
         { "type": "text", "id": "tile6_subtitle","label": "Subtitle" },
         { "type": "url",  "id": "tile6_link",    "label": "Link" }
