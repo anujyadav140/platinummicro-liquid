@@ -536,8 +536,6 @@
 .pm-cart-page__btn--primary {
   background: var(--pm-terracotta);
   color: #fff;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
   padding: 14px 24px;
   font-size: 15px;
 }
@@ -573,15 +571,6 @@
   box-shadow: 0 0 0 3px rgba(166, 61, 47, 0.15);
 }
 .pm-cart-quote-form__actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
-
-/* ── Mobile only: drop the ALL-CAPS on the orange primary buttons.
-   Desktop keeps its uppercase look untouched. ── */
-@media (max-width: 749px) {
-  .pm-cart-page__btn--primary {
-    text-transform: none;
-    letter-spacing: 0;
-  }
-}
 </style>
 
 <script>
