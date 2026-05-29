@@ -51,7 +51,7 @@
 
     var url = ROUTE +
       '?q=' + encodeURIComponent(term) +
-      '&section_id=predictive-search' +
+      '&section_id=pm-predictive-search' +
       '&resources[type]=product,collection,query' +
       '&resources[limit]=6' +
       '&resources[options][unavailable_products]=last';

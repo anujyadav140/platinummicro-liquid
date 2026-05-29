@@ -4,6 +4,8 @@ A custom Shopify Liquid theme that ports the [Platinum Micro Hydrogen storefront
 
 Built for the **platinum-micro.myshopify.com** store (a B2B IT distributor).
 
+> 🔗 **Live store — see it in action:** **<https://platinum-micro.myshopify.com/>**
+
 ---
 
 ## TL;DR for a new teammate
@@ -38,6 +40,7 @@ assets/
   pm-product-specs.json   # Static spec lookup table (fallback spec data by product)
 
   pm-header.js            # Mega-menu hover + mobile nav drawer
+  pm-predictive-search.js # Header search autocomplete (Predictive Search API)
   pm-quick-order.js       # Bulk-SKU modal → /cart/add.js
   pm-cart-drawer.js       # Slide-out cart drawer (Shopify items + quote items)
   pm-add-to-cart.js       # Universal [data-pm-add] "+ Add" button handler
@@ -56,7 +59,8 @@ layout/
 
 sections/                 # One section = one page region (chosen by templates/*.json)
   pm-top-bar.liquid       # Trust strip + Sign in / Quick order / Phone
-  pm-header.liquid        # Logo + search + actions + nav rail with mega menu
+  pm-header.liquid        # Logo + search + actions + nav rail with mega menu + partner-brand blocks
+  pm-predictive-search.liquid # Search autocomplete results (rendered via Section Rendering API)
   pm-footer.liquid        # Catalog / Programs / About columns + legal row
 
   pm-hero-banner.liquid   # Home hero
@@ -108,6 +112,11 @@ locales/  en.default.json
 
 ### Mega menu — no admin setup needed
 Shopify's menu only stores the top-level links on this store. To draw the rich Hydrogen-style dropdown without forcing the merchant to rebuild the whole menu in admin, the category map is **written directly inside `pm-header.liquid`** as `Title~handle~image~blurb` strings. `pm-mega-card.liquid` draws each card, and if the merchant later creates a real matching collection, it automatically uses that live data instead.
+
+The **"Partner brands" logo rail** inside the wider mega panels is merchant-editable: add **"Partner brand"** blocks to the header section in the theme editor (logo + name + link). If no blocks are added, a built-in default set of six brands renders so the rail is never empty.
+
+### Predictive search — type-ahead autocomplete (`pm-predictive-search.js`)
+The header search is progressively enhanced with Shopify's **Predictive Search**. As the shopper types (2+ chars, debounced), `pm-predictive-search.js` fetches `routes.predictive_search_url` with `&section_id=pm-predictive-search` and drops the rendered `pm-predictive-search.liquid` section into a dropdown — product suggestions (thumb + vendor + price), collections, query suggestions, and a "see all results" link. Results come straight from the `predictive_search` Liquid object, so pricing/formatting match the rest of the theme. With JS off, the form still submits to `/search` normally.
 
 ### Static info pages — no admin pages needed
 The footer links to pages like `/pages/about`, `/pages/contact`, `/pages/compare`, etc. The merchant doesn't have to create any of these. The trick lives in `pm-404.liquid`:
@@ -184,7 +193,7 @@ This store uses **New Customer Accounts** (Classic is gone — `/account/login` 
 | `pm:static-mounted` | pm-404 static-page swap | anything needing re-init after page swap |
 
 **Hook attributes** (JS finds elements by these, never by class):
-`data-pm-add`, `data-pm-add-to-list-trigger`, `data-pm-quote-add`, `data-pm-compare`, `data-pm-pdp-pdf`, `data-cart-open`, `data-cart-badge`, `data-pm-rv-track` / `-mount` / `-drawer`, `data-pm-auth-redirect`.
+`data-pm-add`, `data-pm-add-to-list-trigger`, `data-pm-quote-add`, `data-pm-compare`, `data-pm-pdp-pdf`, `data-cart-open`, `data-cart-badge`, `data-pm-rv-track` / `-mount` / `-drawer`, `data-pm-auth-redirect`, `data-pm-search` / `data-pm-search-results`.
 
 **Golden rules**
 - Reuse a `--pm-*` token instead of a raw colour/size.

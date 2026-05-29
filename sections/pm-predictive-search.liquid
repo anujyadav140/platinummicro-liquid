@@ -2,12 +2,12 @@
   PM — Predictive Search results
   ==============================
   Rendered on demand via Shopify's Section Rendering API:
-    {{ routes.predictive_search_url }}?q=TERM&section_id=predictive-search&resources[type]=product,collection,query
+    {{ routes.predictive_search_url }}?q=TERM&section_id=pm-predictive-search&resources[type]=product,collection,query
 
   Shopify auto-populates the `predictive_search` object for that request, so this
   section just lays the results out. Driver: assets/pm-predictive-search.js.
-  Styles: pm-header.css (.pm-psr*). The section name MUST stay "predictive-search"
-  — the driver requests it by that exact id.
+  Styles: pm-header.css (.pm-psr*). The filename MUST stay "pm-predictive-search"
+  — the driver requests it by that exact section id.
 {%- endcomment -%}
 {%- liquid
   assign products = predictive_search.resources.products
