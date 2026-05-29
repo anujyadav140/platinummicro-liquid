@@ -139,6 +139,40 @@ ul, ol { list-style: none; }
   letter-spacing: 0.01em;
 }
 .pm-top-bar__trust .pm-dot { color: rgba(255,255,255,0.35); margin: 0 2px; }
+/* Promotions — admin-managed promo blocks shown in place of the trust line.
+   When more than one is active they rotate (display toggled by JS). */
+.pm-top-bar__promos {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+.pm-top-bar__promo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 11.5px;
+  letter-spacing: 0.01em;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pm-top-bar__promo-code {
+  display: inline-flex;
+  align-items: center;
+  background: var(--pm-terracotta);
+  color: #fff;
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-family: var(--pm-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+}
 .pm-top-bar__right {
   display: flex;
   align-items: center;
@@ -174,7 +208,9 @@ ul, ol { list-style: none; }
 }
 .pm-top-bar__dismiss:hover { color: #fff; }
 @media (max-width: 767px) {
-  .pm-top-bar__trust { font-size: 10px; }
+  .pm-top-bar__trust,
+  .pm-top-bar__promo { font-size: 10px; }
+  .pm-top-bar__promo-code { font-size: 9.5px; padding: 1px 6px; }
   .pm-top-bar { height: auto; min-height: var(--pm-trust-bar-h); padding: 4px 0; }
 }
 

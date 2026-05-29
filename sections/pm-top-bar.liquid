@@ -1,8 +1,59 @@
 {%- assign top_bar_enabled = section.settings.enabled -%}
 
 {%- if top_bar_enabled -%}
+
+{%- comment -%}
+  Promotion blocks
+  ----------------
+  Admin adds "Promotion" blocks in the theme editor (Customize → PM — Top Bar
+  → Add block). Each block is a banner message, optionally tied to a discount
+  code created in the Discounts admin and optionally scheduled with start/end
+  dates. We build the active promos here, count them, and below either show
+  them (rotating if more than one) or fall back to the default trust line.
+
+  Note: the theme can't read the Discounts page directly — the merchant types
+  the promo copy + code here. Dates auto-hide a promo outside its window so
+  expired sales disappear on their own with no manual edit.
+{%- endcomment -%}
+{%- assign _now = 'now' | date: '%s' | plus: 0 -%}
+{%- assign _promo_count = 0 -%}
+{%- capture _promos_html -%}
+  {%- for block in section.blocks -%}
+    {%- if block.type == 'promotion' and block.settings.message != blank -%}
+      {%- assign _active = true -%}
+      {%- if block.settings.start_date != blank -%}
+        {%- assign _start = block.settings.start_date | date: '%s' | plus: 0 -%}
+        {%- if _now < _start -%}{%- assign _active = false -%}{%- endif -%}
+      {%- endif -%}
+      {%- if block.settings.end_date != blank -%}
+        {%- comment -%} end date is inclusive — run through end-of-day {%- endcomment -%}
+        {%- assign _end = block.settings.end_date | date: '%s' | plus: 86399 -%}
+        {%- if _now > _end -%}{%- assign _active = false -%}{%- endif -%}
+      {%- endif -%}
+      {%- if _active -%}
+        {%- assign _promo_count = _promo_count | plus: 1 -%}
+        <span class="pm-top-bar__promo" {{ block.shopify_attributes }}>
+          {{ block.settings.message }}
+          {%- if block.settings.code != blank -%}
+            <span class="pm-top-bar__promo-code" title="Use code {{ block.settings.code | escape }} at checkout">{{ block.settings.code }}</span>
+          {%- endif -%}
+        </span>
+      {%- endif -%}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+
 <div class="pm-top-bar" id="pm-top-bar" role="banner">
   <div class="pm-top-bar__inner">
+    {%- if _promo_count > 0 -%}
+      <div
+        class="pm-top-bar__promos"
+        data-promo-count="{{ _promo_count }}"
+        {%- if _promo_count > 1 %} data-promo-rotate{% endif -%}
+      >
+        {{ _promos_html }}
+      </div>
+    {%- else -%}
     <div class="pm-top-bar__trust">
       {%- if section.settings.lead_text != blank -%}
         {{ section.settings.lead_text }}
@@ -38,6 +89,7 @@
         Ships from Southern California
       {%- endif -%}
     </div>
+    {%- endif -%}
 
     <div class="pm-top-bar__right">
       <a href="#quick-order" data-qo-open>Quick order</a>
@@ -72,6 +124,21 @@
     var bar = document.getElementById('pm-top-bar');
     if (bar) bar.style.display = 'none';
   }
+
+  // Rotate multiple active promotions, one at a time (~4.5s each).
+  (function () {
+    var wrap = document.querySelector('[data-promo-rotate]');
+    if (!wrap) return;
+    var items = wrap.querySelectorAll('.pm-top-bar__promo');
+    if (items.length < 2) return;
+    var i = 0;
+    items.forEach(function (el, idx) { el.style.display = idx === 0 ? '' : 'none'; });
+    setInterval(function () {
+      items[i].style.display = 'none';
+      i = (i + 1) % items.length;
+      items[i].style.display = '';
+    }, 4500);
+  })();
 </script>
 {%- endif -%}
 
@@ -84,6 +151,18 @@
       "id": "enabled",
       "label": "Show top bar",
       "default": true
+    },
+    {
+      "type": "header",
+      "content": "Promotions"
+    },
+    {
+      "type": "paragraph",
+      "content": "Add Promotion blocks below to advertise sales in the bar. Active promotions replace the trust line; if you add more than one, they rotate. Tip: create the matching code in Discounts, then enter it here so shoppers see it."
+    },
+    {
+      "type": "header",
+      "content": "Trust line (shown when no promotion is active)"
     },
     {
       "type": "textarea",
@@ -105,6 +184,39 @@
       "default": 5000
     }
   ],
+  "blocks": [
+    {
+      "type": "promotion",
+      "name": "Promotion",
+      "settings": [
+        {
+          "type": "text",
+          "id": "message",
+          "label": "Message",
+          "info": "e.g. Save 10% on all HPE servers"
+        },
+        {
+          "type": "text",
+          "id": "code",
+          "label": "Discount code (optional)",
+          "info": "Shown as a highlighted chip. Create the code in Discounts first so it works at checkout."
+        },
+        {
+          "type": "text",
+          "id": "start_date",
+          "label": "Start date (optional)",
+          "info": "Format YYYY-MM-DD. Leave blank to start immediately."
+        },
+        {
+          "type": "text",
+          "id": "end_date",
+          "label": "End date (optional)",
+          "info": "Format YYYY-MM-DD. Promotion auto-hides after this day. Leave blank for no end."
+        }
+      ]
+    }
+  ],
+  "max_blocks": 6,
   "presets": [
     { "name": "PM — Top Bar" }
   ]
