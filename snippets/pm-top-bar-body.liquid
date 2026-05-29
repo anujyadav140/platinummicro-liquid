@@ -1,0 +1,163 @@
+{%- comment -%}
+  PM — Top Bar (shared body)
+  ==========================
+  Rendered by both `sections/pm-top-bar.liquid` and
+  `sections/pm-top-bar-2.liquid` so the two stacked bars share one codebase.
+
+  Required params (passed from the section via {% render %}):
+    settings    → section.settings  (all the field values)
+    blocks      → section.blocks     (the Promotion blocks)
+    section_id  → section.id         (makes ids/cookies unique per bar)
+
+  Promotion blocks
+  ----------------
+  Each block is a banner message, optionally tied to a discount code and
+  scheduled with start/end dates. We build the active promos here, count
+  them, and either show them (rotating if more than one) or fall back to
+  the default trust line. The theme can't read the Discounts page directly —
+  the merchant types the promo copy + code here.
+{%- endcomment -%}
+
+{%- if settings.enabled -%}
+
+{%- assign _now = 'now' | date: '%s' | plus: 0 -%}
+{%- assign _promo_count = 0 -%}
+{%- capture _promos_html -%}
+  {%- for block in blocks -%}
+    {%- if block.type == 'promotion' and block.settings.message != blank -%}
+      {%- assign _active = true -%}
+      {%- if block.settings.start_date != blank -%}
+        {%- assign _start = block.settings.start_date | date: '%s' | plus: 0 -%}
+        {%- if _now < _start -%}{%- assign _active = false -%}{%- endif -%}
+      {%- endif -%}
+      {%- if block.settings.end_date != blank -%}
+        {%- comment -%} end date is inclusive — run through end-of-day {%- endcomment -%}
+        {%- assign _end = block.settings.end_date | date: '%s' | plus: 86399 -%}
+        {%- if _now > _end -%}{%- assign _active = false -%}{%- endif -%}
+      {%- endif -%}
+      {%- if _active -%}
+        {%- assign _promo_count = _promo_count | plus: 1 -%}
+        <span class="pm-top-bar__promo" {{ block.shopify_attributes }}>
+          {{ block.settings.message }}
+          {%- if block.settings.code != blank -%}
+            <span class="pm-top-bar__promo-code" title="Use code {{ block.settings.code | escape }} at checkout">{{ block.settings.code }}</span>
+          {%- endif -%}
+        </span>
+      {%- endif -%}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endcapture -%}
+
+{%- comment -%}
+  Design controls → CSS custom properties on the bar root. The CSS reads them
+  with var(--ptb-*, fallback), so leaving a field blank keeps the default look.
+{%- endcomment -%}
+{%- capture _ptb_style -%}
+  {%- if settings.bg_color != blank %}--ptb-bg: {{ settings.bg_color }};{% endif -%}
+  {%- if settings.text_color != blank %}--ptb-text: {{ settings.text_color }};{% endif -%}
+  {%- if settings.chip_bg_color != blank %}--ptb-chip-bg: {{ settings.chip_bg_color }};{% endif -%}
+  {%- if settings.chip_text_color != blank %}--ptb-chip-text: {{ settings.chip_text_color }};{% endif -%}
+  {%- if settings.font_size != blank %}--ptb-font: {{ settings.font_size }}px;{% endif -%}
+  {%- if settings.text_align != blank %}--ptb-align: {{ settings.text_align }};{% endif -%}
+{%- endcapture -%}
+{%- assign _ptb_interval = settings.rotate_speed | default: 4.5 | times: 1000 | round -%}
+{%- assign _bar_id = 'pm-top-bar-' | append: section_id -%}
+{%- assign _dismiss_key = 'pm-top-bar-dismissed-' | append: section_id -%}
+
+<div
+  class="pm-top-bar"
+  id="{{ _bar_id }}"
+  role="banner"
+  data-dismiss-key="{{ _dismiss_key }}"
+  {%- if _ptb_style != blank %} style="{{ _ptb_style | strip | escape }}"{% endif -%}
+>
+  <div class="pm-top-bar__inner">
+    {%- if _promo_count > 0 -%}
+      <div
+        class="pm-top-bar__promos"
+        data-promo-count="{{ _promo_count }}"
+        {%- if _promo_count > 1 %} data-promo-rotate data-promo-interval="{{ _ptb_interval }}"{% endif -%}
+      >
+        {{ _promos_html }}
+      </div>
+    {%- else -%}
+    <div class="pm-top-bar__trust">
+      {%- if settings.lead_text != blank -%}
+        {{ settings.lead_text }}
+      {%- else -%}
+        <strong>MBE-certified</strong>
+        <span class="pm-dot">&middot;</span>
+        Authorized HPE &amp; Intel partner
+        <span class="pm-dot">&middot;</span>
+        {%- comment -%}
+          Note: do NOT pipe through `money_without_currency` — that filter assumes
+          the input is in cents, so 5000 → "$50.00". We just want the literal number.
+        {%- endcomment -%}
+        {%- assign _fsm = settings.free_ship_min | default: 5000 -%}
+        {%- assign _fsm_str = _fsm | round | append: '' -%}
+        {%- assign _fsm_len = _fsm_str | size -%}
+        {%- if _fsm_len == 4 -%}
+          {%- assign _fsm_hd = _fsm_str | slice: 0, 1 -%}
+          {%- assign _fsm_tl = _fsm_str | slice: 1, 3 -%}
+          {%- assign _fsm_fmt = _fsm_hd | append: ',' | append: _fsm_tl -%}
+        {%- elsif _fsm_len == 5 -%}
+          {%- assign _fsm_hd = _fsm_str | slice: 0, 2 -%}
+          {%- assign _fsm_tl = _fsm_str | slice: 2, 3 -%}
+          {%- assign _fsm_fmt = _fsm_hd | append: ',' | append: _fsm_tl -%}
+        {%- elsif _fsm_len == 6 -%}
+          {%- assign _fsm_hd = _fsm_str | slice: 0, 3 -%}
+          {%- assign _fsm_tl = _fsm_str | slice: 3, 3 -%}
+          {%- assign _fsm_fmt = _fsm_hd | append: ',' | append: _fsm_tl -%}
+        {%- else -%}
+          {%- assign _fsm_fmt = _fsm_str -%}
+        {%- endif -%}
+        Free freight on orders over ${{ _fsm_fmt }}
+        <span class="pm-dot">&middot;</span>
+        Ships from Southern California
+      {%- endif -%}
+    </div>
+    {%- endif -%}
+
+    <div class="pm-top-bar__right">
+      <button
+        class="pm-top-bar__dismiss"
+        type="button"
+        aria-label="Dismiss"
+        data-pm-top-bar-dismiss
+      >
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Scoped to THIS bar by id so two stacked bars never fight over each other.
+  (function () {
+    var bar = document.getElementById('{{ _bar_id }}');
+    if (!bar) return;
+
+    // Restore dismissed state from cookie (runs early, before first paint).
+    if (document.cookie.indexOf('{{ _dismiss_key }}=1') !== -1) {
+      bar.style.display = 'none';
+    }
+
+    // Rotate this bar's active promotions, one at a time.
+    var wrap = bar.querySelector('[data-promo-rotate]');
+    if (!wrap) return;
+    var items = wrap.querySelectorAll('.pm-top-bar__promo');
+    if (items.length < 2) return;
+    var interval = parseInt(wrap.getAttribute('data-promo-interval'), 10) || 4500;
+    var i = 0;
+    items.forEach(function (el, idx) { el.style.display = idx === 0 ? '' : 'none'; });
+    setInterval(function () {
+      items[i].style.display = 'none';
+      i = (i + 1) % items.length;
+      items[i].style.display = '';
+    }, interval);
+  })();
+</script>
+
+{%- endif -%}

@@ -1,9 +1,10 @@
 {%- comment -%}
-  PM — Top Bar (first / top row)
-  ------------------------------
-  Thin wrapper: all markup + logic lives in snippets/pm-top-bar-body.liquid so
-  this bar and the second bar (sections/pm-top-bar-2.liquid) share one codebase.
-  Admin adds "Promotion" blocks in the theme editor (Customize → PM — Top Bar).
+  PM — Top Bar (second / lower row)
+  ---------------------------------
+  A second, independently-editable bar that stacks directly under the first one
+  (both are rendered in layout/theme.liquid). Shares all markup + logic with the
+  first bar via snippets/pm-top-bar-body.liquid. Off by default — turn on "Show
+  top bar" to use it.
 {%- endcomment -%}
 {%- render 'pm-top-bar-body',
   settings: section.settings,
@@ -13,13 +14,13 @@
 
 {% schema %}
 {
-  "name": "PM — Top Bar",
+  "name": "PM — Top Bar 2",
   "settings": [
     {
       "type": "checkbox",
       "id": "enabled",
       "label": "Show top bar",
-      "default": true
+      "default": false
     },
     {
       "type": "header",
@@ -140,7 +141,7 @@
   ],
   "max_blocks": 6,
   "presets": [
-    { "name": "PM — Top Bar" }
+    { "name": "PM — Top Bar 2" }
   ]
 }
 {% endschema %}

@@ -112,15 +112,17 @@
   }
 
   // ── Top-bar dismiss ──
-  // Replaces the inline onclick handler that previously lived on the X
-  // button. Event-delegated so it survives DOM re-renders, sets a 24h
-  // cookie + drops the bar from the page.
+  // Event-delegated so it survives DOM re-renders. Works for any number of
+  // stacked bars: hides the bar the X belongs to and sets that bar's own 24h
+  // cookie (data-dismiss-key), so dismissing one bar never hides the other.
   document.addEventListener('click', function (e) {
     var btn = e.target.closest('[data-pm-top-bar-dismiss]');
     if (!btn) return;
-    var bar = document.getElementById('pm-top-bar');
-    if (bar) bar.style.display = 'none';
-    document.cookie = 'pm-top-bar-dismissed=1;path=/;max-age=86400';
+    var bar = btn.closest('.pm-top-bar');
+    if (!bar) return;
+    bar.style.display = 'none';
+    var key = bar.getAttribute('data-dismiss-key') || 'pm-top-bar-dismissed';
+    document.cookie = key + '=1;path=/;max-age=86400';
   });
 
 })();
