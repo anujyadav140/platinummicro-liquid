@@ -302,6 +302,15 @@ ul, ol { list-style: none; }
   background: var(--pm-ink-100);
   color: var(--pm-ink-900);
 }
+/* Auth FOUC fix — before <shopify-account> hydrates (~300ms) both slotted
+   spans live in the light DOM, so the signed-out "Sign in" flashes even
+   when the server already knows the visitor is signed in. <body> carries
+   the server-known auth state in data-pm-customer (customer id, or "" when
+   logged out); use it to show only the correct slot from first paint. Once
+   the component hydrates it projects the matching slot anyway, so this
+   stays consistent with no second swap. */
+.pm-body[data-pm-customer=""] .pm-header__shopify-account [slot="signed-in-avatar"] { display: none; }
+.pm-body:not([data-pm-customer=""]) .pm-header__shopify-account [slot="signed-out-avatar"] { display: none; }
 .pm-header__cart-btn {
   position: relative;
   gap: 8px;
