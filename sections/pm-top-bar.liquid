@@ -115,17 +115,6 @@
     {%- endif -%}
 
     <div class="pm-top-bar__right">
-      <a href="#quick-order" data-qo-open>Quick order</a>
-      <span class="pm-dot">&middot;</span>
-      {%- if customer -%}
-        <a href="{{ routes.account_url }}">Hi, {{ customer.first_name | default: 'Account' }}</a>
-      {%- else -%}
-        <a href="/customer_authentication/login?return_to=%2F">Sign in</a>
-      {%- endif -%}
-      <span class="pm-dot">&middot;</span>
-      <a href="tel:{{ section.settings.phone | default: '8776764986' }}">
-        {{ section.settings.phone | default: '(877)-PMG4YOU' }}
-      </a>
       <button
         class="pm-top-bar__dismiss"
         id="pm-top-bar-dismiss"
@@ -195,12 +184,6 @@
       "label": "Trust line (HTML supported)",
       "info": "Leave blank to use the default trust signals. Use <strong> for bold text.",
       "placeholder": "<strong>MBE-certified</strong> · Authorized HPE &amp; Intel partner · Free freight on orders over $5,000"
-    },
-    {
-      "type": "text",
-      "id": "phone",
-      "label": "Phone number (display)",
-      "default": "(877)-PMG4YOU"
     },
     {
       "type": "number",
