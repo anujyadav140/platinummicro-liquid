@@ -1561,6 +1561,11 @@ ul, ol { list-style: none; }
   display: flex;
   flex-direction: column;
   gap: 8px;
+  /* Show ~8 rows, then scroll. Row ≈ 41px + 8px gap → 8*41 + 7*8 = 384px. */
+  max-height: 384px;
+  overflow-y: auto;
+  /* Keep the scrollbar from sitting on top of the remove (×) buttons. */
+  padding-right: 6px;
 }
 .pm-qo__row {
   display: grid;
