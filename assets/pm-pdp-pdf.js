@@ -187,7 +187,7 @@
     }
   }
 
-  // Brand colours mirror pm-theme.css custom props.
+  // Brand colours mirror pm-tokens.css custom props.
   var NAVY    = [13, 35, 64];
   var INK_700 = [50, 60, 75];
   var INK_500 = [120, 130, 145];

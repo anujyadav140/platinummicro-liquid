@@ -1,0 +1,71 @@
+/* =============================================================================
+   pm-tokens.css — Brand design tokens
+   CSS custom properties (color, type, spacing, motion). Foundation — must load first.
+   PM theme CSS layer · load order 1/12 (see README → "CSS architecture").
+   ============================================================================= */
+
+/* --- Brand Tokens ---------------------------------------------------------- */
+:root {
+  /* Palette — exact hex values from Hydrogen app/styles/app.css */
+  --pm-navy-deepest:      #071525;
+  --pm-navy-deep:         #0D2340;
+  --pm-navy-mid:          #1B3A6B;
+  --pm-navy-light:        #2E6DB4;
+  --pm-navy-pale:         #E6EFF8;
+
+  --pm-terracotta:        #A63D2F;
+  --pm-terracotta-light:  #C04E3E;
+  --pm-tan:               #8B7355;
+  --pm-terracotta-pale:   #F7EBE9;
+  --pm-tan-pale:          #F4EFE8;
+
+  --pm-paper:             #FBFAF7;
+  --pm-white:             #FFFFFF;
+
+  --pm-ink-100:           #F2F4F7;
+  --pm-ink-200:           #E4E7EC;
+  --pm-ink-300:           #D0D5DD;
+  --pm-ink-400:           #98A2B3;
+  --pm-ink-500:           #667085;
+  --pm-ink-600:           #475467;
+  --pm-ink-700:           #344054;
+  --pm-ink-800:           #1D2939;
+  --pm-ink-900:           #101828;
+
+  --pm-success:           #2F7D5B;
+  --pm-success-bg:        #E8F3EC;
+  --pm-warning:           #B5781F;
+  --pm-warning-bg:        #FAF1DF;
+  --pm-danger:            #A63D2F;
+  --pm-danger-bg:         #F7EBE9;
+
+  /* Layout */
+  --pm-container:         1280px;
+  --pm-trust-bar-h:       36px;
+  --pm-header-top-h:      84px;
+  --pm-header-nav-h:      48px;
+
+  /* Typography
+     Mirrors the Hydrogen storefront stack (Google Sans Flex first, then
+     the same system-UI fallback chain). Google Sans Flex is proprietary
+     and not bundled here — visitors that have it installed (e.g. via
+     Google Workspace) will see it; everyone else gets the system UI font
+     which is visually very close. */
+  --pm-font-body:         'Google Sans Flex', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --pm-font-heading:      'Google Sans Flex', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  --pm-font-mono:         'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Motion */
+  --pm-ease-standard:     cubic-bezier(0.2, 0, 0, 1);
+  --pm-ease-emphasized:   cubic-bezier(0.3, 0, 0, 1);
+  --pm-dur-fast:          120ms;
+  --pm-dur-base:          180ms;
+  --pm-dur-slow:          280ms;
+
+  /* Shadows */
+  --pm-shadow-sm:         0 1px 2px rgba(7,21,37,0.06), 0 1px 1px rgba(7,21,37,0.04);
+  --pm-shadow-base:       0 1px 3px 0 rgba(7,21,37,0.10), 0 1px 2px 0 rgba(7,21,37,0.06);
+  --pm-shadow-md:         0 2px 4px rgba(7,21,37,0.06), 0 4px 8px rgba(7,21,37,0.05);
+  --pm-shadow-lg:         0 4px 8px rgba(7,21,37,0.06), 0 12px 24px rgba(7,21,37,0.08);
+}
+

@@ -1,0 +1,73 @@
+/* =============================================================================
+   pm-footer.css — Footer
+   Site footer columns, links, legal row.
+   PM theme CSS layer · load order 5/12 (see README → "CSS architecture").
+   ============================================================================= */
+
+/* --- Footer --------------------------------------------------------------- */
+.pm-footer {
+  background: var(--pm-navy-deepest);
+  color: rgba(255,255,255,0.7);
+  padding-top: 64px;
+  border-top: 1px solid rgba(255,255,255,0.08);
+}
+.pm-footer__inner {
+  max-width: var(--pm-container);
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+.pm-footer__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+}
+@media (min-width: 640px) {
+  .pm-footer__grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 1024px) {
+  .pm-footer__grid { grid-template-columns: 1.5fr repeat(4, 1fr); }
+}
+.pm-footer__brand img { height: 56px; width: auto; margin-bottom: 16px; }
+.pm-footer__tagline { font-size: 13px; line-height: 1.6; color: rgba(255,255,255,0.5); max-width: 220px; }
+.pm-footer__col-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 14px;
+}
+.pm-footer__col-links { display: flex; flex-direction: column; gap: 8px; }
+.pm-footer__col-link {
+  font-size: 13.5px;
+  color: rgba(255,255,255,0.65);
+  transition: color var(--pm-dur-fast);
+  line-height: 1.4;
+}
+.pm-footer__col-link:hover { color: white; }
+.pm-footer__legal {
+  margin-top: 48px;
+  padding: 24px 0;
+  border-top: 1px solid rgba(255,255,255,0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  text-align: center;
+}
+@media (min-width: 640px) {
+  .pm-footer__legal { flex-direction: row; justify-content: space-between; text-align: left; }
+}
+.pm-footer__copyright { font-size: 12px; color: rgba(255,255,255,0.4); }
+.pm-footer__legal-links {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.pm-footer__legal-link {
+  font-size: 12px;
+  color: rgba(255,255,255,0.4);
+  transition: color var(--pm-dur-fast);
+}
+.pm-footer__legal-link:hover { color: rgba(255,255,255,0.8); }
+

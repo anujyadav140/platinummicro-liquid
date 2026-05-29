@@ -1,0 +1,610 @@
+/* =============================================================================
+   pm-header.css — Header & navigation chrome
+   Top bar, promotions, header, account host, nav rail, mega menu, partner brands.
+   PM theme CSS layer · load order 3/12 (see README → "CSS architecture").
+   ============================================================================= */
+
+/* --- Top Bar --------------------------------------------------------------- */
+.pm-top-bar {
+  background: var(--ptb-bg, var(--pm-navy-deepest));
+  color: var(--ptb-text, rgba(255,255,255,0.85));
+  font-size: 12px;
+  height: var(--pm-trust-bar-h);
+  display: flex;
+  align-items: center;
+  position: relative;
+  z-index: 50;
+}
+.pm-top-bar__inner {
+  max-width: var(--pm-container);
+  margin: 0 auto;
+  /* extra right padding reserves room so promo text never slides under the
+     dismiss X, which is pinned to the far right edge of the bar (below). */
+  padding: 0 3rem 0 1rem;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.pm-top-bar__trust {
+  display: flex;
+  align-items: center;
+  justify-content: var(--ptb-align, flex-start);
+  flex: 1;
+  gap: 4px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: var(--ptb-font, 11.5px);
+  color: var(--ptb-text, inherit);
+  letter-spacing: 0.01em;
+}
+.pm-top-bar__trust .pm-dot { color: rgba(255,255,255,0.35); margin: 0 2px; }
+/* Promotions — admin-managed promo blocks shown in place of the trust line.
+   When more than one is active they rotate (display toggled by JS). */
+.pm-top-bar__promos {
+  display: flex;
+  align-items: center;
+  justify-content: var(--ptb-align, flex-start);
+  flex: 1;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+}
+.pm-top-bar__promo {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: var(--ptb-font, 11.5px);
+  letter-spacing: 0.01em;
+  color: var(--ptb-text, #fff);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pm-top-bar__promo-code {
+  display: inline-flex;
+  align-items: center;
+  background: var(--ptb-chip-bg, var(--pm-terracotta));
+  color: var(--ptb-chip-text, #fff);
+  font-weight: 700;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-family: var(--pm-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+}
+.pm-top-bar__right {
+  /* pinned flush to the far right of the bar (not the centered container),
+     vertically centered, so the dismiss X always hugs the viewport edge. */
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  font-size: 11.5px;
+}
+.pm-top-bar__right a,
+.pm-top-bar__right button {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.85);
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 4px 6px;
+  line-height: 1;
+  transition: color var(--pm-dur-fast) var(--pm-ease-standard);
+}
+.pm-top-bar__right a:hover,
+.pm-top-bar__right button:hover { color: #fff; }
+.pm-top-bar__right .pm-dot { color: rgba(255,255,255,0.35); font-size: 10px; }
+.pm-top-bar__dismiss {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.5);
+  margin-left: 4px;
+  padding: 4px;
+  border-radius: 4px;
+  transition: color var(--pm-dur-fast);
+}
+.pm-top-bar__dismiss:hover { color: #fff; }
+@media (max-width: 767px) {
+  .pm-top-bar__trust,
+  .pm-top-bar__promo { font-size: 10px; }
+  .pm-top-bar__promo-code { font-size: 9.5px; padding: 1px 6px; }
+  .pm-top-bar { height: auto; min-height: var(--pm-trust-bar-h); padding: 4px 0; }
+}
+
+/* --- Header --------------------------------------------------------------- */
+.pm-header {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: var(--pm-white);
+  border-bottom: 1px solid var(--pm-ink-200);
+  box-shadow: var(--pm-shadow-sm);
+}
+.pm-header__top {
+  height: var(--pm-header-top-h);
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  max-width: var(--pm-container);
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+@media (min-width: 640px) {
+  .pm-header__top { padding: 0 1.5rem; }
+}
+@media (min-width: 768px) {
+  .pm-header__top { padding: 0 2rem; }
+}
+.pm-header__logo {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+.pm-header__logo img {
+  height: 48px;
+  width: auto;
+}
+.pm-header__search {
+  flex: 1;
+  max-width: 640px;
+  position: relative;
+}
+.pm-header__search form {
+  display: flex;
+  align-items: center;
+  background: var(--pm-ink-100);
+  border: 1.5px solid var(--pm-ink-200);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color var(--pm-dur-fast);
+}
+.pm-header__search form:focus-within {
+  border-color: var(--pm-navy-light);
+  background: var(--pm-white);
+}
+.pm-header__search input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: var(--pm-ink-900);
+  font-family: var(--pm-font-body);
+}
+.pm-header__search input::placeholder { color: var(--pm-ink-400); }
+.pm-header__search button[type="submit"] {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--pm-terracotta);
+  color: white;
+  border: none;
+  padding: 10px 18px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--pm-font-body);
+  transition: background var(--pm-dur-fast);
+  white-space: nowrap;
+}
+.pm-header__search button[type="submit"]:hover { background: var(--pm-terracotta-light); }
+.pm-header__actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+.pm-header__action-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--pm-ink-700);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 8px;
+  transition: background var(--pm-dur-fast), color var(--pm-dur-fast);
+  white-space: nowrap;
+  font-family: var(--pm-font-body);
+}
+.pm-header__action-btn:hover {
+  background: var(--pm-ink-100);
+  color: var(--pm-ink-900);
+}
+/* ── shopify-account host ──
+   The popup positioning itself is handled by pm-auth-anchor.js, which
+   reaches into the nested shadow DOM after the popup renders and
+   directly sets the dialog's left/top to land beneath the visible Sign
+   in trigger. CSS hacks (padding/margin/order/transform) all fail because
+   Shopify's positioner has viewport-aware overflow logic that fights any
+   indirect repositioning. */
+.pm-header__shopify-account {
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  position: relative;
+  z-index: 600;
+}
+.pm-header__shopify-account span.pm-header__action-btn {
+  cursor: pointer;
+  user-select: none;
+}
+.pm-header__shopify-account span.pm-header__action-btn:hover {
+  background: var(--pm-ink-100);
+  color: var(--pm-ink-900);
+}
+/* Auth FOUC fix — before <shopify-account> hydrates (~300ms) both slotted
+   spans live in the light DOM, so the signed-out "Sign in" flashes even
+   when the server already knows the visitor is signed in. <body> carries
+   the server-known auth state in data-pm-customer (customer id, or "" when
+   logged out); use it to show only the correct slot from first paint. Once
+   the component hydrates it projects the matching slot anyway, so this
+   stays consistent with no second swap. */
+.pm-body[data-pm-customer=""] .pm-header__shopify-account [slot="signed-in-avatar"] { display: none; }
+.pm-body:not([data-pm-customer=""]) .pm-header__shopify-account [slot="signed-out-avatar"] { display: none; }
+.pm-header__cart-btn {
+  position: relative;
+  gap: 8px;
+}
+/* Icon wrapper exists so the badge anchors to the cart SVG specifically
+   (not the whole button) — that way the badge sits on the icon corner
+   instead of overlapping the "Cart" label, and on mobile when the label
+   is hidden the badge still pokes off the icon cleanly. */
+.pm-header__cart-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+}
+.pm-header__cart-label {
+  line-height: 1;
+}
+.pm-header__cart-badge {
+  position: absolute;
+  top: -7px;
+  right: -10px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: var(--pm-terracotta);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  font-feature-settings: 'tnum';
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(13, 35, 64, 0.22);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  /* Subtle pop-in when the count updates. */
+  transition: transform var(--pm-dur-fast);
+}
+.pm-header__cart-btn:hover .pm-header__cart-badge {
+  transform: scale(1.06);
+}
+.pm-header__cart-badge[hidden] {
+  display: none !important;
+}
+.pm-header__hamburger {
+  display: none;
+}
+@media (max-width: 767px) {
+  .pm-header__search { display: none; }
+  .pm-header__hamburger { display: flex; }
+  /* Hide the text label inside header action buttons, but keep icon
+     wrappers and the cart badge visible. */
+  .pm-header__action-btn > span:not(.pm-header__cart-icon):not(.pm-header__cart-badge) {
+    display: none;
+  }
+  .pm-header__cart-btn { gap: 0; }
+}
+
+/* --- Nav Rail ------------------------------------------------------------- */
+.pm-nav {
+  background: var(--pm-navy-deep);
+  height: var(--pm-header-nav-h);
+  position: relative;
+}
+.pm-nav__inner {
+  max-width: var(--pm-container);
+  margin: 0 auto;
+  padding: 0 1rem;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+@media (min-width: 640px) {
+  .pm-nav__inner { padding: 0 1.5rem; }
+}
+@media (min-width: 768px) {
+  .pm-nav__inner { padding: 0 2rem; }
+}
+.pm-nav__item {
+  /* Static so .pm-mega (position:absolute) anchors to .pm-nav (full width)
+     instead of the narrow nav-link button. */
+  position: static;
+}
+.pm-nav__link {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: rgba(255,255,255,0.85);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 0 12px;
+  height: var(--pm-header-nav-h);
+  transition: color var(--pm-dur-fast), background var(--pm-dur-fast);
+  white-space: nowrap;
+}
+.pm-nav__link:hover,
+.pm-nav__item.is-open > .pm-nav__link {
+  color: white;
+  background: rgba(255,255,255,0.08);
+}
+.pm-nav__chevron {
+  width: 12px;
+  height: 12px;
+  opacity: 0.6;
+  transition: transform var(--pm-dur-base) var(--pm-ease-standard);
+}
+.pm-nav__item.is-open .pm-nav__chevron { transform: rotate(180deg); }
+@media (max-width: 767px) {
+  .pm-nav { display: none; }
+}
+
+/* --- Mega Menu ------------------------------------------------------------ */
+.pm-mega {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--pm-white);
+  border-bottom: 1px solid var(--pm-ink-200);
+  box-shadow: 0 8px 24px rgba(7,21,37,0.12);
+  z-index: 100;
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition: opacity var(--pm-dur-base) var(--pm-ease-standard),
+              transform var(--pm-dur-base) var(--pm-ease-standard);
+}
+.pm-mega.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: all;
+}
+.pm-mega__inner {
+  max-width: var(--pm-container);
+  margin: 0 auto;
+  padding: 28px 2rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 24px;
+}
+.pm-mega__col-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--pm-tan);
+  margin-bottom: 8px;
+}
+.pm-mega__col-list { display: flex; flex-direction: column; gap: 2px; }
+.pm-mega__col-link {
+  font-size: 13px;
+  color: var(--pm-ink-700);
+  padding: 5px 0;
+  transition: color var(--pm-dur-fast);
+  display: block;
+}
+.pm-mega__col-link:hover { color: var(--pm-terracotta); }
+
+/* --- Mega Menu: Card-Grid Layout ------------------------------------------ */
+.pm-mega__card-wrap {
+  max-width: var(--pm-container);
+  margin: 0 auto;
+  padding: 16px 2rem;
+}
+.pm-mega__split {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  align-items: start;
+}
+.pm-mega--with-brands .pm-mega__split {
+  grid-template-columns: 1fr;
+}
+@media (min-width: 1024px) {
+  .pm-mega--with-brands .pm-mega__split {
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 28px;
+  }
+}
+@media (min-width: 1280px) {
+  .pm-mega--with-brands .pm-mega__split {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 32px;
+  }
+}
+.pm-mega__cards-col { min-width: 0; }
+.pm-mega__card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+@media (min-width: 960px) {
+  .pm-mega__card-grid { grid-template-columns: repeat(3, 1fr); gap: 16px; }
+}
+
+/* Single-row variant — used when ≤3 cards (Bundles, Software).
+   Bigger card with the image stacked underneath the description
+   instead of beside it. */
+.pm-mega__card-grid--single-row { gap: 18px; }
+@media (min-width: 960px) {
+  .pm-mega__card-grid--single-row { grid-template-columns: repeat(3, 1fr); gap: 20px; }
+}
+.pm-mega__card-grid--single-row .pm-mega__card-body {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 12px;
+  padding: 14px 14px 16px;
+}
+.pm-mega__card-grid--single-row .pm-mega__card-blurb {
+  -webkit-line-clamp: 2;
+  font-size: 12.5px;
+}
+.pm-mega__card-grid--single-row .pm-mega__card-img {
+  width: auto;
+  max-width: 100%;
+  height: 140px;
+  max-height: 160px;
+  margin: 0 auto;
+  object-fit: contain;
+  border-radius: 4px;
+}
+/* Partner brands rail */
+.pm-mega__brands {
+  border-left: 1px solid var(--pm-ink-200);
+  padding-left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+@media (max-width: 1023px) {
+  .pm-mega__brands {
+    border-left: none;
+    border-top: 1px solid var(--pm-ink-200);
+    padding-left: 0;
+    padding-top: 16px;
+  }
+}
+.pm-mega__brands-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--pm-tan);
+}
+.pm-mega__brands-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+.pm-mega__brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 46px;
+  padding: 4px 8px;
+  background: var(--pm-white);
+  border: 1px solid var(--pm-ink-200);
+  border-radius: 8px;
+  transition: border-color var(--pm-dur-fast) var(--pm-ease-standard), transform var(--pm-dur-fast) var(--pm-ease-standard), box-shadow var(--pm-dur-fast) var(--pm-ease-standard);
+}
+.pm-mega__brand:hover {
+  border-color: var(--pm-navy-light);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(7, 21, 37, 0.06);
+}
+.pm-mega__brand img {
+  max-height: 34px;
+  max-width: 80%;
+  width: auto;
+  object-fit: contain;
+}
+@media (min-width: 1280px) {
+  .pm-mega__brand { height: 50px; }
+  .pm-mega__brand img { max-height: 36px; }
+}
+.pm-mega__card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 6px;
+  border: 1px solid var(--pm-ink-200);
+  background: var(--pm-white);
+  text-decoration: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.pm-mega__card:hover {
+  border-color: var(--pm-terracotta);
+  box-shadow: 0 4px 12px rgba(7,21,37,0.10);
+}
+.pm-mega__card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--pm-paper, #F5F3EF);
+  padding: 7px 10px;
+}
+.pm-mega__card-badge {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  background: var(--pm-terracotta);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0 6px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.pm-mega__card-title {
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--pm-ink-900);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.pm-mega__card-body {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px;
+  flex: 1;
+}
+.pm-mega__card-blurb {
+  flex: 1;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--pm-ink-600, #4B5563);
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+.pm-mega__card-img {
+  width: 72px;
+  height: 52px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 3px;
+}
+

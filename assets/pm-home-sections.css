@@ -1,0 +1,570 @@
+/* =============================================================================
+   pm-home-sections.css — Home / marketing sections
+   Hero banner, banner strip, card section, brand wall, promotion card, about banner.
+   PM theme CSS layer · load order 4/12 (see README → "CSS architecture").
+   ============================================================================= */
+
+/* --- Hero Banner ---------------------------------------------------------- */
+/* PM — Hero Banner
+   All knobs read CSS custom properties set on the section root.
+   Existing instances render identically until any setting is touched. */
+.pm-hero {
+  position: relative;
+  overflow: hidden;
+}
+.pm-hero--cover {
+  background: var(--hb-bg, var(--pm-navy-deep));
+}
+.pm-hero__bg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  pointer-events: none;
+}
+.pm-hero__overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  /* Multiplies the overlay color into a left-to-right gradient.
+     Alpha is the admin-set strength (0–1). Inner three stops fade
+     across the band so the right edge of the image stays visible. */
+  background: linear-gradient(to right,
+    rgba(0, 0, 0, calc(var(--hb-overlay-alpha, 1) * 0.72)) 0%,
+    rgba(0, 0, 0, calc(var(--hb-overlay-alpha, 1) * 0.45)) 45%,
+    rgba(0, 0, 0, calc(var(--hb-overlay-alpha, 1) * 0.05)) 100%);
+  background-color: color-mix(in srgb,
+    var(--hb-overlay-color, #071525) calc(var(--hb-overlay-alpha, 1) * 30%),
+    transparent);
+}
+.pm-hero__body {
+  position: relative;
+  max-width: var(--pm-container);
+  margin: 0 auto;
+  padding: var(--hb-pt, 64px) 1rem var(--hb-pb, 64px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: var(--hb-min-h-m, 420px);
+}
+@media (min-width: 640px) {
+  .pm-hero__body { padding-left: 1.5rem; padding-right: 1.5rem; }
+}
+@media (min-width: 768px) {
+  .pm-hero__body { padding-left: 2rem; padding-right: 2rem; min-height: var(--hb-min-h, 480px); }
+}
+.pm-hero--align-center .pm-hero__body { align-items: center; text-align: center; }
+.pm-hero--align-right  .pm-hero__body { align-items: flex-end;  text-align: right; }
+.pm-hero__eyebrow {
+  font-size: var(--hb-eyebrow-size, 11px);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--hb-eyebrow, var(--pm-terracotta-light));
+  margin-bottom: 16px;
+}
+.pm-hero__headline {
+  font-size: var(--hb-headline-size-m, 28px);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--hb-headline, var(--pm-white));
+  max-width: var(--hb-content-max, 680px);
+  margin: 0 0 16px;
+}
+@media (min-width: 640px) {
+  .pm-hero__headline { font-size: var(--hb-headline-size-t, 34px); }
+}
+@media (min-width: 768px) {
+  .pm-hero__headline { font-size: var(--hb-headline-size, 44px); }
+}
+.pm-hero__body-text {
+  font-size: var(--hb-body-size, 17px);
+  line-height: 1.6;
+  color: var(--hb-body, rgba(255, 255, 255, 0.82));
+  max-width: calc(var(--hb-content-max, 680px) * 0.82);
+  margin: 0 0 32px;
+}
+.pm-hero__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--hb-cta-bg, var(--pm-terracotta));
+  color: var(--hb-cta-text, white);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 13px 24px;
+  border-radius: 6px;
+  box-shadow: var(--pm-shadow-md);
+  transition: opacity var(--pm-dur-fast);
+  width: fit-content;
+}
+.pm-hero__cta:hover { opacity: 0.92; color: var(--hb-cta-text, white); }
+.pm-hero__cta svg { flex-shrink: 0; }
+
+/* --- Banner Strip --------------------------------------------------------- */
+/* PM — Banner Strip
+   Slim full-width strip above the header. All knobs read CSS vars
+   from the section root (see sections/pm-banner-strip.liquid). */
+.pm-banner-strip {
+  background: var(--bs-bg, var(--pm-tan-pale));
+  border-bottom: 1px solid rgba(139, 115, 85, 0.2);
+  color: var(--bs-text, var(--pm-ink-700));
+}
+.pm-banner-strip__inner {
+  max-width: var(--pm-container);
+  margin: 0 auto;
+  padding: var(--bs-pt, 12px) 1rem var(--bs-pb, 12px);
+  text-align: center;
+  font-size: var(--bs-size, 14px);
+  font-weight: 500;
+}
+.pm-banner-strip--align-left   .pm-banner-strip__inner { text-align: left; }
+.pm-banner-strip--align-right  .pm-banner-strip__inner { text-align: right; }
+.pm-banner-strip__inner a { color: var(--bs-link, var(--pm-terracotta)); text-decoration: underline; }
+.pm-banner-strip__inner strong { color: var(--pm-ink-900); }
+
+/* --- Card Section --------------------------------------------------------- */
+/* PM — Card Section
+   Same CSS-var pattern as the other designable sections.
+   Color overrides for shared .pm-section-* classes are scoped to the
+   .pm-card-section root so other sections that reuse those classes
+   aren't affected. */
+.pm-card-section {
+  padding: var(--cs-pt, 64px) 0 var(--cs-pb, 64px);
+  background: var(--cs-bg, var(--pm-paper));
+}
+.pm-section-header { margin-bottom: 32px; }
+.pm-section-header--center { text-align: center; }
+.pm-section-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--pm-tan);
+  margin-bottom: 8px;
+}
+.pm-card-section .pm-section-eyebrow { color: var(--cs-eyebrow, var(--pm-tan)); }
+.pm-section-title {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.018em;
+  color: var(--pm-ink-900);
+}
+@media (min-width: 640px) { .pm-section-title { font-size: 28px; } }
+@media (min-width: 768px) { .pm-section-title { font-size: 32px; } }
+.pm-card-section .pm-section-title {
+  font-size: var(--cs-title-size-m, 24px);
+  color: var(--cs-title, var(--pm-ink-900));
+}
+@media (min-width: 768px) {
+  .pm-card-section .pm-section-title { font-size: var(--cs-title-size, 32px); }
+}
+.pm-section-subtitle {
+  margin-top: 12px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--pm-ink-500);
+  max-width: 640px;
+}
+.pm-card-section .pm-section-subtitle {
+  font-size: var(--cs-subtitle-size, 15px);
+  color: var(--cs-subtitle, var(--pm-ink-500));
+}
+
+/* Poster card grid */
+.pm-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--cs-gap-m, 12px);
+}
+@media (min-width: 768px) {
+  .pm-card-grid { grid-template-columns: repeat(3, 1fr); gap: var(--cs-gap, 12px); }
+}
+@media (min-width: 1024px) {
+  .pm-card-grid { grid-template-columns: repeat(6, 1fr); }
+}
+.pm-card-grid--3col {
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--cs-gap-m, 18px);
+}
+@media (min-width: 768px) {
+  .pm-card-grid--3col {
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--cs-gap, 24px);
+  }
+}
+
+/* Poster card */
+.pm-poster-card {
+  aspect-ratio: var(--cs-card-aspect, 2 / 1.3);
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--cs-card-radius, 8px);
+  background-size: cover;
+  background-position: center;
+  background-color: var(--pm-navy-deep);
+  box-shadow: 0 4px 12px rgba(7,21,37,0.08), 0 1px 2px rgba(7,21,37,0.04);
+  transition: transform var(--pm-dur-base) var(--pm-ease-standard),
+              box-shadow var(--pm-dur-base) var(--pm-ease-standard);
+  display: block;
+}
+.pm-poster-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 20px rgba(7,21,37,0.12);
+}
+.pm-poster-card__ribbon {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background: var(--pm-terracotta);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 7px 14px;
+  max-width: 70%;
+  line-height: 1.2;
+}
+
+/* Icon tile card */
+.pm-icon-card {
+  background: var(--pm-white);
+  border: 1px solid var(--pm-ink-200);
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: var(--pm-shadow-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: relative;
+  overflow: hidden;
+  height: 100%;
+  transition: transform var(--pm-dur-base) var(--pm-ease-standard),
+              box-shadow var(--pm-dur-base) var(--pm-ease-standard),
+              border-color var(--pm-dur-base);
+}
+.pm-icon-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 16px rgba(7,21,37,0.08);
+  border-color: rgba(166,61,47,0.3);
+}
+.pm-icon-card__icon {
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--pm-navy-pale);
+  color: var(--pm-navy-light);
+  flex-shrink: 0;
+  transition: background var(--pm-dur-base), color var(--pm-dur-base);
+}
+.pm-icon-card:hover .pm-icon-card__icon {
+  background: var(--pm-terracotta);
+  color: white;
+}
+.pm-icon-card__title {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--pm-ink-900);
+  transition: color var(--pm-dur-base);
+}
+.pm-icon-card:hover .pm-icon-card__title { color: var(--pm-navy-deep); }
+.pm-icon-card__subtitle {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--pm-ink-500);
+}
+.pm-icon-card__arrow {
+  position: absolute;
+  bottom: 14px;
+  right: 14px;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity var(--pm-dur-base), transform var(--pm-dur-base);
+  color: var(--pm-terracotta);
+}
+.pm-icon-card:hover .pm-icon-card__arrow {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* --- Brand Wall ----------------------------------------------------------- */
+/* All visual knobs read CSS custom properties set on the section root
+   by the schema settings (see pm-brand-wall.liquid). Each has a sane
+   fallback so existing instances (or any setting left blank) render
+   identically to the original hardcoded values. */
+.pm-brand-wall {
+  background: var(--bw-bg, var(--pm-paper));
+  padding: var(--bw-pt, 56px) 0 var(--bw-pb, 64px);
+}
+.pm-brand-wall__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+.pm-brand-wall--center .pm-brand-wall__head {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.pm-brand-wall__heading { display: flex; flex-direction: column; gap: 6px; }
+.pm-brand-wall .pm-section-eyebrow { color: var(--bw-eyebrow, var(--pm-tan)); }
+.pm-brand-wall__title {
+  margin: 0;
+  font-size: var(--bw-title-size-m, 22px);
+  font-weight: 800;
+  color: var(--bw-title, var(--pm-ink-900));
+  letter-spacing: -0.018em;
+  line-height: 1.2;
+}
+@media (min-width: 640px) {
+  .pm-brand-wall__title { font-size: var(--bw-title-size, 26px); }
+}
+.pm-brand-wall__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--bw-cta, var(--pm-ink-800));
+  border-bottom: 1.5px solid transparent;
+  padding-bottom: 2px;
+  transition: color var(--pm-dur-fast), border-color var(--pm-dur-fast);
+  white-space: nowrap;
+}
+.pm-brand-wall__cta:hover {
+  color: var(--pm-terracotta);
+  border-bottom-color: var(--pm-terracotta);
+}
+
+.pm-brand-wall__row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pm-brand-wall__nav {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border: 1.5px solid var(--pm-ink-300);
+  background: transparent;
+  border-radius: 999px;
+  color: var(--pm-ink-700);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background var(--pm-dur-fast), border-color var(--pm-dur-fast), color var(--pm-dur-fast), opacity var(--pm-dur-fast);
+}
+.pm-brand-wall__nav:hover {
+  background: var(--pm-white);
+  border-color: var(--pm-navy-deep);
+  color: var(--pm-navy-deep);
+}
+.pm-brand-wall__nav[disabled] {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.pm-brand-wall__scroll {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--bw-logo-gap-m, 32px);
+  overflow-x: auto;
+  scroll-behavior: smooth;
+  padding: 8px 4px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  cursor: grab;
+  scroll-snap-type: x proximity;
+  min-width: 0;
+}
+@media (min-width: 640px) {
+  .pm-brand-wall__scroll { gap: var(--bw-logo-gap, 56px); }
+}
+.pm-brand-wall__scroll::-webkit-scrollbar { display: none; }
+.pm-brand-wall__scroll:active { cursor: grabbing; }
+
+.pm-brand-logo {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--bw-logo-min, 100px);
+  scroll-snap-align: center;
+}
+.pm-brand-logo img {
+  height: var(--bw-logo-h-m, 32px);
+  width: auto;
+  max-width: 220px;
+  object-fit: contain;
+  transition: opacity var(--pm-dur-base) var(--pm-ease-standard),
+              transform var(--pm-dur-base) var(--pm-ease-standard),
+              filter var(--pm-dur-base) var(--pm-ease-standard);
+}
+@media (min-width: 640px) {
+  .pm-brand-logo img { height: var(--bw-logo-h, 44px); }
+}
+.pm-brand-logo:hover img {
+  transform: scale(1.04);
+}
+.pm-brand-logo__name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--pm-ink-600);
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+  transition: color var(--pm-dur-base);
+}
+.pm-brand-logo:hover .pm-brand-logo__name { color: var(--pm-ink-900); }
+
+/* ── Behavior modifiers (driven by checkbox settings) ── */
+.pm-brand-wall--grayscale .pm-brand-logo img {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+.pm-brand-wall--grayscale .pm-brand-logo:hover img {
+  filter: grayscale(0);
+  opacity: 1;
+}
+.pm-brand-wall--no-scale .pm-brand-logo:hover img { transform: none; }
+
+@media (max-width: 640px) {
+  .pm-brand-wall__nav { width: 36px; height: 36px; }
+}
+
+/* --- Promotion Card ------------------------------------------------------- */
+/* PM — Promotion Card
+   All values read CSS custom properties set on the section root by
+   schema settings (see sections/pm-promotion-card.liquid). Each var
+   has a sane fallback matching the prior hardcoded value, so existing
+   instances render identically before any setting is touched. */
+.pm-promo-section {
+  padding: var(--pc-pt, 64px) 0 var(--pc-pb, 64px);
+  background: var(--pc-section-bg, var(--pm-paper));
+}
+.pm-promo-card {
+  border-radius: var(--pc-radius, 12px);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--pc-bg, var(--pm-navy-deep));
+  min-height: var(--pc-min-h-m, 280px);
+}
+@media (min-width: 768px) {
+  .pm-promo-card { flex-direction: row; min-height: var(--pc-min-h, 320px); }
+  /* "Image left" flips the row so content sits on the right. */
+  .pm-promo-card--img-left { flex-direction: row-reverse; }
+}
+.pm-promo-card__content {
+  flex: 1;
+  padding: var(--pc-content-pad-m, 40px);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 12px;
+}
+@media (min-width: 768px) {
+  .pm-promo-card__content { padding: var(--pc-content-pad, 56px); }
+}
+.pm-promo-card__eyebrow {
+  font-size: var(--pc-eyebrow-size, 10px);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--pc-eyebrow, var(--pm-terracotta-light));
+}
+.pm-promo-card__title {
+  font-size: var(--pc-title-size-m, 26px);
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--pc-title, white);
+  margin: 0;
+}
+@media (min-width: 768px) {
+  .pm-promo-card__title { font-size: var(--pc-title-size, 32px); }
+}
+.pm-promo-card__body {
+  font-size: var(--pc-body-size, 15px);
+  line-height: 1.6;
+  color: var(--pc-body, rgba(255, 255, 255, 0.78));
+  max-width: 520px;
+  margin: 0;
+}
+.pm-promo-card__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--pc-cta-bg, var(--pm-terracotta));
+  color: var(--pc-cta-text, white);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 12px 22px;
+  border-radius: 6px;
+  width: fit-content;
+  margin-top: 8px;
+  transition: opacity var(--pm-dur-fast);
+}
+.pm-promo-card__cta:hover { opacity: 0.9; color: var(--pc-cta-text, white); }
+.pm-promo-card__image {
+  flex-shrink: 0;
+  width: 100%;
+  min-height: 200px;
+  background-size: cover;
+  background-position: center;
+}
+@media (min-width: 768px) {
+  .pm-promo-card__image { width: var(--pc-img-w, 45%); min-height: unset; }
+}
+
+/* --- About Banner --------------------------------------------------------- */
+/* PM — About Banner */
+.pm-about-banner {
+  background: var(--ab-bg, var(--pm-navy-deepest));
+  color: var(--ab-body, white);
+  padding: var(--ab-pt-m, 56px) 0 var(--ab-pb-m, 56px);
+}
+@media (min-width: 768px) {
+  .pm-about-banner { padding: var(--ab-pt, 80px) 0 var(--ab-pb, 80px); }
+}
+.pm-about-banner__inner {
+  max-width: var(--ab-max-w, 920px);
+  margin: 0 auto;
+  padding: 0 1rem;
+  text-align: center;
+}
+.pm-about-banner--align-left .pm-about-banner__inner { text-align: left; }
+.pm-about-banner__eyebrow {
+  font-size: var(--ab-eyebrow-size, 11px);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--ab-eyebrow, var(--pm-terracotta-light));
+  margin-bottom: 16px;
+}
+.pm-about-banner__body {
+  font-size: var(--ab-body-size-m, 15px);
+  line-height: 1.7;
+  color: var(--ab-body, rgba(255, 255, 255, 0.82));
+  margin: 0;
+}
+@media (min-width: 768px) {
+  .pm-about-banner__body { font-size: var(--ab-body-size, 18px); }
+}
+

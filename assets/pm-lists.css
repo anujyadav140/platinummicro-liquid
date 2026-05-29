@@ -1,0 +1,658 @@
+/* =============================================================================
+   pm-lists.css — Lists
+   Add-to-list popover, header lists button/badge, /pages/lists dashboard.
+   PM theme CSS layer · load order 11/12 (see README → "CSS architecture").
+   ============================================================================= */
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Add-to-List popover (pm-add-to-list.js)
+   Portal-rendered into <body>, anchored to the trigger button's right edge.
+   ─────────────────────────────────────────────────────────────────── */
+
+/* Trigger "in list" state — swap to navy-mid tint when the SKU is in
+   any saved list. JS toggles `.is-in-list` and shows the star icon. */
+.pm-pdp__cta--ghost.is-in-list {
+  border-color: rgba(27, 58, 107, 0.3);
+  background: rgba(27, 58, 107, 0.05);
+  color: var(--pm-navy-mid);
+}
+.pm-pdp__cta--ghost.is-in-list:hover {
+  border-color: rgba(27, 58, 107, 0.5);
+  background: rgba(27, 58, 107, 0.1);
+}
+.pm-pdp__cta[aria-expanded="true"] .pm-pdp__cta-caret { transform: rotate(180deg); }
+.pm-pdp__cta-caret { transition: transform 120ms var(--pm-ease-standard); }
+
+/* Star polygon's visible bounding box sits y=2 → y=21 inside a 24-tall
+   viewBox, so it renders ~1px above the geometric center. Nudge it down
+   so it lines up with the "In Your List" text in the trigger button. */
+.pm-pdp__cta svg[data-pm-add-icon-star] {
+  position: relative;
+  top: 1px;
+}
+
+.pm-list-popover {
+  position: fixed;
+  display: none;
+  z-index: 1000;
+  width: 300px;
+  background: #fff;
+  border: 1px solid var(--pm-ink-200);
+  border-radius: 8px;
+  box-shadow: 0 12px 28px rgba(7, 21, 37, 0.16);
+  overflow: hidden;
+  font-family: var(--pm-font-body);
+  animation: pmListPopIn 140ms var(--pm-ease-standard);
+}
+.pm-list-popover.is-open { display: block; }
+
+@keyframes pmListPopIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.pm-list-popover__head {
+  border-bottom: 1px solid var(--pm-ink-200);
+  padding: 10px 16px;
+}
+.pm-list-popover__eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pm-tan);
+}
+
+.pm-list-popover__body {
+  max-height: 168px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+.pm-list-popover__body--empty {
+  padding: 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--pm-ink-500);
+  max-height: none;
+}
+
+.pm-list-popover__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.pm-list-popover__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background var(--pm-dur-fast);
+  font-family: var(--pm-font-body);
+}
+.pm-list-popover__item:hover { background: var(--pm-ink-100); }
+.pm-list-popover__item-main {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  overflow: hidden;
+}
+.pm-list-popover__item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pm-ink-900);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pm-list-popover__item-count {
+  font-size: 12px;
+  color: var(--pm-ink-500);
+  flex-shrink: 0;
+}
+.pm-list-popover__item-plus { color: var(--pm-ink-400); flex-shrink: 0; }
+.pm-list-popover__check {
+  display: inline-flex;
+  align-items: center;
+  color: var(--pm-success);
+  flex-shrink: 0;
+}
+.pm-list-popover__added {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--pm-success);
+  flex-shrink: 0;
+}
+
+/* Row state when this list already contains the trigger's SKU.
+   Subtle navy-tint background + bolder name color reads as "yes, it's
+   in here — click to remove" without needing extra text. */
+.pm-list-popover__item.is-in-list {
+  background: rgba(27, 58, 107, 0.04);
+}
+.pm-list-popover__item.is-in-list:hover {
+  background: rgba(166, 61, 47, 0.06);
+}
+.pm-list-popover__item.is-in-list .pm-list-popover__item-name {
+  color: var(--pm-navy-mid);
+}
+.pm-list-popover__item.is-in-list:hover .pm-list-popover__check {
+  color: var(--pm-danger);
+}
+
+.pm-list-popover__footer {
+  border-top: 1px solid var(--pm-ink-200);
+  background: var(--pm-paper);
+  padding: 10px 16px;
+}
+.pm-list-popover__create {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: transparent;
+  border: none;
+  padding: 4px 0;
+  font-family: var(--pm-font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pm-navy-mid);
+  cursor: pointer;
+  transition: color var(--pm-dur-fast);
+}
+.pm-list-popover__create:hover { color: var(--pm-navy-deep); }
+
+.pm-list-popover__form { display: flex; flex-direction: column; gap: 8px; }
+.pm-list-popover__input {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--pm-ink-300);
+  border-radius: 6px;
+  background: #fff;
+  font-family: var(--pm-font-body);
+  font-size: 13px;
+  color: var(--pm-ink-900);
+  outline: none;
+  transition: border-color var(--pm-dur-fast), box-shadow var(--pm-dur-fast);
+}
+.pm-list-popover__input:focus {
+  border-color: var(--pm-navy-light);
+  box-shadow: 0 0 0 3px rgba(46, 109, 180, 0.15);
+}
+.pm-list-popover__form-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.pm-list-popover__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-family: var(--pm-font-body);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--pm-dur-fast), color var(--pm-dur-fast);
+}
+.pm-list-popover__btn--ghost {
+  background: transparent;
+  color: var(--pm-ink-500);
+}
+.pm-list-popover__btn--ghost:hover { background: var(--pm-ink-100); color: var(--pm-ink-900); }
+.pm-list-popover__btn--primary {
+  background: var(--pm-terracotta);
+  color: #fff;
+}
+.pm-list-popover__btn--primary:hover:not(:disabled) { background: var(--pm-terracotta-light); }
+.pm-list-popover__btn--primary:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   Header — Lists button + count badge
+   ─────────────────────────────────────────────────────────────────── */
+.pm-header__lists-btn { position: relative; text-decoration: none; }
+.pm-header__lists-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--pm-terracotta);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  margin-left: 2px;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   /pages/lists dashboard (templates/page.lists.json → pm-lists-page section,
+   plus the `when 'lists'` branch in pm-static-body.liquid).
+   No navy hero — clean inline header sits above the dashboard on pm-paper.
+   ─────────────────────────────────────────────────────────────────── */
+.pm-lists__inner { display: flex; flex-direction: column; gap: 24px; text-align: left; }
+
+.pm-lists__header { display: flex; flex-direction: column; gap: 6px; }
+.pm-lists__title {
+  margin: 0;
+  font-family: var(--pm-font-heading);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.012em;
+  color: var(--pm-ink-900);
+}
+@media (min-width: 640px) { .pm-lists__title { font-size: 28px; } }
+.pm-lists__lede {
+  margin: 0;
+  font-size: 14px;
+  color: var(--pm-ink-500);
+}
+.pm-lists__rule {
+  border: 0;
+  border-top: 1px solid var(--pm-ink-200);
+  margin: 0;
+}
+
+/* ── Empty state ── */
+.pm-lists__empty {
+  background: #fff;
+  border: 1.5px dashed var(--pm-ink-300);
+  border-radius: 12px;
+  padding: 40px 24px;
+  text-align: center;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+@media (min-width: 640px) { .pm-lists__empty { padding: 56px 32px; } }
+.pm-lists__empty-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto;
+  border-radius: 50%;
+  background: var(--pm-ink-100);
+  color: var(--pm-ink-500);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pm-lists__empty-title {
+  margin: 16px 0 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--pm-navy-deep);
+}
+.pm-lists__empty-lede {
+  margin: 8px auto 0;
+  max-width: 420px;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--pm-ink-500);
+}
+.pm-lists__empty-cta { margin-top: 24px; }
+
+/* ── Create panel ── */
+.pm-lists__create {
+  background: #fff;
+  border: 1px solid var(--pm-ink-200);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+@media (min-width: 640px) { .pm-lists__create { padding: 24px; } }
+.pm-lists__create-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--pm-tan);
+  margin-bottom: 6px;
+}
+.pm-lists__create-input {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--pm-ink-200);
+  border-radius: 6px;
+  background: #fff;
+  font-family: var(--pm-font-body);
+  font-size: 14px;
+  color: var(--pm-ink-900);
+  outline: none;
+  transition: border-color var(--pm-dur-fast), box-shadow var(--pm-dur-fast);
+}
+.pm-lists__create-input::placeholder { color: var(--pm-ink-400); }
+.pm-lists__create-input:focus {
+  border-color: var(--pm-navy-mid);
+  box-shadow: 0 0 0 3px rgba(27, 58, 107, 0.15);
+}
+.pm-lists__create-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+/* ── Buttons ── */
+.pm-lists__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 16px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  font-family: var(--pm-font-body);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--pm-dur-fast), color var(--pm-dur-fast), border-color var(--pm-dur-fast);
+}
+.pm-lists__btn--sm { min-height: 36px; padding: 6px 12px; font-size: 12px; }
+.pm-lists__btn--ghost {
+  background: transparent;
+  color: var(--pm-ink-700);
+}
+.pm-lists__btn--ghost:hover { background: var(--pm-ink-100); color: var(--pm-ink-900); }
+.pm-lists__btn--primary {
+  background: var(--pm-terracotta);
+  color: #fff;
+}
+.pm-lists__btn--primary:hover:not(:disabled) { background: var(--pm-terracotta-light); }
+.pm-lists__btn--primary:disabled { opacity: 0.5; cursor: not-allowed; }
+.pm-lists__btn--danger-outline {
+  background: #fff;
+  border-color: rgba(166, 61, 47, 0.4);
+  color: var(--pm-danger);
+}
+.pm-lists__btn--danger-outline:hover { background: rgba(166, 61, 47, 0.08); }
+
+/* ── Grid view ── */
+.pm-lists__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+@media (min-width: 640px) { .pm-lists__grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1024px) { .pm-lists__grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1280px) { .pm-lists__grid { grid-template-columns: repeat(3, 1fr); } }
+
+.pm-lists__card {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border: 1px solid var(--pm-ink-200);
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+  min-height: 180px;
+}
+.pm-lists__card-head { display: flex; align-items: center; gap: 8px; }
+.pm-lists__card-icon { color: var(--pm-navy-mid); }
+.pm-lists__card-name {
+  margin: 0;
+  font-family: var(--pm-font-heading);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--pm-navy-deep);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pm-lists__card-meta {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--pm-ink-500);
+}
+.pm-lists__rename { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+.pm-lists__rename-input {
+  flex: 1;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--pm-ink-300);
+  border-radius: 6px;
+  background: #fff;
+  font-family: var(--pm-font-body);
+  font-size: 13px;
+  color: var(--pm-ink-900);
+  outline: none;
+  transition: border-color var(--pm-dur-fast);
+}
+.pm-lists__rename-input:focus { border-color: var(--pm-navy-light); }
+
+.pm-lists__card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: auto;
+  padding-top: 12px;
+  border-top: 1px solid var(--pm-ink-100);
+  font-size: 13px;
+}
+.pm-lists__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  font-family: var(--pm-font-body);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pm-navy-mid);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--pm-dur-fast), color var(--pm-dur-fast);
+}
+.pm-lists__link:hover { background: rgba(27, 58, 107, 0.08); color: var(--pm-navy-deep); }
+.pm-lists__link--danger { color: var(--pm-danger); }
+.pm-lists__link--danger:hover { background: rgba(166, 61, 47, 0.08); color: var(--pm-danger); }
+.pm-lists__link--open svg { transition: transform var(--pm-dur-fast); }
+.pm-lists__link--open:hover svg { transform: translateX(2px); }
+.pm-lists__sep { margin: 0 4px; color: var(--pm-ink-300); }
+
+.pm-lists__new-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 180px;
+  border: 2px dashed var(--pm-ink-300);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--pm-ink-500);
+  font-family: var(--pm-font-body);
+  cursor: pointer;
+  transition: border-color var(--pm-dur-fast), background var(--pm-dur-fast), color var(--pm-dur-fast);
+}
+.pm-lists__new-tile:hover {
+  border-color: var(--pm-navy-light);
+  background: var(--pm-navy-pale);
+  color: var(--pm-navy-mid);
+}
+.pm-lists__new-tile-circle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--pm-ink-100);
+  color: var(--pm-ink-500);
+  transition: background var(--pm-dur-fast), color var(--pm-dur-fast);
+}
+.pm-lists__new-tile:hover .pm-lists__new-tile-circle {
+  background: #fff;
+  color: var(--pm-navy-mid);
+}
+.pm-lists__new-tile-label { font-size: 13px; font-weight: 600; }
+
+/* ── Detail view ── */
+.pm-lists__detail { display: flex; flex-direction: column; gap: 20px; }
+.pm-lists__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pm-navy-mid);
+  text-decoration: none;
+  transition: color var(--pm-dur-fast);
+}
+.pm-lists__back:hover { color: var(--pm-navy-deep); }
+
+.pm-lists__detail-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+.pm-lists__detail-title {
+  margin: 0;
+  font-family: var(--pm-font-heading);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.012em;
+  color: var(--pm-navy-deep);
+}
+@media (min-width: 640px) { .pm-lists__detail-title { font-size: 24px; } }
+.pm-lists__detail-meta {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--pm-ink-500);
+}
+
+.pm-lists__detail-empty {
+  background: #fff;
+  border: 1.5px dashed var(--pm-ink-200);
+  border-radius: 12px;
+  padding: 40px 24px;
+  text-align: center;
+  font-size: 14px;
+  color: var(--pm-ink-500);
+}
+
+.pm-lists__detail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+}
+.pm-lists__row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #fff;
+  border: 1px solid var(--pm-ink-200);
+  border-radius: 10px;
+  padding: 14px;
+}
+.pm-lists__row-img {
+  flex-shrink: 0;
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--pm-ink-100);
+  border-radius: 8px;
+  overflow: hidden;
+  color: var(--pm-ink-400);
+}
+.pm-lists__row-img img { width: 100%; height: 100%; object-fit: contain; padding: 4px; }
+.pm-lists__row-main { min-width: 0; flex: 1; }
+.pm-lists__row-brand {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pm-tan);
+}
+.pm-lists__row-name {
+  display: block;
+  margin-top: 2px;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--pm-navy-deep);
+  text-decoration: none;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+a.pm-lists__row-name:hover { color: var(--pm-navy-mid); }
+.pm-lists__row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--pm-ink-500);
+}
+.pm-lists__row-price { color: var(--pm-ink-700); font-weight: 600; }
+
+.pm-lists__row-controls { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.pm-lists__qty {
+  display: inline-flex;
+  align-items: stretch;
+  overflow: hidden;
+  border: 1px solid var(--pm-ink-200);
+  border-radius: 6px;
+}
+.pm-lists__qty button {
+  background: #fff;
+  border: none;
+  padding: 6px 10px;
+  font-size: 14px;
+  color: var(--pm-ink-700);
+  cursor: pointer;
+  transition: background var(--pm-dur-fast);
+}
+.pm-lists__qty button:hover:not(:disabled) { background: var(--pm-ink-100); }
+.pm-lists__qty button:disabled { opacity: 0.4; cursor: not-allowed; }
+.pm-lists__qty-val {
+  min-width: 34px;
+  padding: 6px 8px;
+  border-left: 1px solid var(--pm-ink-200);
+  border-right: 1px solid var(--pm-ink-200);
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--pm-ink-900);
+}
+.pm-lists__row-remove {
+  background: transparent;
+  border: none;
+  padding: 6px;
+  border-radius: 6px;
+  color: var(--pm-ink-500);
+  cursor: pointer;
+  transition: background var(--pm-dur-fast), color var(--pm-dur-fast);
+}
+.pm-lists__row-remove:hover { background: rgba(166, 61, 47, 0.1); color: var(--pm-danger); }
+

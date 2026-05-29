@@ -1,0 +1,44 @@
+/* =============================================================================
+   pm-base.css — Reset & base
+   Global reset, base element styles, .pm-container width utility.
+   PM theme CSS layer · load order 2/12 (see README → "CSS architecture").
+   ============================================================================= */
+
+/* --- Global Reset & Base --------------------------------------------------- */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  font-family: var(--pm-font-body);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--pm-ink-900);
+  background: var(--pm-paper);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--pm-paper);
+}
+
+img { display: block; max-width: 100%; height: auto; }
+a { color: inherit; text-decoration: none; }
+button { cursor: pointer; font-family: inherit; }
+ul, ol { list-style: none; }
+
+/* --- Utility Container ----------------------------------------------------- */
+.pm-container {
+  max-width: var(--pm-container);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+@media (min-width: 640px) {
+  .pm-container { padding-left: 1.5rem; padding-right: 1.5rem; }
+}
+@media (min-width: 768px) {
+  .pm-container { padding-left: 2rem; padding-right: 2rem; }
+}
+

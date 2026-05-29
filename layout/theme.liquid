@@ -22,7 +22,24 @@
 
   {{ content_for_header }}
 
-  {{ 'pm-theme.css' | asset_url | stylesheet_tag }}
+  {%- comment -%}
+    PM theme CSS layer. Split by domain so teams can own a slice without
+    touching a 6k-line monolith. ORDER MATTERS — it mirrors the original
+    single-file cascade, so keep tokens → base first and don't reshuffle.
+    See README → "CSS architecture".
+  {%- endcomment -%}
+  {{ 'pm-tokens.css'        | asset_url | stylesheet_tag }}
+  {{ 'pm-base.css'          | asset_url | stylesheet_tag }}
+  {{ 'pm-header.css'        | asset_url | stylesheet_tag }}
+  {{ 'pm-home-sections.css' | asset_url | stylesheet_tag }}
+  {{ 'pm-footer.css'        | asset_url | stylesheet_tag }}
+  {{ 'pm-overlays.css'      | asset_url | stylesheet_tag }}
+  {{ 'pm-collection.css'    | asset_url | stylesheet_tag }}
+  {{ 'pm-account.css'       | asset_url | stylesheet_tag }}
+  {{ 'pm-product.css'       | asset_url | stylesheet_tag }}
+  {{ 'pm-compare.css'       | asset_url | stylesheet_tag }}
+  {{ 'pm-lists.css'         | asset_url | stylesheet_tag }}
+  {{ 'pm-auth-misc.css'     | asset_url | stylesheet_tag }}
 
   {%- comment -%}
     Collection 404 → search redirect. Runs in <head> BEFORE the body

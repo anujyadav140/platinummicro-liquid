@@ -8,7 +8,7 @@ Built for the **platinum-micro.myshopify.com** store (a B2B IT distributor).
 
 ## TL;DR for a new teammate
 
-- **Styling** lives in ONE file: `assets/pm-theme.css`. Design tokens (colours, spacing, timing) are CSS variables at the top — always reuse a `--pm-*` variable instead of hard-coding a colour.
+- **Styling** is split by domain into `assets/pm-*.css` files (one per area — header, product, cart, compare, …), loaded in order by `layout/theme.liquid`. Design tokens (colours, spacing, timing) are CSS variables in `pm-tokens.css`, which loads first — always reuse a `--pm-*` variable instead of hard-coding a colour. See [CSS architecture](#css-architecture) before editing.
 - **Behaviour** is split into small vanilla-JS modules, one per feature, each named `assets/pm-*.js`. No framework, no build step. Every file starts with a header comment explaining what it does.
 - **Markup** is Liquid: page layouts are `sections/`, reusable bits are `snippets/`, and which sections appear on which page is decided by `templates/*.json`.
 - **Cross-feature wiring** is done with two patterns: `data-*` attributes (to tag a button/element) and custom DOM events (e.g. `pm:cart-changed`) so modules can talk without importing each other.
@@ -20,7 +20,21 @@ Built for the **platinum-micro.myshopify.com** store (a B2B IT distributor).
 
 ```
 assets/
-  pm-theme.css            # THE stylesheet — design tokens + every component
+  # CSS — split by domain, loaded IN THIS ORDER by layout/theme.liquid.
+  # Order mirrors the old single-file cascade; keep tokens → base first.
+  pm-tokens.css           # 1  Design tokens (--pm-* CSS variables) — loads first
+  pm-base.css             # 2  Reset, base elements, .pm-container
+  pm-header.css           # 3  Top bar, header, nav rail, mega menu, partner brands
+  pm-home-sections.css    # 4  Hero, banner strip, card section, brand wall, promo/about
+  pm-footer.css           # 5  Footer
+  pm-overlays.css         # 6  Mobile nav drawer, shared buttons, quick-order, cart drawer
+  pm-collection.css       # 7  Search bar, PLP, product card, facets, static info pages
+  pm-account.css          # 8  Register, sign-in landing, account dashboard
+  pm-product.css          # 9  PDP: gallery, buy-box, bundles, description/specs
+  pm-compare.css          # 10 Floating compare bar, /pages/compare grid, toast
+  pm-lists.css            # 11 Add-to-list popover, header lists button, /pages/lists
+  pm-auth-misc.css        # 12 Customer auth forms, focus rings, form-field, recently-viewed
+
   pm-product-specs.json   # Static spec lookup table (fallback spec data by product)
 
   pm-header.js            # Mega-menu hover + mobile nav drawer
@@ -146,7 +160,7 @@ This store uses **New Customer Accounts** (Classic is gone — `/account/login` 
 
 **Naming** — every theme file, CSS class, and global is prefixed `pm-` / `Pm` so it never clashes with Shopify or app code.
 
-**CSS** — one file, `pm-theme.css`. Reuse the design tokens at the top:
+**CSS** — split into domain files (`assets/pm-*.css`), loaded in order by `theme.liquid` (see [CSS architecture](#css-architecture)). Reuse the design tokens from `pm-tokens.css`:
 | Token kind | Examples |
 |---|---|
 | Brand colours | `--pm-navy-deep`, `--pm-terracotta` |
@@ -176,7 +190,37 @@ This store uses **New Customer Accounts** (Classic is gone — `/account/login` 
 - Reuse a `--pm-*` token instead of a raw colour/size.
 - Talk between modules with events, not direct calls.
 - Tag elements with `data-*` hooks; don't make JS depend on CSS class names.
-- Keep each JS file to one feature, with its header comment up to date.
+- Keep each JS/CSS file to one feature/domain, with its header comment up to date.
+
+---
+
+## CSS architecture
+
+The stylesheet used to be one 6k-line `pm-theme.css`. It's now **split by domain** into 12 `assets/pm-*.css` files so a team can own a slice (header, product, cart, …) without fighting over a monolith — the same one-file-per-concern shape the JS already uses.
+
+**Load order is significant.** `layout/theme.liquid` emits the `stylesheet_tag`s in the exact order shown in the [File map](#file-map). That order mirrors the original single-file cascade, so the rendered result is byte-for-byte the same as before the split. Two consequences:
+
+1. `pm-tokens.css` (the `--pm-*` variables) and `pm-base.css` (reset) **must stay first** — everything else depends on them.
+2. If two rules with equal specificity target the same element, the file loaded later still wins — so **don't reshuffle the order** when adding tags.
+
+**Which file does a style go in?** Match the domain:
+
+| You're styling… | File |
+|---|---|
+| A colour/spacing/timing token | `pm-tokens.css` |
+| A reset / `.pm-container` / global helper | `pm-base.css` |
+| Header, nav rail, mega menu, top bar | `pm-header.css` |
+| A homepage section (hero, cards, brand wall) | `pm-home-sections.css` |
+| Footer | `pm-footer.css` |
+| Mobile nav drawer, shared `.pm-btn`, quick-order/cart drawer | `pm-overlays.css` |
+| Collection/search page, product card, facets, info pages | `pm-collection.css` |
+| Register / sign-in / account dashboard | `pm-account.css` |
+| Product detail page (gallery, buy-box, specs, bundles) | `pm-product.css` |
+| Compare bar / compare page | `pm-compare.css` |
+| Lists popover / lists dashboard | `pm-lists.css` |
+| Auth forms, focus rings, form-field, recently-viewed | `pm-auth-misc.css` |
+
+**Adding a brand-new CSS file:** create `assets/pm-<thing>.css` with a header comment, then add one `{{ 'pm-<thing>.css' | asset_url | stylesheet_tag }}` line to `theme.liquid` **in the right cascade position** (append at the end unless it must override an earlier domain).
 
 ---
 

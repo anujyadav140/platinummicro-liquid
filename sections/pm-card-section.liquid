@@ -1,3 +1,10 @@
+{%- comment -%}
+  PM — Card Section
+  =================
+  Homepage card grid with two looks: 'poster' (image cards, e.g. Industries)
+  and 'icon' (icon tiles). Columns + style are merchant-set in the editor.
+  Styles: pm-home-sections.css (.pm-cards-* / poster + icon tile rules).
+{%- endcomment -%}
 {%- liquid
   assign card_style = section.settings.card_style | default: 'poster'
   assign columns    = section.settings.columns | default: 6
