@@ -160,6 +160,7 @@ This store uses **New Customer Accounts** (Classic is gone — `/account/login` 
 | `pm:quote:v1` | pm-quote | Quote-cart items |
 | `pm:recently-viewed:v1` | pm-recently-viewed | Recently viewed PDPs |
 | `pm-compare` | pm-compare | Compare selection (≤4) |
+| `pm:topbar-dismissed:v1` | pm-top-bar-body inline script | Dismissed top-bar **content signatures** → timestamp (30-day TTL). Keyed by content so edited/new banners re-appear. |
 
 **Custom events** (how modules talk without importing each other):
 | Event | Fired by | Listened by |

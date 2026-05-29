@@ -23,6 +23,15 @@
 
 {%- assign _now = 'now' | date: '%s' | plus: 0 -%}
 {%- assign _promo_count = 0 -%}
+{%- comment -%}
+  _bar_sig is a content fingerprint of what this bar is currently showing.
+  We append each active promo's message+code to it as we build the markup.
+  The dismiss tracking (localStorage) keys off this signature, so when the
+  merchant edits or adds a promo the signature changes and a previously
+  dismissed bar re-appears — only the *exact* content a shopper closed
+  stays hidden.
+{%- endcomment -%}
+{%- assign _bar_sig = '' -%}
 {%- capture _promos_html -%}
   {%- for block in blocks -%}
     {%- if block.type == 'promotion' and block.settings.message != blank -%}
@@ -38,6 +47,7 @@
       {%- endif -%}
       {%- if _active -%}
         {%- assign _promo_count = _promo_count | plus: 1 -%}
+        {%- assign _bar_sig = _bar_sig | append: block.settings.message | append: '|' | append: block.settings.code | append: '~~' -%}
         <span class="pm-top-bar__promo" {{ block.shopify_attributes }}>
           {{ block.settings.message }}
           {%- if block.settings.code != blank -%}
@@ -48,6 +58,15 @@
     {%- endif -%}
   {%- endfor -%}
 {%- endcapture -%}
+
+{%- comment -%}
+  No active promos → the bar shows the trust line, so its signature is the
+  trust-line copy (or a stable default). This way dismissing the trust-line
+  bar is also content-aware: change the lead text and it comes back.
+{%- endcomment -%}
+{%- if _bar_sig == blank -%}
+  {%- assign _bar_sig = settings.lead_text | default: 'pm-trust-default' -%}
+{%- endif -%}
 
 {%- comment -%}
   Design controls → CSS custom properties on the bar root. The CSS reads them
@@ -63,13 +82,12 @@
 {%- endcapture -%}
 {%- assign _ptb_interval = settings.rotate_speed | default: 4.5 | times: 1000 | round -%}
 {%- assign _bar_id = 'pm-top-bar-' | append: section_id -%}
-{%- assign _dismiss_key = 'pm-top-bar-dismissed-' | append: section_id -%}
 
 <div
   class="pm-top-bar"
   id="{{ _bar_id }}"
   role="banner"
-  data-dismiss-key="{{ _dismiss_key }}"
+  data-bar-sig="{{ _bar_sig | escape }}"
   {%- if _ptb_style != blank %} style="{{ _ptb_style | strip | escape }}"{% endif -%}
 >
   <div class="pm-top-bar__inner">
@@ -140,12 +158,64 @@
     var bar = document.getElementById('{{ _bar_id }}');
     if (!bar) return;
 
-    // Restore dismissed state from cookie (runs early, before first paint).
-    if (document.cookie.indexOf('{{ _dismiss_key }}=1') !== -1) {
+    // ── Content-aware dismiss tracking ────────────────────────────────────
+    // We store dismissals in localStorage keyed by the bar's CONTENT
+    // signature (data-bar-sig), not by section id. So:
+    //   • closing a bar hides exactly that content, forever-ish (30d TTL)
+    //   • editing the promo / trust copy changes the signature → re-appears
+    //   • a brand-new bar has a never-seen signature → shows
+    //   • each stacked bar is tracked independently (different signatures)
+    // The store is a { "<signature>": <dismissedAtMs> } map; we prune
+    // entries older than the TTL on every load so it can't grow forever.
+    var STORE_KEY = 'pm:topbar-dismissed:v1';
+    var TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+    var sig = bar.getAttribute('data-bar-sig') || '';
+
+    function readStore() {
+      try {
+        var raw = window.localStorage.getItem(STORE_KEY);
+        var obj = raw ? JSON.parse(raw) : {};
+        return (obj && typeof obj === 'object') ? obj : {};
+      } catch (e) { return {}; }
+    }
+    function writeStore(obj) {
+      try { window.localStorage.setItem(STORE_KEY, JSON.stringify(obj)); } catch (e) {}
+    }
+    function prune(obj) {
+      var now = Date.now();
+      var changed = false;
+      for (var k in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, k)) {
+          if (typeof obj[k] !== 'number' || (now - obj[k]) > TTL_MS) {
+            delete obj[k]; changed = true;
+          }
+        }
+      }
+      return changed;
+    }
+
+    var store = readStore();
+    if (prune(store)) writeStore(store);
+
+    // Hide only if THIS exact content was dismissed and hasn't expired.
+    if (sig && Object.prototype.hasOwnProperty.call(store, sig)) {
       bar.style.display = 'none';
     }
 
-    // Rotate this bar's active promotions, one at a time.
+    // Bind this bar's own X to record its signature.
+    var dismissBtn = bar.querySelector('[data-pm-top-bar-dismiss]');
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', function () {
+        bar.style.display = 'none';
+        if (!sig) return;
+        var s = readStore();
+        s[sig] = Date.now();
+        prune(s);
+        writeStore(s);
+      });
+    }
+
+    // ── Rotate this bar's active promotions, one at a time ────────────────
     var wrap = bar.querySelector('[data-promo-rotate]');
     if (!wrap) return;
     var items = wrap.querySelectorAll('.pm-top-bar__promo');
