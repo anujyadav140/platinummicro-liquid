@@ -15,28 +15,7 @@
 {%- assign _col = collections[col_handle] -%}
 {%- assign _badge = col_title | upcase | slice: 0, 3 -%}
 
-{%- comment -%}
-  Per-handle fallback assets. Admin-driven cards (nested nav links) call
-  this snippet WITHOUT col_image_url / col_blurb, so when the live
-  collection has no image or products there's nothing to show ("Browse
-  the catalog", no image). This map backfills those handles.
-  Format: handle~image-file~blurb, rows separated by '||'. Image files
-  resolve against the store CDN base below.
-{%- endcomment -%}
-{%- assign _ov_cdn = 'https://cdn.shopify.com/s/files/1/0715/8841/3523/files/' -%}
-{%- assign _overrides = 'intel-core-i7~29839__15063.jpg~Intel Core i7 desktops, laptops & processors' -%}
-{%- assign _ov_img = '' -%}
-{%- assign _ov_blurb = '' -%}
-{%- assign _ov_rows = _overrides | split: '||' -%}
-{%- for _row in _ov_rows -%}
-  {%- assign _ov = _row | split: '~' -%}
-  {%- if _ov[0] == col_handle -%}
-    {%- if _ov[1] != blank -%}{%- assign _ov_img = _ov_cdn | append: _ov[1] -%}{%- endif -%}
-    {%- assign _ov_blurb = _ov[2] -%}
-  {%- endif -%}
-{%- endfor -%}
-
-{%- comment -%} Blurb: explicit > live collection count+name > handle override > default {%- endcomment -%}
+{%- comment -%} Blurb: explicit > live collection count+name > default {%- endcomment -%}
 {%- assign _blurb = '' -%}
 {%- if col_blurb != blank -%}
   {%- assign _blurb = col_blurb -%}
@@ -50,13 +29,11 @@
     {%- assign _desc_short = _col.description | strip_html | truncatewords: 9, '…' -%}
     {%- assign _blurb = _blurb | append: '. ' | append: _desc_short -%}
   {%- endif -%}
-{%- elsif _ov_blurb != blank -%}
-  {%- assign _blurb = _ov_blurb -%}
 {%- else -%}
   {%- assign _blurb = 'Browse the catalog' -%}
 {%- endif -%}
 
-{%- comment -%} Image: explicit URL > collection image > first product image > handle override {%- endcomment -%}
+{%- comment -%} Image: explicit URL > collection image > first product image {%- endcomment -%}
 {%- assign _img = nil -%}
 {%- assign _img_alt = col_title -%}
 {%- if col_image_url != blank -%}
@@ -67,8 +44,6 @@
 {%- elsif _col.products.first.featured_image -%}
   {%- assign _img = _col.products.first.featured_image | image_url: width: 200 -%}
   {%- assign _img_alt = _col.products.first.featured_image.alt | default: col_title -%}
-{%- elsif _ov_img != blank -%}
-  {%- assign _img = _ov_img -%}
 {%- endif -%}
 
 <a href="/collections/{{ col_handle }}" class="pm-mega__card">

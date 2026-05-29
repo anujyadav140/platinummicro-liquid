@@ -122,6 +122,10 @@
     are baked-in defaults from the Hydrogen reference — when a Shopify
     collection with the same handle exists *and* the merchant has set a
     custom image, that wins (handled by `snippets/pm-mega-card.liquid`).
+
+    ⚠ `|` separates cards and `~` separates fields — so NEVER put a raw
+    `|` (or `~`) inside a title or blurb, or it spawns a phantom card.
+    Use an em dash (—) in product names instead.
   {%- endcomment -%}
 
   {%- assign _cdn_base = 'https://cdn.shopify.com/s/files/1/0715/8841/3523/files/' -%}
@@ -134,7 +138,7 @@
 
   {%- capture _children_components -%}Storage Devices~storage-devices~33447_5_-5__72396.jpg~2,087 products. Adata ALRAI910CWH MFi Certified Lightning Card Reader|Cooling Devices~cooling-devices~15177__75911.jpg~1,547 products. Dynatron A27G 2U Side Fan CPU Cooler for AMD AM2 AM3|Graphics Cards~graphics-cards~11G-P4-6390-KR_3__87057.jpg~345 products. EVGA 11G-P4-6390-KR GeForce GTX 1080 Ti Founders Edition|Development Boards~development-boards~C1207-2GB_2__59220.jpg~295 products. Raspberry RPI4-MODBP-2GB Pi 4 Model B 2019 Quad Core 64 Bit|CPU Processors~cpu-processors~29839__15063.jpg~256 products. Intel BX80646I74790K Core i7-4790K 4.0GHz LGA 1150 88W Quad-Core|Motherboards~motherboards~31940_5__75601.jpg~179 products. Gigabyte GA-Z170X-Gaming 3 Intel Z170 Chipset ATX Motherboard{%- endcapture -%}
 
-  {%- capture _children_computers -%}Tablets & Laptops~tablets-laptops~Aero_15W_v8-BK4_bundle-New__02462.jpg~48 products. Gigabyte Aero 15W v8-BK4 15" Ultra Slim Gaming Laptop Bundle|Mini PC~mini-pc~GB-BRR7H-48003__96730.jpg~32 products. Gigabyte BRIX GB-BRR7H-4800-BWUS Ultra Compact PC Kit|Mini PC Bare Bones~mini-pc-bare-bones~1000__02363.png~10 products. GIGABYTE BRIX EXTREME GB-BEi7HS-1260-BWUS Intel i7-1260P|Desktop Computer~desktop-computer~bl631s_bl_gallery_01_s__50258.png~4 products. Platinum Micro The Multi Tasker Mini Desktop PC | Intel Core i7{%- endcapture -%}
+  {%- capture _children_computers -%}Tablets & Laptops~tablets-laptops~Aero_15W_v8-BK4_bundle-New__02462.jpg~48 products. Gigabyte Aero 15W v8-BK4 15" Ultra Slim Gaming Laptop Bundle|Mini PC~mini-pc~GB-BRR7H-48003__96730.jpg~32 products. Gigabyte BRIX GB-BRR7H-4800-BWUS Ultra Compact PC Kit|Mini PC Bare Bones~mini-pc-bare-bones~1000__02363.png~10 products. GIGABYTE BRIX EXTREME GB-BEi7HS-1260-BWUS Intel i7-1260P|Desktop Computer~desktop-computer~bl631s_bl_gallery_01_s__50258.png~4 products. Platinum Micro The Multi Tasker Mini Desktop PC — Intel Core i7|Intel Core i7~intel-core-i7~29839__15063.jpg~Intel Core i7 desktops, laptops & processors{%- endcapture -%}
 
   {%- capture _children_peripherals -%}Audio~audio~28984__67260.jpg~206 products. Microlab M102WHITE Daisy-Chain Compact Mini Stereo Speaker|External Hard Drives~external-hard-drives~31kJ7BvAISL-1__06902.jpg~100 products. Seagate STEA1500400 Expansion 1.5TB 2.5" Portable USB 3.0|Monitors~monitors~AEMNT00028A__85413.jpg~85 products. Arctic AEMNT00028A Z+1 Pro Monitor Arm Extension Kit|Keyboards & Mices~keyboards-mices~31528__11152.jpg~63 products. Logitech 920-002555 Wireless Wave Combo MK550 Keyboard & Mouse|Video~video~~58 products. Logitech 960-000694 C270 3MP HD Webcam, Retail|Optical Drives~optical-drives~30508_2__72127.jpg~27 products. Pioneer BDR-XU03 External Slim Blu-Ray 6X USB 3.0 Writer Drive{%- endcapture -%}
 
