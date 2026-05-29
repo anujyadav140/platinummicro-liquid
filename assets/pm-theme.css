@@ -108,8 +108,8 @@ ul, ol { list-style: none; }
 
 /* --- Top Bar --------------------------------------------------------------- */
 .pm-top-bar {
-  background: var(--pm-navy-deepest);
-  color: rgba(255,255,255,0.85);
+  background: var(--ptb-bg, var(--pm-navy-deepest));
+  color: var(--ptb-text, rgba(255,255,255,0.85));
   font-size: 12px;
   height: var(--pm-trust-bar-h);
   display: flex;
@@ -130,12 +130,15 @@ ul, ol { list-style: none; }
 .pm-top-bar__trust {
   display: flex;
   align-items: center;
+  justify-content: var(--ptb-align, flex-start);
+  flex: 1;
   gap: 4px;
   font-weight: 600;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  font-size: 11.5px;
+  font-size: var(--ptb-font, 11.5px);
+  color: var(--ptb-text, inherit);
   letter-spacing: 0.01em;
 }
 .pm-top-bar__trust .pm-dot { color: rgba(255,255,255,0.35); margin: 0 2px; }
@@ -144,6 +147,8 @@ ul, ol { list-style: none; }
 .pm-top-bar__promos {
   display: flex;
   align-items: center;
+  justify-content: var(--ptb-align, flex-start);
+  flex: 1;
   gap: 8px;
   min-width: 0;
   overflow: hidden;
@@ -153,9 +158,9 @@ ul, ol { list-style: none; }
   align-items: center;
   gap: 8px;
   font-weight: 600;
-  font-size: 11.5px;
+  font-size: var(--ptb-font, 11.5px);
   letter-spacing: 0.01em;
-  color: #fff;
+  color: var(--ptb-text, #fff);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -163,8 +168,8 @@ ul, ol { list-style: none; }
 .pm-top-bar__promo-code {
   display: inline-flex;
   align-items: center;
-  background: var(--pm-terracotta);
-  color: #fff;
+  background: var(--ptb-chip-bg, var(--pm-terracotta));
+  color: var(--ptb-chip-text, #fff);
   font-weight: 700;
   font-size: 10.5px;
   letter-spacing: 0.04em;

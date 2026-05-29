@@ -43,13 +43,36 @@
   {%- endfor -%}
 {%- endcapture -%}
 
-<div class="pm-top-bar" id="pm-top-bar" role="banner">
+{%- comment -%}
+  Design controls
+  ---------------
+  These map theme-editor "Design" settings to CSS custom properties on the
+  bar root. The CSS in pm-theme.css reads them with var(--ptb-*, fallback),
+  so leaving a field blank keeps the original look. Rotation speed is passed
+  as a data-* attribute and read by the script below.
+{%- endcomment -%}
+{%- capture _ptb_style -%}
+  {%- if section.settings.bg_color != blank %}--ptb-bg: {{ section.settings.bg_color }};{% endif -%}
+  {%- if section.settings.text_color != blank %}--ptb-text: {{ section.settings.text_color }};{% endif -%}
+  {%- if section.settings.chip_bg_color != blank %}--ptb-chip-bg: {{ section.settings.chip_bg_color }};{% endif -%}
+  {%- if section.settings.chip_text_color != blank %}--ptb-chip-text: {{ section.settings.chip_text_color }};{% endif -%}
+  {%- if section.settings.font_size != blank %}--ptb-font: {{ section.settings.font_size }}px;{% endif -%}
+  {%- if section.settings.text_align != blank %}--ptb-align: {{ section.settings.text_align }};{% endif -%}
+{%- endcapture -%}
+{%- assign _ptb_interval = section.settings.rotate_speed | default: 4.5 | times: 1000 | round -%}
+
+<div
+  class="pm-top-bar"
+  id="pm-top-bar"
+  role="banner"
+  {%- if _ptb_style != blank %} style="{{ _ptb_style | strip | escape }}"{% endif -%}
+>
   <div class="pm-top-bar__inner">
     {%- if _promo_count > 0 -%}
       <div
         class="pm-top-bar__promos"
         data-promo-count="{{ _promo_count }}"
-        {%- if _promo_count > 1 %} data-promo-rotate{% endif -%}
+        {%- if _promo_count > 1 %} data-promo-rotate data-promo-interval="{{ _ptb_interval }}"{% endif -%}
       >
         {{ _promos_html }}
       </div>
@@ -131,13 +154,15 @@
     if (!wrap) return;
     var items = wrap.querySelectorAll('.pm-top-bar__promo');
     if (items.length < 2) return;
+    // Rotation speed is set in the theme editor (Design → Rotation speed).
+    var interval = parseInt(wrap.getAttribute('data-promo-interval'), 10) || 4500;
     var i = 0;
     items.forEach(function (el, idx) { el.style.display = idx === 0 ? '' : 'none'; });
     setInterval(function () {
       items[i].style.display = 'none';
       i = (i + 1) % items.length;
       items[i].style.display = '';
-    }, 4500);
+    }, interval);
   })();
 </script>
 {%- endif -%}
@@ -182,6 +207,65 @@
       "id": "free_ship_min",
       "label": "Free shipping minimum ($)",
       "default": 5000
+    },
+    {
+      "type": "header",
+      "content": "Design"
+    },
+    {
+      "type": "paragraph",
+      "content": "Leave any field blank to keep the default theme look. Colors apply to the whole bar; chip colors apply to the discount-code pill."
+    },
+    {
+      "type": "color",
+      "id": "bg_color",
+      "label": "Background color"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color"
+    },
+    {
+      "type": "color",
+      "id": "chip_bg_color",
+      "label": "Discount chip background"
+    },
+    {
+      "type": "color",
+      "id": "chip_text_color",
+      "label": "Discount chip text"
+    },
+    {
+      "type": "range",
+      "id": "font_size",
+      "label": "Text size",
+      "min": 10,
+      "max": 16,
+      "step": 0.5,
+      "unit": "px",
+      "default": 11.5
+    },
+    {
+      "type": "select",
+      "id": "text_align",
+      "label": "Promotion alignment",
+      "options": [
+        { "value": "flex-start", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "flex-end", "label": "Right" }
+      ],
+      "default": "flex-start"
+    },
+    {
+      "type": "range",
+      "id": "rotate_speed",
+      "label": "Rotation speed (multiple promos)",
+      "min": 2,
+      "max": 10,
+      "step": 0.5,
+      "unit": "s",
+      "default": 4.5
     }
   ],
   "blocks": [
