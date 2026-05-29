@@ -196,7 +196,7 @@
         </div>
 
         <button type="button" class="pm-cart-page__btn pm-cart-page__btn--primary pm-cart-page__btn--block" data-pm-cart-quote-open>
-          Request quote for these items
+          Request quote
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>
 
@@ -573,6 +573,15 @@
   box-shadow: 0 0 0 3px rgba(166, 61, 47, 0.15);
 }
 .pm-cart-quote-form__actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+
+/* ── Mobile only: drop the ALL-CAPS on the orange primary buttons.
+   Desktop keeps its uppercase look untouched. ── */
+@media (max-width: 749px) {
+  .pm-cart-page__btn--primary {
+    text-transform: none;
+    letter-spacing: 0;
+  }
+}
 </style>
 
 <script>

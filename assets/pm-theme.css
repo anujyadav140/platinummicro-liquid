@@ -4540,9 +4540,13 @@ ul, ol { list-style: none; }
 @media (max-width: 720px) {
   .pm-cmp-bar__inner { gap: 10px; padding: 10px; }
   .pm-cmp-bar__left { width: 100%; flex-direction: row; align-items: baseline; gap: 10px; }
-  .pm-cmp-bar__thumbs { order: 3; width: 100%; }
-  .pm-cmp-bar__actions { order: 2; margin-left: auto; }
+  /* Thumbnails sit in their own row ABOVE the action buttons. */
+  .pm-cmp-bar__thumbs { order: 2; width: 100%; }
+  .pm-cmp-bar__actions { order: 3; width: 100%; }
   .pm-cmp-bar__thumb { min-width: 180px; }
+  /* Clear-all is icon-only on mobile to save space. */
+  .pm-cmp-bar__clear span { display: none; }
+  .pm-cmp-bar__clear { padding-left: 10px; padding-right: 10px; }
 }
 
 /* ── Compare page ── */
