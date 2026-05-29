@@ -288,16 +288,33 @@
                       <aside class="pm-mega__brands" aria-label="Partner brands">
                         <div class="pm-mega__brands-title">Partner brands</div>
                         <div class="pm-mega__brands-grid">
-                          {%- assign _brands = _partner_brands | split: '!!' -%}
-                          {%- for _b in _brands -%}
-                            {%- assign _bp = _b | split: '|' -%}
-                            {%- assign _b_alt = _bp[0] -%}
-                            {%- assign _b_file = _bp[1] -%}
-                            {%- assign _b_handle = _bp[2] -%}
-                            <a class="pm-mega__brand" href="/collections/{{ _b_handle }}" aria-label="{{ _b_alt }}">
-                              <img src="{{ _cdn_base | append: _b_file }}" alt="{{ _b_alt }}" loading="lazy">
-                            </a>
-                          {%- endfor -%}
+                          {%- comment -%}
+                            Console-editable first: any "Partner brand" blocks
+                            added in Customize → Header drive this rail. If none
+                            are configured we fall back to the baked-in defaults
+                            (_partner_brands) so the rail is never empty.
+                          {%- endcomment -%}
+                          {%- assign _brand_blocks = section.blocks | where: 'type', 'partner_brand' -%}
+                          {%- if _brand_blocks.size > 0 -%}
+                            {%- for _bblock in _brand_blocks -%}
+                              {%- if _bblock.settings.image != blank -%}
+                                <a class="pm-mega__brand" href="{{ _bblock.settings.link | default: '#' }}" aria-label="{{ _bblock.settings.name | escape }}" {{ _bblock.shopify_attributes }}>
+                                  <img src="{{ _bblock.settings.image | image_url: width: 240 }}" alt="{{ _bblock.settings.name | escape }}" loading="lazy">
+                                </a>
+                              {%- endif -%}
+                            {%- endfor -%}
+                          {%- else -%}
+                            {%- assign _brands = _partner_brands | split: '!!' -%}
+                            {%- for _b in _brands -%}
+                              {%- assign _bp = _b | split: '|' -%}
+                              {%- assign _b_alt = _bp[0] -%}
+                              {%- assign _b_file = _bp[1] -%}
+                              {%- assign _b_handle = _bp[2] -%}
+                              <a class="pm-mega__brand" href="/collections/{{ _b_handle }}" aria-label="{{ _b_alt }}">
+                                <img src="{{ _cdn_base | append: _b_file }}" alt="{{ _b_alt }}" loading="lazy">
+                              </a>
+                            {%- endfor -%}
+                          {%- endif -%}
                         </div>
                       </aside>
                     {%- endif -%}
@@ -334,7 +351,42 @@
       "id": "search_placeholder",
       "label": "Search placeholder text",
       "default": "Search by keyword, brand, or SKU"
+    },
+    {
+      "type": "header",
+      "content": "Partner brands rail"
+    },
+    {
+      "type": "paragraph",
+      "content": "Add 'Partner brand' blocks below to control the logo rail shown in the mega-menu panels. If you add none, a built-in default set is shown."
     }
-  ]
+  ],
+  "blocks": [
+    {
+      "type": "partner_brand",
+      "name": "Partner brand",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Brand logo",
+          "info": "Shown in the mega-menu 'Partner brands' rail. Use a transparent PNG or SVG."
+        },
+        {
+          "type": "text",
+          "id": "name",
+          "label": "Brand name",
+          "info": "Used for the link's accessible label and the image alt text."
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link",
+          "info": "Where the logo links to — e.g. the brand's collection."
+        }
+      ]
+    }
+  ],
+  "max_blocks": 16
 }
 {% endschema %}
