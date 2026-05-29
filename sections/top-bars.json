@@ -4,10 +4,36 @@
   "sections": {
     "top-bar": {
       "type": "pm-top-bar",
+      "blocks": {
+        "promo-save10": {
+          "type": "promotion",
+          "settings": {
+            "message": "Save 10% on all HPE ProLiant servers",
+            "code": "SAVE10"
+          }
+        }
+      },
+      "block_order": ["promo-save10"],
+      "settings": {
+        "enabled": true
+      }
+    },
+    "top-bar-2": {
+      "type": "pm-top-bar",
+      "blocks": {
+        "promo-refurb60": {
+          "type": "promotion",
+          "settings": {
+            "message": "Refurbished enterprise gear — up to 60% off list",
+            "code": "REFURB60"
+          }
+        }
+      },
+      "block_order": ["promo-refurb60"],
       "settings": {
         "enabled": true
       }
     }
   },
-  "order": ["top-bar"]
+  "order": ["top-bar", "top-bar-2"]
 }
