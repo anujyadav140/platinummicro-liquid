@@ -479,9 +479,14 @@
    This restores expected behaviour for hidden attribute toggles. */
 [hidden] { display: none !important; }
 
-/* Reserve bottom padding so the compare bar doesn't cover content */
+/* Reserve bottom padding so the compare bar doesn't cover content.
+   The full white bar is ~96px tall, so reserve that while EXPANDED. */
 body { padding-bottom: 0; transition: padding-bottom 0.18s; }
 body:has(#pm-compare-bar:not([hidden])) { padding-bottom: 96px; }
+/* Collapsed = just the small floating pill in the bottom-right corner.
+   It needs far less clearance, so don't leave a big blank gap under the
+   footer. (Higher specificity + later in source → wins when collapsed.) */
+body:has(#pm-compare-bar.is-collapsed:not([hidden])) { padding-bottom: 64px; }
 
 /* ── Toast (welcome on auth success, etc.) ── */
 .pm-toast {
