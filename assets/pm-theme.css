@@ -120,7 +120,9 @@ ul, ol { list-style: none; }
 .pm-top-bar__inner {
   max-width: var(--pm-container);
   margin: 0 auto;
-  padding: 0 1rem;
+  /* extra right padding reserves room so promo text never slides under the
+     dismiss X, which is pinned to the far right edge of the bar (below). */
+  padding: 0 3rem 0 1rem;
   width: 100%;
   display: flex;
   align-items: center;
@@ -179,6 +181,12 @@ ul, ol { list-style: none; }
   font-family: var(--pm-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
 }
 .pm-top-bar__right {
+  /* pinned flush to the far right of the bar (not the centered container),
+     vertically centered, so the dismiss X always hugs the viewport edge. */
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
   display: flex;
   align-items: center;
   gap: 4px;
