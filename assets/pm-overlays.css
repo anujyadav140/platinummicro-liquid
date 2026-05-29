@@ -73,6 +73,31 @@
 .pm-mobile-nav__link:active { background: var(--pm-ink-100); color: var(--pm-terracotta); }
 .pm-mobile-nav__link:last-child { border-bottom: none; }
 
+/* Separate the Account + Cart actions from the menu links above. The
+   <shopify-account> web component defaults to inline, so .pm-mobile-nav__link's
+   display:flex pulls it into the same row layout as the <a> links. */
+.pm-mobile-nav__account {
+  box-sizing: border-box;
+  border-top: 2px solid var(--pm-ink-200);
+  margin-top: 8px;
+}
+/* Cart total pill — sits at the far right via the row's
+   justify-content: space-between. */
+.pm-mobile-nav__cart-count {
+  flex: none;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--pm-terracotta);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 22px;
+  text-align: center;
+}
+.pm-mobile-nav__cart-count[hidden] { display: none; }
+
 /* --- General utility ------------------------------------------------------ */
 .visually-hidden {
   position: absolute;

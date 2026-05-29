@@ -107,6 +107,20 @@
       .catch(function () {});
   }
 
+  // Update EVERY cart badge on the page (header + mobile-nav) in one shot.
+  // There are multiple [data-cart-badge] hooks now, so a single querySelector
+  // would leave the others stale (e.g. mobile showing 3 while header shows 5).
+  function setAllBadges(total) {
+    document.querySelectorAll('[data-cart-badge]').forEach(function (b) {
+      if (total > 0) {
+        b.textContent = total;
+        b.removeAttribute('hidden');
+      } else {
+        b.setAttribute('hidden', '');
+      }
+    });
+  }
+
   function render(cart) {
     var shopifyItems = (cart && cart.items) ? cart.items : [];
     var quoteItems   = (window.PmQuote && window.PmQuote.list) ? window.PmQuote.list() : [];
@@ -122,16 +136,8 @@
       ? '1 item · ' + totalQty + ' unit' + (totalQty === 1 ? '' : 's')
       : totalLines + ' items · ' + totalQty + ' units';
 
-    // Header cart badge counts BOTH Shopify cart and local quote items.
-    var badge = document.querySelector('[data-cart-badge]');
-    if (badge) {
-      if (totalLines > 0) {
-        badge.textContent = totalLines;
-        badge.removeAttribute('hidden');
-      } else {
-        badge.setAttribute('hidden', '');
-      }
-    }
+    // Cart badges count BOTH the Shopify cart and local quote items.
+    setAllBadges(totalLines);
 
     itemsEl.innerHTML = '';
 
@@ -278,11 +284,7 @@
         ? '1 item · ' + totalQty + ' unit' + (totalQty === 1 ? '' : 's')
         : totalItems + ' items · ' + totalQty + ' units';
     }
-    var badge = document.querySelector('[data-cart-badge]');
-    if (badge) {
-      if (totalItems > 0) { badge.textContent = totalItems; badge.removeAttribute('hidden'); }
-      else { badge.setAttribute('hidden', ''); }
-    }
+    setAllBadges(totalItems);
     // If the cart is now empty, swap to empty state immediately.
     if (totalItems === 0) {
       itemsEl.setAttribute('hidden', '');
@@ -376,17 +378,14 @@
   }
 
   function syncBadgeFromStorage() {
+    // Read the Shopify baseline from the FIRST badge (the header, which is
+    // earliest in the DOM and still holds the clean server-rendered line
+    // count) BEFORE writing, so we never double-count across badges.
     var badge = document.querySelector('[data-cart-badge]');
     if (!badge) return;
     var shopifyLines = parseInt(badge.textContent, 10);
     if (isNaN(shopifyLines)) shopifyLines = 0;
-    var total = shopifyLines + readQuoteLineCount();
-    if (total > 0) {
-      badge.textContent = total;
-      badge.removeAttribute('hidden');
-    } else {
-      badge.setAttribute('hidden', '');
-    }
+    setAllBadges(shopifyLines + readQuoteLineCount());
   }
 
   syncBadgeFromStorage();

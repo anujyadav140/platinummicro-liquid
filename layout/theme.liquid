@@ -133,8 +133,30 @@
         {%- for link in linklists.main-menu.links -%}
           <a class="pm-mobile-nav__link" href="{{ link.url }}">{{ link.title }}</a>
         {%- endfor -%}
-        <a class="pm-mobile-nav__link" href="/account" style="border-top: 2px solid var(--pm-ink-200);margin-top:8px;">Sign in</a>
-        <button type="button" class="pm-mobile-nav__link" data-cart-open>Cart ({{ cart.item_count }})</button>
+
+        {%- comment -%}
+          Account — same <shopify-account> web component as the desktop header,
+          so the label reflects real New-Customer-Accounts state ("Sign in" when
+          signed out, the customer's name / "Account" when signed in) instead of
+          a hardcoded link. A distinct class keeps pm-auth-anchor.js — which
+          pins ONLY the header instance (.pm-header__shopify-account) — from
+          repositioning this one; the mobile popup uses Shopify's default spot.
+        {%- endcomment -%}
+        <shopify-account class="pm-mobile-nav__link pm-mobile-nav__account" menu="customer-account-main-menu">
+          <span slot="signed-out-avatar">Sign in</span>
+          <span slot="signed-in-avatar">{% if customer %}{{ customer.first_name | default: 'Account' }}{% else %}Account{% endif %}</span>
+        </shopify-account>
+
+        {%- comment -%}
+          Cart count must match the header badge, which folds local "quote"
+          items (localStorage) on top of the Shopify line count. Use the same
+          [data-cart-badge] hook so pm-cart-drawer.js keeps every badge live;
+          the count sits on the right of the row and hides when the cart is empty.
+        {%- endcomment -%}
+        <button type="button" class="pm-mobile-nav__link pm-mobile-nav__cart" data-cart-open>
+          <span>Cart</span>
+          <span class="pm-mobile-nav__cart-count" data-cart-badge {% if cart.items.size == 0 %}hidden{% endif %}>{{ cart.items.size }}</span>
+        </button>
       </div>
     </nav>
   </div>
