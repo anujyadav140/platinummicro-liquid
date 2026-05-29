@@ -297,9 +297,16 @@
                           {%- assign _brand_blocks = section.blocks | where: 'type', 'partner_brand' -%}
                           {%- if _brand_blocks.size > 0 -%}
                             {%- for _bblock in _brand_blocks -%}
+                              {%- comment -%} Uploaded logo wins; otherwise fall back to the URL field. {%- endcomment -%}
+                              {%- assign _b_src = '' -%}
                               {%- if _bblock.settings.image != blank -%}
+                                {%- assign _b_src = _bblock.settings.image | image_url: width: 240 -%}
+                              {%- elsif _bblock.settings.image_url != blank -%}
+                                {%- assign _b_src = _bblock.settings.image_url -%}
+                              {%- endif -%}
+                              {%- if _b_src != blank -%}
                                 <a class="pm-mega__brand" href="{{ _bblock.settings.link | default: '#' }}" aria-label="{{ _bblock.settings.name | escape }}" {{ _bblock.shopify_attributes }}>
-                                  <img src="{{ _bblock.settings.image | image_url: width: 240 }}" alt="{{ _bblock.settings.name | escape }}" loading="lazy">
+                                  <img src="{{ _b_src }}" alt="{{ _bblock.settings.name | escape }}" loading="lazy">
                                 </a>
                               {%- endif -%}
                             {%- endfor -%}
@@ -374,6 +381,12 @@
         },
         {
           "type": "text",
+          "id": "image_url",
+          "label": "Brand logo URL (fallback)",
+          "info": "Optional. Used only when no logo is uploaded above. Paste a full https:// image URL."
+        },
+        {
+          "type": "text",
           "id": "name",
           "label": "Brand name",
           "info": "Used for the link's accessible label and the image alt text."
@@ -387,6 +400,58 @@
       ]
     }
   ],
-  "max_blocks": 16
+  "max_blocks": 16,
+  "default": {
+    "blocks": [
+      {
+        "type": "partner_brand",
+        "settings": {
+          "name": "Hewlett Packard Enterprise",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/8841/3523/files/HPE_BIG.png",
+          "link": "/collections/hewlett-packard-enterprise"
+        }
+      },
+      {
+        "type": "partner_brand",
+        "settings": {
+          "name": "Intel",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/8841/3523/files/INTC.png",
+          "link": "/collections/intel"
+        }
+      },
+      {
+        "type": "partner_brand",
+        "settings": {
+          "name": "AMD",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/8841/3523/files/AMD_BIG.png",
+          "link": "/collections/amd"
+        }
+      },
+      {
+        "type": "partner_brand",
+        "settings": {
+          "name": "Samsung",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/8841/3523/files/005930.KS_BIG.png",
+          "link": "/collections/samsung"
+        }
+      },
+      {
+        "type": "partner_brand",
+        "settings": {
+          "name": "Seagate",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/8841/3523/files/STX_BIG.png",
+          "link": "/collections/seagate"
+        }
+      },
+      {
+        "type": "partner_brand",
+        "settings": {
+          "name": "WD",
+          "image_url": "https://cdn.shopify.com/s/files/1/0715/8841/3523/files/WDC_BIG.png",
+          "link": "/collections/wd"
+        }
+      }
+    ]
+  }
 }
 {% endschema %}
