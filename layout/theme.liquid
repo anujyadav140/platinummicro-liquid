@@ -81,9 +81,12 @@
   {%- endcomment -%}
   <a href="#MainContent" class="pm-skip-link">Skip to main content</a>
 
-  {%- section 'pm-top-bar' -%}
-  {%- comment -%} Optional second bar, stacks under the first. Off until enabled in the editor. {%- endcomment -%}
-  {%- section 'pm-top-bar-2' -%}
+  {%- comment -%}
+    Top bars are a section GROUP so the editor can add / remove / reorder as
+    many bars as you want (each PM — Top Bar stacks under the previous one).
+    Managed in Customize → "Top bars". Defined in sections/top-bars.json.
+  {%- endcomment -%}
+  {%- sections 'top-bars' -%}
 
   {%- section 'pm-header' -%}
 

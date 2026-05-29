@@ -1,8 +1,9 @@
 {%- comment -%}
   PM — Top Bar (shared body)
   ==========================
-  Rendered by both `sections/pm-top-bar.liquid` and
-  `sections/pm-top-bar-2.liquid` so the two stacked bars share one codebase.
+  Rendered by `sections/pm-top-bar.liquid`. That section lives in the "Top bars"
+  section group (sections/top-bars.json), so the editor can add multiple bars —
+  each one renders this body with its own settings and stacks under the others.
 
   Required params (passed from the section via {% render %}):
     settings    → section.settings  (all the field values)

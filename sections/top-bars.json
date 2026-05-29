@@ -1,0 +1,13 @@
+{
+  "name": "Top bars",
+  "type": "header",
+  "sections": {
+    "top-bar": {
+      "type": "pm-top-bar",
+      "settings": {
+        "enabled": true
+      }
+    }
+  },
+  "order": ["top-bar"]
+}

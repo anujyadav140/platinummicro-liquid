@@ -1,9 +1,10 @@
 {%- comment -%}
-  PM — Top Bar (first / top row)
-  ------------------------------
-  Thin wrapper: all markup + logic lives in snippets/pm-top-bar-body.liquid so
-  this bar and the second bar (sections/pm-top-bar-2.liquid) share one codebase.
-  Admin adds "Promotion" blocks in the theme editor (Customize → PM — Top Bar).
+  PM — Top Bar
+  ------------
+  Thin wrapper: all markup + logic lives in snippets/pm-top-bar-body.liquid.
+  This section belongs to the "Top bars" section group (sections/top-bars.json),
+  so the editor can add as many bars as you like — they stack in order. Admin
+  adds "Promotion" blocks per bar in the theme editor.
 {%- endcomment -%}
 {%- render 'pm-top-bar-body',
   settings: section.settings,
