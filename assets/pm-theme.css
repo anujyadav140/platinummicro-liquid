@@ -1391,17 +1391,24 @@ ul, ol { list-style: none; }
 .pm-mobile-nav__links {
   flex: 1;
   padding: 8px 0;
+  display: flex;
+  flex-direction: column;
 }
 .pm-mobile-nav__link {
-  display: block;
-  padding: 14px 20px;
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--pm-ink-800);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 20px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--pm-ink-900);
+  text-decoration: none;
   border-bottom: 1px solid var(--pm-ink-100);
-  transition: background var(--pm-dur-fast);
+  transition: background var(--pm-dur-fast), color var(--pm-dur-fast);
 }
-.pm-mobile-nav__link:hover { background: var(--pm-ink-100); }
+.pm-mobile-nav__link:hover,
+.pm-mobile-nav__link:active { background: var(--pm-ink-100); color: var(--pm-terracotta); }
+.pm-mobile-nav__link:last-child { border-bottom: none; }
 
 /* --- General utility ------------------------------------------------------ */
 .visually-hidden {
@@ -4544,9 +4551,8 @@ ul, ol { list-style: none; }
   .pm-cmp-bar__thumbs { order: 2; width: 100%; }
   .pm-cmp-bar__actions { order: 3; width: 100%; }
   .pm-cmp-bar__thumb { min-width: 180px; }
-  /* Clear-all is icon-only on mobile to save space. */
-  .pm-cmp-bar__clear span { display: none; }
-  .pm-cmp-bar__clear { padding-left: 10px; padding-right: 10px; }
+  /* Push the minimize/collapse chevron to the far right of the row. */
+  .pm-cmp-bar__collapse { margin-left: auto; }
 }
 
 /* ── Compare page ── */
@@ -5698,16 +5704,15 @@ a.pm-lists__row-name:hover { color: var(--pm-navy-mid); }
 .pm-pdp__buybox :focus-visible {
   outline-color: rgba(255, 255, 255, 0.85);
 }
-/* Skip-link style — make our mobile-nav cart trigger render like the
-   other nav links rather than a default button. */
-.pm-mobile-nav__link {
+/* Make our mobile-nav cart trigger (a <button>) render like the other
+   nav links (which are <a>). Scoped to button only so it doesn't clobber
+   the shared .pm-mobile-nav__link padding/typography. */
+button.pm-mobile-nav__link {
   background: none;
   border: none;
   font: inherit;
-  color: inherit;
-  text-align: left;
   cursor: pointer;
-  padding: 0;
+  width: 100%;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
