@@ -304,23 +304,51 @@ ul, ol { list-style: none; }
 }
 .pm-header__cart-btn {
   position: relative;
+  gap: 8px;
+}
+/* Icon wrapper exists so the badge anchors to the cart SVG specifically
+   (not the whole button) — that way the badge sits on the icon corner
+   instead of overlapping the "Cart" label, and on mobile when the label
+   is hidden the badge still pokes off the icon cleanly. */
+.pm-header__cart-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  line-height: 0;
+}
+.pm-header__cart-label {
+  line-height: 1;
 }
 .pm-header__cart-badge {
   position: absolute;
-  top: 2px;
-  right: 4px;
+  top: -7px;
+  right: -10px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
   background: var(--pm-terracotta);
-  color: white;
-  font-size: 9px;
+  color: #fff;
+  font-size: 10px;
   font-weight: 700;
-  min-width: 16px;
-  height: 16px;
-  border-radius: 8px;
-  display: flex;
+  font-feature-settings: 'tnum';
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  line-height: 1;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  box-shadow: 0 1px 3px rgba(13, 35, 64, 0.22);
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0 3px;
   pointer-events: none;
+  /* Subtle pop-in when the count updates. */
+  transition: transform var(--pm-dur-fast);
+}
+.pm-header__cart-btn:hover .pm-header__cart-badge {
+  transform: scale(1.06);
+}
+.pm-header__cart-badge[hidden] {
+  display: none !important;
 }
 .pm-header__hamburger {
   display: none;
@@ -328,7 +356,12 @@ ul, ol { list-style: none; }
 @media (max-width: 767px) {
   .pm-header__search { display: none; }
   .pm-header__hamburger { display: flex; }
-  .pm-header__action-btn span { display: none; }
+  /* Hide the text label inside header action buttons, but keep icon
+     wrappers and the cart badge visible. */
+  .pm-header__action-btn > span:not(.pm-header__cart-icon):not(.pm-header__cart-badge) {
+    display: none;
+  }
+  .pm-header__cart-btn { gap: 0; }
 }
 
 /* --- Nav Rail ------------------------------------------------------------- */
