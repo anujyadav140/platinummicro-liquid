@@ -354,6 +354,43 @@
 
   window.PmCart = { open: open, close: close, refresh: refresh };
 
+  // ── Flicker fix ────────────────────────────────────────────────────
+  // The header badge is server-rendered with the Shopify cart LINE count
+  // only — it can't know about local "quote" items (those live in
+  // localStorage). Without this, every navigation showed the Shopify-only
+  // number for ~500ms until refresh()'s /cart.js fetch resolved and
+  // render() added the quote lines, causing a visible 2 → 4 jump.
+  //
+  // This runs SYNCHRONOUSLY at script parse (header is already in the DOM
+  // by the time scripts load at end of <body>), reading quote lines
+  // straight from localStorage and folding them into the badge before the
+  // first paint settles. It must run exactly once per page load so it
+  // never double-counts the server value.
+  function readQuoteLineCount() {
+    try {
+      var raw = window.localStorage.getItem('pm:quote:v1');
+      if (!raw) return 0;
+      var arr = JSON.parse(raw);
+      return Array.isArray(arr) ? arr.length : 0;
+    } catch (e) { return 0; }
+  }
+
+  function syncBadgeFromStorage() {
+    var badge = document.querySelector('[data-cart-badge]');
+    if (!badge) return;
+    var shopifyLines = parseInt(badge.textContent, 10);
+    if (isNaN(shopifyLines)) shopifyLines = 0;
+    var total = shopifyLines + readQuoteLineCount();
+    if (total > 0) {
+      badge.textContent = total;
+      badge.removeAttribute('hidden');
+    } else {
+      badge.setAttribute('hidden', '');
+    }
+  }
+
+  syncBadgeFromStorage();
+
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);
   } else {

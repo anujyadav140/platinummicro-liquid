@@ -92,7 +92,12 @@
       <button type="button" class="pm-header__action-btn pm-header__cart-btn" data-cart-open aria-haspopup="dialog" aria-label="Cart ({{ cart.item_count }} items)">
         <span class="pm-header__cart-icon">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
-          <span class="pm-header__cart-badge" data-cart-badge {% if cart.item_count == 0 %}hidden{% endif %} aria-hidden="true">{{ cart.item_count }}</span>
+          {%- comment -%}
+            Badge counts Shopify cart LINES (not total qty) so it matches
+            what pm-cart-drawer.js renders. JS then adds local quote lines
+            on top synchronously on page load — see syncBadgeFromStorage().
+          {%- endcomment -%}
+          <span class="pm-header__cart-badge" data-cart-badge {% if cart.items.size == 0 %}hidden{% endif %} aria-hidden="true">{{ cart.items.size }}</span>
         </span>
         <span class="pm-header__cart-label">Cart</span>
       </button>
