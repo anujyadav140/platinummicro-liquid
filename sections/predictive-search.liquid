@@ -1,0 +1,87 @@
+{%- comment -%}
+  PM — Predictive Search results
+  ==============================
+  Rendered on demand via Shopify's Section Rendering API:
+    {{ routes.predictive_search_url }}?q=TERM&section_id=predictive-search&resources[type]=product,collection,query
+
+  Shopify auto-populates the `predictive_search` object for that request, so this
+  section just lays the results out. Driver: assets/pm-predictive-search.js.
+  Styles: pm-header.css (.pm-psr*). The section name MUST stay "predictive-search"
+  — the driver requests it by that exact id.
+{%- endcomment -%}
+{%- liquid
+  assign products = predictive_search.resources.products
+  assign collections = predictive_search.resources.collections
+  assign queries = predictive_search.resources.queries
+  assign total = products.size | plus: collections.size | plus: queries.size
+-%}
+<div class="pm-psr" id="pm-psr" data-terms="{{ predictive_search.terms | escape }}" data-total="{{ total }}">
+  {%- if predictive_search.performed -%}
+    {%- if total == 0 -%}
+      <p class="pm-psr__empty">No matches for &ldquo;<strong>{{ predictive_search.terms | escape }}</strong>&rdquo;.</p>
+    {%- else -%}
+
+      {%- if queries.size > 0 -%}
+        <ul class="pm-psr__suggest" role="group" aria-label="Suggestions">
+          {%- for q in queries limit: 4 -%}
+            <li>
+              <a class="pm-psr__row pm-psr__suggest-link" href="{{ q.url }}">
+                <svg class="pm-psr__ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+                <span class="pm-psr__suggest-text">{{ q.styled_text }}</span>
+              </a>
+            </li>
+          {%- endfor -%}
+        </ul>
+      {%- endif -%}
+
+      {%- if products.size > 0 -%}
+        <div class="pm-psr__group">
+          <div class="pm-psr__group-title">Products</div>
+          <ul role="group" aria-label="Products">
+            {%- for product in products limit: 6 -%}
+              <li>
+                <a class="pm-psr__row pm-psr__product" href="{{ product.url }}">
+                  <span class="pm-psr__thumb">
+                    {%- if product.featured_image -%}
+                      <img src="{{ product.featured_image | image_url: width: 96 }}" alt="{{ product.featured_image.alt | default: product.title | escape }}" width="48" height="48" loading="lazy">
+                    {%- endif -%}
+                  </span>
+                  <span class="pm-psr__meta">
+                    <span class="pm-psr__title">{{ product.title }}</span>
+                    {%- if product.vendor != blank -%}<span class="pm-psr__vendor">{{ product.vendor }}</span>{%- endif -%}
+                  </span>
+                  <span class="pm-psr__price">{%- if product.price_varies -%}From {% endif -%}{{ product.price | money }}</span>
+                </a>
+              </li>
+            {%- endfor -%}
+          </ul>
+        </div>
+      {%- endif -%}
+
+      {%- if collections.size > 0 -%}
+        <div class="pm-psr__group">
+          <div class="pm-psr__group-title">Collections</div>
+          <ul role="group" aria-label="Collections">
+            {%- for collection in collections limit: 3 -%}
+              <li>
+                <a class="pm-psr__row pm-psr__collection" href="{{ collection.url }}">
+                  <svg class="pm-psr__ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                  <span class="pm-psr__title">{{ collection.title }}</span>
+                </a>
+              </li>
+            {%- endfor -%}
+          </ul>
+        </div>
+      {%- endif -%}
+
+      <a class="pm-psr__all" href="{{ routes.search_url }}?q={{ predictive_search.terms | url_encode }}&type=product&options[prefix]=last">
+        See all results for &ldquo;{{ predictive_search.terms | escape }}&rdquo;
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </a>
+
+    {%- endif -%}
+  {%- endif -%}
+</div>
+{% schema %}
+{ "name": "Predictive search" }
+{% endschema %}

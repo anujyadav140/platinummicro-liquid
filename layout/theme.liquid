@@ -22,6 +22,13 @@
 
   {{ content_for_header }}
 
+  {%- comment -%} Shopify front-end routes exposed to our JS (predictive search, etc.) {%- endcomment -%}
+  <script>
+    window.routes = window.routes || {};
+    window.routes.predictive_search_url = {{ routes.predictive_search_url | json }};
+    window.routes.search_url = {{ routes.search_url | json }};
+  </script>
+
   {%- comment -%}
     PM theme CSS layer. Split by domain so teams can own a slice without
     touching a 6k-line monolith. ORDER MATTERS — it mirrors the original
@@ -167,6 +174,7 @@
   {%- render 'pm-compare-bar' -%}
 
   {{ 'pm-header.js'      | asset_url | script_tag }}
+  {{ 'pm-predictive-search.js' | asset_url | script_tag }}
   {{ 'pm-quick-order.js' | asset_url | script_tag }}
   {{ 'pm-cart-drawer.js' | asset_url | script_tag }}
   {{ 'pm-facets.js'      | asset_url | script_tag }}

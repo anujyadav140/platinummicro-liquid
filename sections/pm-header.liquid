@@ -39,15 +39,22 @@
       {%- endif -%}
     </a>
 
-    {%- comment -%} Search {%- endcomment -%}
-    <div class="pm-header__search">
-      <form action="/search" method="get" role="search">
+    {%- comment -%} Search (with predictive autocomplete — assets/pm-predictive-search.js) {%- endcomment -%}
+    <div class="pm-header__search" data-pm-search>
+      <form action="{{ routes.search_url }}" method="get" role="search">
         <input
           type="search"
           name="q"
           placeholder="{{ section.settings.search_placeholder | default: 'Search by keyword, brand, or SKU' }}"
           aria-label="Search"
           autocomplete="off"
+          autocorrect="off"
+          spellcheck="false"
+          role="combobox"
+          aria-autocomplete="list"
+          aria-expanded="false"
+          aria-controls="pm-psr-panel"
+          aria-haspopup="listbox"
           value="{{ search.terms | escape }}"
         >
         <input type="hidden" name="type" value="product">
@@ -62,6 +69,8 @@
           Search
         </button>
       </form>
+      {%- comment -%} Predictive results drop in here (filled by JS, empty otherwise) {%- endcomment -%}
+      <div class="pm-psr-panel" id="pm-psr-panel" data-pm-search-results role="region" aria-label="Search suggestions" hidden></div>
     </div>
 
     {%- comment -%} Action buttons {%- endcomment -%}
