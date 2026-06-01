@@ -47,6 +47,24 @@
     }
   }
 
+  // On-page spec table → [{name,value}]. Specs sourced from the
+  // pm-product-specs.json asset are rendered client-side into this table
+  // but aren't in the JSON island, so we read the rendered rows to keep
+  // the PDF in sync with what the buyer sees. Hidden ("show more") rows
+  // are still in the DOM, so the full list is captured.
+  function specsFromDom() {
+    var out = [];
+    var rows = document.querySelectorAll('[data-pm-pdp-specs] .pm-pdp__spec-row');
+    for (var i = 0; i < rows.length; i++) {
+      var dt = rows[i].querySelector('.pm-pdp__spec-key');
+      var dd = rows[i].querySelector('.pm-pdp__spec-val');
+      var name = dt ? (dt.textContent || '').trim() : '';
+      var value = dd ? (dd.textContent || '').trim() : '';
+      if (name && value) out.push({ name: name, value: value });
+    }
+    return out;
+  }
+
   // Description HTML → array of plain-text paragraphs, preserving
   // paragraph / list / heading boundaries.
   function parseDescriptionHTML(html) {
@@ -383,13 +401,19 @@
         y += 8;
 
         // ── Resolve specs ──
-        // 1. Metafield-driven specs (highest quality, admin-curated).
-        // 2. <strong>/heading-extracted specs from description copy
-        //    (fallback for products like vendor-fed Asustor / NAS items
-        //    that wear their specs as bold-labelled marketing bullets).
+        // 1. Metafield-driven specs from the island (admin-curated).
+        // 2. The on-page spec table (covers specs hydrated client-side
+        //    from pm-product-specs.json, which never reach the island).
+        // 3. <strong>/heading-extracted specs from description copy
+        //    (fallback for vendor-fed items that wear their specs as
+        //    bold-labelled marketing bullets).
         var metafieldSpecs = (Array.isArray(data.specs) ? data.specs : []).filter(function (s) {
           return s && s.name && s.value;
         });
+        if (metafieldSpecs.length === 0) {
+          var domSpecs = specsFromDom();
+          if (domSpecs.length) metafieldSpecs = domSpecs;
+        }
         var descSpecs = (metafieldSpecs.length === 0)
           ? extractSpecsFromHTML(data.description_html || '')
           : [];

@@ -90,9 +90,12 @@
     swap the markup, the PDF still builds correctly from this data.
 
     `description_html` is the raw HTML; the JS strips it client-side
-    via DOMParser so paragraph / list breaks survive. Specs come out
-    of the same `_specs_encoded` capture that drives the on-page
-    spec table, so the PDF matches what the buyer sees.
+    via DOMParser so paragraph / list breaks survive. Specs seed from
+    the same `_specs_encoded` (metafield) capture that drives the
+    on-page table; when those are empty and specs hydrate client-side
+    from pm-product-specs.json, the inline script backfills this island
+    (and the PDF also reads the rendered table) so the datasheet always
+    matches what the buyer sees.
   {%- endcomment -%}
   {%- capture _specs_json -%}[
   {%- assign _first_s = true -%}
@@ -1115,6 +1118,22 @@
     specsDl.innerHTML = rowsHtml;
     specsDl.removeAttribute('hidden');
     specsDl.setAttribute('data-total', String(specs.length));
+
+    // Keep the PDF data island in sync: asset-driven specs aren't in the
+    // server-rendered island, so the "Download datasheet (PDF)" build would
+    // otherwise miss them. Backfill only when the island has no specs yet.
+    try {
+      var pdfIsland = document.getElementById('pm-pdp-pdf-data');
+      if (pdfIsland) {
+        var pdfData = JSON.parse(pdfIsland.textContent || '{}');
+        if (!Array.isArray(pdfData.specs) || pdfData.specs.length === 0) {
+          pdfData.specs = specs
+            .map(function (s) { return { name: (s.name || '').trim(), value: (s.value || '').trim() }; })
+            .filter(function (s) { return s.name && s.value; });
+          pdfIsland.textContent = JSON.stringify(pdfData);
+        }
+      }
+    } catch (e) { /* island optional */ }
 
     if (specsCount) {
       specsCount.textContent = specs.length + ' ' + (specs.length === 1 ? 'spec' : 'specs');
