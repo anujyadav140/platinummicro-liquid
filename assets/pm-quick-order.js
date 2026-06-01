@@ -29,7 +29,8 @@
     addRowBtn.addEventListener('click', function () { addRow(); focusLastSku(); });
     submitBtn.addEventListener('click', submit);
     modal.addEventListener('click', function (e) {
-      if (e.target.hasAttribute('data-qo-close')) close();
+      // closest() so clicks on the X icon's inner <svg>/<path> still close
+      if (e.target.closest('[data-qo-close]')) close();
     });
     rowsEl.addEventListener('click', function (e) {
       var btn = e.target.closest('[data-qo-remove]');
