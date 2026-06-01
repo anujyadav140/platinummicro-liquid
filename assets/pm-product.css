@@ -665,6 +665,13 @@
   flex: 1 1 0;
   min-width: 0;
 }
+/* Email = icon-only square; datasheet takes the rest of the row. */
+.pm-pdp__cta-row .pm-pdp__cta--share {
+  flex: 0 0 auto;
+  width: 48px;
+  padding-left: 0;
+  padding-right: 0;
+}
 .pm-pdp__cta--cart {
   background: var(--pm-terracotta);
   color: #fff;
