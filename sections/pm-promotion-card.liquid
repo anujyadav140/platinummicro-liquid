@@ -30,10 +30,16 @@
     <div class="pm-promo-grid">
       {%- for block in section.blocks -%}
         <article class="pm-promo-card" {{ block.shopify_attributes }}>
+          {%- assign _pbg = '' -%}
           {%- if block.settings.image != blank -%}
+            {%- assign _pbg = block.settings.image | image_url: width: 1000 -%}
+          {%- elsif block.settings.image_url != blank -%}
+            {%- assign _pbg = block.settings.image_url -%}
+          {%- endif -%}
+          {%- if _pbg != blank -%}
             <div
               class="pm-promo-card__bg"
-              style="background-image:url('{{ block.settings.image | image_url: width: 1000 }}');background-position:{{ block.settings.image_position | default: 'center' }};"
+              style="background-image:url('{{ _pbg }}');background-position:{{ block.settings.image_position | default: 'center' }};"
               role="img"
               aria-label="{{ block.settings.title | escape }}"
             ></div>
@@ -101,6 +107,7 @@
           ],
           "default": "center"
         },
+        { "type": "text",     "id": "image_url", "label": "Image URL (fallback)", "info": "Used as the card background if no Card image is uploaded." },
         { "type": "text",     "id": "eyebrow",   "label": "Eyebrow text" },
         { "type": "text",     "id": "title",     "label": "Headline" },
         { "type": "textarea", "id": "body",      "label": "Body text" },
