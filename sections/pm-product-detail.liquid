@@ -217,52 +217,6 @@
           </div>
         </div>
 
-        {%- comment -%}
-          ── At a glance ──
-          Lives under the gallery frame (not in the details column) so
-          the buy-area stays compact and the Description / Specs band
-          rises closer to the fold.
-        {%- endcomment -%}
-        <div class="pm-pdp__glance pm-pdp__glance--under-gallery" data-pm-pdp-glance{% if _features.size == 0 and _spec_count == 0 %} hidden{% endif %}>
-          <div class="pm-pdp__glance-eyebrow" data-pm-pdp-glance-eyebrow>
-            {%- if _features.size > 0 -%}Key features{%- else -%}At a glance{%- endif -%}
-          </div>
-          <ul class="pm-pdp__glance-list" data-pm-pdp-glance-list>
-            {%- if _features.size > 0 -%}
-              {%- for f in _features limit: 4 -%}
-                {%- assign _ft = f | strip -%}
-                {%- if _ft != blank -%}
-                  <li>
-                    <span class="pm-pdp__glance-dot" aria-hidden="true"></span>
-                    <span>{{ _ft }}</span>
-                  </li>
-                {%- endif -%}
-              {%- endfor -%}
-            {%- else -%}
-              {%- assign _shown = 0 -%}
-              {%- for pair in _spec_pairs -%}
-                {%- if _shown >= 4 -%}{%- break -%}{%- endif -%}
-                {%- assign _p = pair | strip -%}
-                {%- if _p == '' -%}{%- continue -%}{%- endif -%}
-                {%- unless _p contains '<<KV>>' -%}{%- continue -%}{%- endunless -%}
-                {%- assign _kv = _p | split: '<<KV>>' -%}
-                {%- assign _nm = _kv[0] | strip -%}
-                {%- assign _vl = _kv[1] | strip -%}
-                {%- if _nm != '' and _vl != '' -%}
-                  <li>
-                    <span class="pm-pdp__glance-dot" aria-hidden="true"></span>
-                    <span><strong>{{ _nm }}:</strong> {{ _vl }}</span>
-                  </li>
-                  {%- assign _shown = _shown | plus: 1 -%}
-                {%- endif -%}
-              {%- endfor -%}
-            {%- endif -%}
-          </ul>
-          <a href="#pm-product-description" class="pm-pdp__glance-more">
-            <span>See full details &amp; specs</span>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-          </a>
-        </div>
       </div>
 
       {%- comment -%} ── Info pane: Details column + Buy-box card ──────── {%- endcomment -%}
@@ -325,6 +279,53 @@
             </svg>
             <span>Shipping and Returns</span>
           </a>
+
+          {%- comment -%}
+            ── At a glance ──
+            Sits in the details column (under Shipping & Returns) so it
+            fills the space beside the gallery instead of leaving the
+            middle column empty.
+          {%- endcomment -%}
+          <div class="pm-pdp__glance" data-pm-pdp-glance{% if _features.size == 0 and _spec_count == 0 %} hidden{% endif %}>
+            <div class="pm-pdp__glance-eyebrow" data-pm-pdp-glance-eyebrow>
+              {%- if _features.size > 0 -%}Key features{%- else -%}At a glance{%- endif -%}
+            </div>
+            <ul class="pm-pdp__glance-list" data-pm-pdp-glance-list>
+              {%- if _features.size > 0 -%}
+                {%- for f in _features limit: 4 -%}
+                  {%- assign _ft = f | strip -%}
+                  {%- if _ft != blank -%}
+                    <li>
+                      <span class="pm-pdp__glance-dot" aria-hidden="true"></span>
+                      <span>{{ _ft }}</span>
+                    </li>
+                  {%- endif -%}
+                {%- endfor -%}
+              {%- else -%}
+                {%- assign _shown = 0 -%}
+                {%- for pair in _spec_pairs -%}
+                  {%- if _shown >= 4 -%}{%- break -%}{%- endif -%}
+                  {%- assign _p = pair | strip -%}
+                  {%- if _p == '' -%}{%- continue -%}{%- endif -%}
+                  {%- unless _p contains '<<KV>>' -%}{%- continue -%}{%- endunless -%}
+                  {%- assign _kv = _p | split: '<<KV>>' -%}
+                  {%- assign _nm = _kv[0] | strip -%}
+                  {%- assign _vl = _kv[1] | strip -%}
+                  {%- if _nm != '' and _vl != '' -%}
+                    <li>
+                      <span class="pm-pdp__glance-dot" aria-hidden="true"></span>
+                      <span><strong>{{ _nm }}:</strong> {{ _vl }}</span>
+                    </li>
+                    {%- assign _shown = _shown | plus: 1 -%}
+                  {%- endif -%}
+                {%- endfor -%}
+              {%- endif -%}
+            </ul>
+            <a href="#pm-product-description" class="pm-pdp__glance-more">
+              <span>See full details &amp; specs</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </a>
+          </div>
 
         </div>
 
