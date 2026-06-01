@@ -182,25 +182,12 @@
             "cta_href": "/collections/all",
             "image_url": "https://cdn.shopify.com/s/files/1/0715/8841/3523/files/public-sector.jpg"
           }
-        },
-        "card-4": {
-          "type": "card",
-          "settings": {
-            "image_position": "center",
-            "eyebrow": "CERTIFIED REFURB",
-            "title": "Refurbished gear, full warranty.",
-            "body": "Up to 60% off list on tested, warrantied enterprise hardware.",
-            "cta_label": "Browse refurb",
-            "cta_href": "/collections/all",
-            "image_url": "https://cdn.shopify.com/s/files/1/0715/8841/3523/files/system-integrators.jpg"
-          }
         }
       },
       "block_order": [
         "card-1",
         "card-2",
-        "card-3",
-        "card-4"
+        "card-3"
       ],
       "settings": {
         "heading": "",
