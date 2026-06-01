@@ -914,11 +914,14 @@
 }
 .pm-static__intro {
   max-width: 720px;
-  margin: 0 auto 48px;
+  margin: 0 0 48px;
   font-size: 15.5px;
   line-height: 1.7;
   color: var(--pm-ink-700);
 }
+/* Only re-center the intro on genuinely centered pages; on left-aligned
+   pages (brands, site-map) it lines up with the headings/grid below. */
+.pm-static--centered .pm-static__intro { margin-left: auto; margin-right: auto; }
 .pm-static__card {
   background: var(--pm-paper);
   border: 1px solid var(--pm-ink-200);
