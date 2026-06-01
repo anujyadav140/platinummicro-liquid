@@ -470,20 +470,25 @@
   grid-template-columns: 1fr;
   gap: 20px;
 }
-/* aaawave-style feature banner: one large card on the left + two stacked
-   cards on the right. Built for exactly 3 cards. */
+/* Equal-sized cards. 1-up mobile -> 2-up tablet -> N-up desktop, where N is
+   the live card count (--pc-cols, set per-section from the block count and
+   capped at 4). Every card shares the same column width AND row height, so
+   3 cards read as a tidy trio and adding a 4th gives four uniform tiles —
+   no special-casing, no big/small split. */
+@media (min-width: 640px) {
+  .pm-promo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 @media (min-width: 900px) {
   .pm-promo-grid {
-    grid-template-columns: 1.7fr 1fr;
+    grid-template-columns: repeat(var(--pc-cols, 3), minmax(0, 1fr));
     grid-auto-rows: 1fr;
   }
-  .pm-promo-grid > .pm-promo-card:first-child { grid-row: span 2; }
 }
 .pm-promo-card {
   position: relative;
   display: flex;
   align-items: flex-end;
-  min-height: 210px;
+  min-height: 300px;
   border-radius: var(--pc-radius, 12px);
   overflow: hidden;
   background: var(--pc-bg, var(--pm-navy-deep));
