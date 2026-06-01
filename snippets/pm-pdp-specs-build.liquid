@@ -1,7 +1,7 @@
 {%- comment -%}
   PM — PDP specs extractor (Liquid port of pm-product-by-slug.ts in Hydrogen)
 
-  Outputs a "<<ROW>>"-delimited stream of "<name><<KV>><value>" pairs.
+  Outputs a "~~ROW~~"-delimited stream of "name ~~KV~~ value" pairs.
   Call site captures this and splits to render rows / bullets / count.
 
   Sources scanned, in priority order:
@@ -67,7 +67,7 @@
               {%- assign sk = '|' | append: cur_n | downcase | append: '|' -%}
               {%- unless seen contains sk -%}
                 {%- assign seen = seen | append: cur_n | downcase | append: '|' -%}
-                {{ cur_n }}<<KV>>{{ cur_v }}<<ROW>>
+                {{ cur_n }}~~KV~~{{ cur_v }}~~ROW~~
               {%- endunless -%}
             {%- endif -%}
             {%- assign cur_n = before -%}
@@ -87,7 +87,7 @@
         {%- assign sk = '|' | append: cur_n | downcase | append: '|' -%}
         {%- unless seen contains sk -%}
           {%- assign seen = seen | append: cur_n | downcase | append: '|' -%}
-          {{ cur_n }}<<KV>>{{ cur_v }}<<ROW>>
+          {{ cur_n }}~~KV~~{{ cur_v }}~~ROW~~
         {%- endunless -%}
       {%- endif -%}
     {%- endfor -%}
@@ -100,7 +100,7 @@
       {%- assign sk = '|' | append: nm | downcase | append: '|' -%}
       {%- unless seen contains sk -%}
         {%- assign seen = seen | append: nm | downcase | append: '|' -%}
-        {{ nm }}<<KV>>{{ vl }}<<ROW>>
+        {{ nm }}~~KV~~{{ vl }}~~ROW~~
       {%- endunless -%}
     {%- endif -%}
 
@@ -111,7 +111,7 @@
       {%- assign sk = '|' | append: nm | downcase | append: '|' -%}
       {%- unless seen contains sk -%}
         {%- assign seen = seen | append: nm | downcase | append: '|' -%}
-        {{ nm }}<<KV>>{{ raw_ }}<<ROW>>
+        {{ nm }}~~KV~~{{ raw_ }}~~ROW~~
       {%- endunless -%}
     {%- endif -%}
   {%- endif -%}
@@ -146,7 +146,7 @@
     {%- assign sk = '|' | append: nm | downcase | append: '|' -%}
     {%- unless seen contains sk -%}
       {%- assign seen = seen | append: nm | downcase | append: '|' -%}
-      {{ nm }}<<KV>>{{ vl }}<<ROW>>
+      {{ nm }}~~KV~~{{ vl }}~~ROW~~
     {%- endunless -%}
   {%- endif -%}
 {%- endfor -%}
@@ -190,7 +190,7 @@
       {%- assign sk2 = '|' | append: nm | downcase | append: '|' -%}
       {%- unless seen contains sk2 -%}
         {%- assign seen = seen | append: nm | downcase | append: '|' -%}
-        {{ nm }}<<KV>>{{ vl }}<<ROW>>
+        {{ nm }}~~KV~~{{ vl }}~~ROW~~
       {%- endunless -%}
     {%- endif -%}
   {%- endfor -%}

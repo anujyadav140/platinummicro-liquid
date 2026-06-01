@@ -173,26 +173,27 @@
   {%- render 'pm-cart-drawer' -%}
   {%- render 'pm-compare-bar' -%}
 
-  {{ 'pm-header.js'      | asset_url | script_tag }}
-  {{ 'pm-predictive-search.js' | asset_url | script_tag }}
-  {{ 'pm-quick-order.js' | asset_url | script_tag }}
-  {{ 'pm-cart-drawer.js' | asset_url | script_tag }}
-  {{ 'pm-facets.js'      | asset_url | script_tag }}
-  {{ 'pm-plp.js'         | asset_url | script_tag }}
-  {{ 'pm-add-to-cart.js' | asset_url | script_tag }}
-  {{ 'pm-add-to-list.js' | asset_url | script_tag }}
-  {{ 'pm-quote.js'       | asset_url | script_tag }}
-  {{ 'pm-recently-viewed.js' | asset_url | script_tag }}
-  {{ 'pm-pdp-pdf.js'         | asset_url | script_tag }}
+  {%- comment -%} Deferred so they don't block the parser (theme-check: ParserBlockingScript) {%- endcomment -%}
+  <script src="{{ 'pm-header.js'          | asset_url }}" defer></script>
+  <script src="{{ 'pm-predictive-search.js' | asset_url }}" defer></script>
+  <script src="{{ 'pm-quick-order.js'     | asset_url }}" defer></script>
+  <script src="{{ 'pm-cart-drawer.js'     | asset_url }}" defer></script>
+  <script src="{{ 'pm-facets.js'          | asset_url }}" defer></script>
+  <script src="{{ 'pm-plp.js'             | asset_url }}" defer></script>
+  <script src="{{ 'pm-add-to-cart.js'     | asset_url }}" defer></script>
+  <script src="{{ 'pm-add-to-list.js'     | asset_url }}" defer></script>
+  <script src="{{ 'pm-quote.js'           | asset_url }}" defer></script>
+  <script src="{{ 'pm-recently-viewed.js' | asset_url }}" defer></script>
+  <script src="{{ 'pm-pdp-pdf.js'         | asset_url }}" defer></script>
   {%- comment -%}
     Lists dashboard JS loads on /pages/lists whether admin picked the
     custom `lists` template OR the default `page` template — gating on
     page.handle catches both.
   {%- endcomment -%}
   {%- if template == 'page.lists' or page.handle == 'lists' -%}
-    {{ 'pm-lists-page.js' | asset_url | script_tag }}
+    <script src="{{ 'pm-lists-page.js' | asset_url }}" defer></script>
   {%- endif -%}
-  {{ 'pm-compare.js'     | asset_url | script_tag }}
-  {{ 'pm-auth-anchor.js' | asset_url | script_tag }}
+  <script src="{{ 'pm-compare.js'     | asset_url }}" defer></script>
+  <script src="{{ 'pm-auth-anchor.js' | asset_url }}" defer></script>
 </body>
 </html>

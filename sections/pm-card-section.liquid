@@ -47,9 +47,11 @@
           <h2 class="pm-section-title">{{ section.settings.title }}</h2>
         {%- endif -%}
         {%- if section.settings.subtitle != blank -%}
-          <p class="pm-section-subtitle{% if section.settings.align == 'center' %}" style="margin-left:auto;margin-right:auto;{% else -%}"{% endif %}>
-            {{ section.settings.subtitle }}
-          </p>
+          {%- if section.settings.align == 'center' -%}
+            <p class="pm-section-subtitle" style="margin-left:auto;margin-right:auto;">{{ section.settings.subtitle }}</p>
+          {%- else -%}
+            <p class="pm-section-subtitle">{{ section.settings.subtitle }}</p>
+          {%- endif -%}
         {%- endif -%}
       </div>
     {%- endif -%}

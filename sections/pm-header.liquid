@@ -315,7 +315,7 @@
                               {%- endif -%}
                               {%- if _b_src != blank -%}
                                 <a class="pm-mega__brand" href="{{ _bblock.settings.link | default: '#' }}" aria-label="{{ _bblock.settings.name | escape }}" {{ _bblock.shopify_attributes }}>
-                                  <img src="{{ _b_src }}" alt="{{ _bblock.settings.name | escape }}" loading="lazy">
+                                  <img src="{{ _b_src }}" alt="{{ _bblock.settings.name | escape }}" width="120" height="48" loading="lazy">
                                 </a>
                               {%- endif -%}
                             {%- endfor -%}
@@ -327,7 +327,7 @@
                               {%- assign _b_file = _bp[1] -%}
                               {%- assign _b_handle = _bp[2] -%}
                               <a class="pm-mega__brand" href="/collections/{{ _b_handle }}" aria-label="{{ _b_alt }}">
-                                <img src="{{ _cdn_base | append: _b_file }}" alt="{{ _b_alt }}" loading="lazy">
+                                <img src="{{ _cdn_base | append: _b_file }}" alt="{{ _b_alt }}" width="120" height="48" loading="lazy">
                               </a>
                             {%- endfor -%}
                           {%- endif -%}

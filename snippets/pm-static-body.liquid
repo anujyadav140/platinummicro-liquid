@@ -154,7 +154,7 @@
               {%- endfor -%}
               <li class="pm-brand-card">
                 {%- if _logo != '' -%}
-                  <img src="{{ _logo }}" alt="{{ _label }}" loading="lazy">
+                  <img src="{{ _logo }}" alt="{{ _label }}" width="150" height="64" loading="lazy">
                 {%- else -%}
                   {%- comment -%} No store logo file — try a logo from the simpleicons CDN, fall back to text {%- endcomment -%}
                   {%- assign _si = '' -%}
@@ -167,7 +167,7 @@
                     {%- when 'corsair' -%}{%- assign _si = 'corsair' -%}
                   {%- endcase -%}
                   {%- if _si != blank -%}
-                    <img class="pm-brand-card__si" src="https://cdn.simpleicons.org/{{ _si }}" alt="{{ _label }}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                    <img class="pm-brand-card__si" src="https://cdn.simpleicons.org/{{ _si }}" alt="{{ _label }}" width="80" height="80" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
                     <span class="pm-brand-card__text" style="display:none;">{{ _label | upcase }}</span>
                   {%- else -%}
                     <span class="pm-brand-card__text">{{ _label | upcase }}</span>
@@ -195,7 +195,7 @@
               {%- endfor -%}
               <li class="pm-brand-card">
                 {%- if _logo != '' -%}
-                  <img src="{{ _logo }}" alt="{{ _label }}" loading="lazy">
+                  <img src="{{ _logo }}" alt="{{ _label }}" width="150" height="64" loading="lazy">
                 {%- else -%}
                   {%- comment -%} No store logo file — try a logo from the simpleicons CDN, fall back to text {%- endcomment -%}
                   {%- assign _si = '' -%}
@@ -208,7 +208,7 @@
                     {%- when 'corsair' -%}{%- assign _si = 'corsair' -%}
                   {%- endcase -%}
                   {%- if _si != blank -%}
-                    <img class="pm-brand-card__si" src="https://cdn.simpleicons.org/{{ _si }}" alt="{{ _label }}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+                    <img class="pm-brand-card__si" src="https://cdn.simpleicons.org/{{ _si }}" alt="{{ _label }}" width="80" height="80" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
                     <span class="pm-brand-card__text" style="display:none;">{{ _label | upcase }}</span>
                   {%- else -%}
                     <span class="pm-brand-card__text">{{ _label | upcase }}</span>

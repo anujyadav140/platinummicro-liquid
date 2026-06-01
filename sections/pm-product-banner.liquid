@@ -202,7 +202,7 @@
                     {%- endif -%}
                     {%- if p.featured_image -%}
                       <div class="pm-pbnr-prods__card-img">
-                        <img src="{{ p.featured_image | image_url: width: 480 }}" alt="{{ p.title | escape }}" loading="lazy">
+                        <img src="{{ p.featured_image | image_url: width: 480 }}" alt="{{ p.title | escape }}" width="480" height="480" loading="lazy">
                       </div>
                     {%- endif -%}
                     {%- if p.vendor != blank -%}

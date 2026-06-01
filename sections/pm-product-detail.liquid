@@ -69,15 +69,15 @@
   Delegate to `pm-pdp-specs-build` (ports the Hydrogen pm-product-by-slug
   extractor). It probes BC-style aggregate metafields, Shopify category
   metafields, and per-spec metafields across custom/pm/specs/bc
-  namespaces; emits an encoded "<name><<KV>><value><<ROW>>…" stream that
+  namespaces; emits an encoded "name ~~KV~~ value ~~ROW~~ …" stream that
   we split into pairs for rendering rows + at-a-glance bullets.
 {%- endcomment -%}
 {%- capture _specs_encoded -%}{%- render 'pm-pdp-specs-build', product: product -%}{%- endcapture -%}
-{%- assign _spec_pairs = _specs_encoded | split: '<<ROW>>' -%}
+{%- assign _spec_pairs = _specs_encoded | split: '~~ROW~~' -%}
 {%- assign _spec_count = 0 -%}
 {%- for pair in _spec_pairs -%}
   {%- assign _p = pair | strip -%}
-  {%- if _p != '' and _p contains '<<KV>>' -%}
+  {%- if _p != '' and _p contains '~~KV~~' -%}
     {%- assign _spec_count = _spec_count | plus: 1 -%}
   {%- endif -%}
 {%- endfor -%}
@@ -100,7 +100,7 @@
   {%- capture _specs_json -%}[
   {%- assign _first_s = true -%}
   {%- for pair in _spec_pairs -%}
-    {%- assign _kv = pair | split: '<<KV>>' -%}
+    {%- assign _kv = pair | split: '~~KV~~' -%}
     {%- if _kv.size >= 2 -%}
       {%- assign _kvn = _kv[0] | strip -%}
       {%- assign _kvv = _kv[1] | strip -%}
@@ -307,8 +307,8 @@
                   {%- if _shown >= 4 -%}{%- break -%}{%- endif -%}
                   {%- assign _p = pair | strip -%}
                   {%- if _p == '' -%}{%- continue -%}{%- endif -%}
-                  {%- unless _p contains '<<KV>>' -%}{%- continue -%}{%- endunless -%}
-                  {%- assign _kv = _p | split: '<<KV>>' -%}
+                  {%- unless _p contains '~~KV~~' -%}{%- continue -%}{%- endunless -%}
+                  {%- assign _kv = _p | split: '~~KV~~' -%}
                   {%- assign _nm = _kv[0] | strip -%}
                   {%- assign _vl = _kv[1] | strip -%}
                   {%- if _nm != '' and _vl != '' -%}
@@ -672,8 +672,8 @@
             {%- for pair in _spec_pairs -%}
               {%- assign _p = pair | strip -%}
               {%- if _p == '' -%}{%- continue -%}{%- endif -%}
-              {%- unless _p contains '<<KV>>' -%}{%- continue -%}{%- endunless -%}
-              {%- assign _kv = _p | split: '<<KV>>' -%}
+              {%- unless _p contains '~~KV~~' -%}{%- continue -%}{%- endunless -%}
+              {%- assign _kv = _p | split: '~~KV~~' -%}
               {%- assign _nm = _kv[0] | strip -%}
               {%- assign _vl = _kv[1] | strip -%}
               {%- if _nm != '' and _vl != '' -%}
