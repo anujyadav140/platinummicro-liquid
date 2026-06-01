@@ -1,10 +1,11 @@
 {%- comment -%}
-  PM — Promotion Card
-  Full design layer: every visual knob exposed to the admin editor via
-  CSS custom properties on the section root. CSS reads each var with a
-  fallback that matches the prior hardcoded value, so existing instances
-  render identically until someone touches a setting.
+  PM — Promotion Card(s)
+  Block-based: each "Card" block renders one promo card; cards lay out in a
+  responsive row (1-up mobile → 2-up tablet → up to 4-up desktop). Shared
+  look (colours, radius, spacing) is set on the section root as CSS custom
+  properties; per-card content lives on the block. Styles: pm-home-sections.css.
 {%- endcomment -%}
+{%- assign _cols = section.blocks.size | at_most: 4 | at_least: 1 -%}
 <section
   class="pm-promo-section"
   style="
@@ -13,53 +14,49 @@
     --pc-section-bg:{{ section.settings.section_bg }};
     --pc-bg:{{ section.settings.bg_color }};
     --pc-radius:{{ section.settings.border_radius }}px;
-    --pc-min-h:{{ section.settings.min_height_desktop }}px;
-    --pc-min-h-m:{{ section.settings.min_height_mobile }}px;
-    --pc-img-w:{{ section.settings.image_width_pct }}%;
-    --pc-content-pad:{{ section.settings.content_padding_desktop }}px;
-    --pc-content-pad-m:{{ section.settings.content_padding_mobile }}px;
     --pc-eyebrow:{{ section.settings.eyebrow_color }};
     --pc-title:{{ section.settings.title_color }};
     --pc-body:{{ section.settings.body_color }};
     --pc-cta-bg:{{ section.settings.accent_color }};
     --pc-cta-text:{{ section.settings.cta_text_color }};
-    --pc-eyebrow-size:{{ section.settings.eyebrow_size }}px;
-    --pc-title-size:{{ section.settings.title_size_desktop }}px;
-    --pc-title-size-m:{{ section.settings.title_size_mobile }}px;
-    --pc-body-size:{{ section.settings.body_size }}px;
+    --pc-cols:{{ _cols }};
   "
 >
   <div class="pm-container">
-    <div class="pm-promo-card pm-promo-card--img-{{ section.settings.image_side | default: 'right' }}">
-      <div class="pm-promo-card__content">
-        {%- if section.settings.eyebrow != blank -%}
-          <div class="pm-promo-card__eyebrow">{{ section.settings.eyebrow }}</div>
-        {%- endif -%}
+    {%- if section.settings.heading != blank -%}
+      <h2 class="pm-promo-heading">{{ section.settings.heading }}</h2>
+    {%- endif -%}
 
-        {%- if section.settings.title != blank -%}
-          <h2 class="pm-promo-card__title">{{ section.settings.title }}</h2>
-        {%- endif -%}
-
-        {%- if section.settings.body != blank -%}
-          <p class="pm-promo-card__body">{{ section.settings.body }}</p>
-        {%- endif -%}
-
-        {%- if section.settings.cta_label != blank and section.settings.cta_href != blank -%}
-          <a class="pm-promo-card__cta" href="{{ section.settings.cta_href }}">
-            {{ section.settings.cta_label }}
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </a>
-        {%- endif -%}
-      </div>
-
-      {%- if section.settings.image != blank -%}
-        <div
-          class="pm-promo-card__image"
-          style="background-image:url('{{ section.settings.image | image_url: width: 1200 }}');background-position:{{ section.settings.image_position | default: 'center' }};"
-          role="img"
-          aria-label="{{ section.settings.title | escape }}"
-        ></div>
-      {%- endif -%}
+    <div class="pm-promo-grid">
+      {%- for block in section.blocks -%}
+        <article class="pm-promo-card" {{ block.shopify_attributes }}>
+          {%- if block.settings.image != blank -%}
+            <div
+              class="pm-promo-card__image"
+              style="background-image:url('{{ block.settings.image | image_url: width: 800 }}');background-position:{{ block.settings.image_position | default: 'center' }};"
+              role="img"
+              aria-label="{{ block.settings.title | escape }}"
+            ></div>
+          {%- endif -%}
+          <div class="pm-promo-card__content">
+            {%- if block.settings.eyebrow != blank -%}
+              <div class="pm-promo-card__eyebrow">{{ block.settings.eyebrow }}</div>
+            {%- endif -%}
+            {%- if block.settings.title != blank -%}
+              <h3 class="pm-promo-card__title">{{ block.settings.title }}</h3>
+            {%- endif -%}
+            {%- if block.settings.body != blank -%}
+              <p class="pm-promo-card__body">{{ block.settings.body }}</p>
+            {%- endif -%}
+            {%- if block.settings.cta_label != blank and block.settings.cta_href != blank -%}
+              <a class="pm-promo-card__cta" href="{{ block.settings.cta_href }}">
+                {{ block.settings.cta_label }}
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+              </a>
+            {%- endif -%}
+          </div>
+        </article>
+      {%- endfor -%}
     </div>
   </div>
 </section>
@@ -68,76 +65,59 @@
 {
   "name": "PM — Promotion Card",
   "tag": "section",
+  "max_blocks": 4,
   "settings": [
-    { "type": "header", "content": "Content" },
-    { "type": "image_picker", "id": "image", "label": "Card image" },
-    {
-      "type": "select",
-      "id": "image_position",
-      "label": "Image focus point",
-      "options": [
-        { "value": "center",       "label": "Center" },
-        { "value": "top",          "label": "Top" },
-        { "value": "bottom",       "label": "Bottom" },
-        { "value": "left center",  "label": "Left" },
-        { "value": "right center", "label": "Right" }
-      ],
-      "default": "center"
-    },
-    { "type": "text",     "id": "eyebrow",   "label": "Eyebrow text", "default": "LIMITED-TIME OFFER" },
-    { "type": "text",     "id": "title",     "label": "Headline",     "default": "Cisco refresh window — Q4 pricing locked." },
-    { "type": "textarea", "id": "body",      "label": "Body text",    "default": "HPE, Cisco, and Dell lease returns arriving now. Fixed-price bundles, no auction, NASPO-aligned." },
-    { "type": "text",     "id": "cta_label", "label": "CTA label",    "default": "View the deal" },
-    { "type": "url",      "id": "cta_href",  "label": "CTA link" },
-
-    { "type": "header", "content": "Section spacing" },
+    { "type": "header", "content": "Section" },
+    { "type": "text",  "id": "heading",        "label": "Section heading (optional)" },
     { "type": "color", "id": "section_bg",     "label": "Section background", "default": "#FBFAF7" },
     { "type": "range", "id": "padding_top",    "label": "Padding top",        "min": 0, "max": 160, "step": 4, "unit": "px", "default": 64 },
     { "type": "range", "id": "padding_bottom", "label": "Padding bottom",     "min": 0, "max": 160, "step": 4, "unit": "px", "default": 64 },
 
-    { "type": "header", "content": "Card" },
-    { "type": "color", "id": "bg_color",           "label": "Card background",      "default": "#0D2340" },
-    { "type": "range", "id": "border_radius",      "label": "Card border radius",   "min": 0, "max": 32, "step": 1, "unit": "px", "default": 12 },
-    { "type": "range", "id": "min_height_desktop", "label": "Card height (desktop)", "min": 200, "max": 600, "step": 10, "unit": "px", "default": 320 },
-    { "type": "range", "id": "min_height_mobile",  "label": "Card height (mobile)",  "min": 160, "max": 480, "step": 10, "unit": "px", "default": 280 },
-
-    { "type": "header", "content": "Layout" },
-    {
-      "type": "select",
-      "id": "image_side",
-      "label": "Image side (desktop)",
-      "options": [
-        { "value": "right", "label": "Right" },
-        { "value": "left",  "label": "Left" }
-      ],
-      "default": "right"
-    },
-    { "type": "range", "id": "image_width_pct",         "label": "Image width %",            "min": 25, "max": 65, "step": 1, "unit": "%", "default": 45 },
-    { "type": "range", "id": "content_padding_desktop", "label": "Content padding (desktop)", "min": 16, "max": 96, "step": 4, "unit": "px", "default": 56 },
-    { "type": "range", "id": "content_padding_mobile",  "label": "Content padding (mobile)",  "min": 16, "max": 64, "step": 4, "unit": "px", "default": 40 },
-
-    { "type": "header", "content": "Typography" },
-    { "type": "color", "id": "eyebrow_color",     "label": "Eyebrow color",        "default": "#C04E3E" },
-    { "type": "color", "id": "title_color",       "label": "Title color",          "default": "#FFFFFF" },
-    { "type": "color", "id": "body_color",        "label": "Body color",           "default": "#D8DEE7" },
-    { "type": "range", "id": "eyebrow_size",      "label": "Eyebrow size",         "min": 8,  "max": 16, "step": 1, "unit": "px", "default": 10 },
-    { "type": "range", "id": "title_size_desktop","label": "Title size (desktop)", "min": 20, "max": 56, "step": 2, "unit": "px", "default": 32 },
-    { "type": "range", "id": "title_size_mobile", "label": "Title size (mobile)",  "min": 18, "max": 40, "step": 2, "unit": "px", "default": 26 },
-    { "type": "range", "id": "body_size",         "label": "Body size",            "min": 12, "max": 22, "step": 1, "unit": "px", "default": 15 },
-
-    { "type": "header", "content": "CTA button" },
+    { "type": "header", "content": "Card style (all cards)" },
+    { "type": "color", "id": "bg_color",       "label": "Card background",   "default": "#0D2340" },
+    { "type": "range", "id": "border_radius",  "label": "Card radius",       "min": 0, "max": 32, "step": 1, "unit": "px", "default": 12 },
+    { "type": "color", "id": "eyebrow_color",  "label": "Eyebrow color",     "default": "#C04E3E" },
+    { "type": "color", "id": "title_color",    "label": "Title color",       "default": "#FFFFFF" },
+    { "type": "color", "id": "body_color",     "label": "Body color",        "default": "#D8DEE7" },
     { "type": "color", "id": "accent_color",   "label": "Button color",      "default": "#A63D2F" },
     { "type": "color", "id": "cta_text_color", "label": "Button text color", "default": "#FFFFFF" }
+  ],
+  "blocks": [
+    {
+      "type": "card",
+      "name": "Card",
+      "settings": [
+        { "type": "image_picker", "id": "image", "label": "Card image" },
+        {
+          "type": "select",
+          "id": "image_position",
+          "label": "Image focus point",
+          "options": [
+            { "value": "center",       "label": "Center" },
+            { "value": "top",          "label": "Top" },
+            { "value": "bottom",       "label": "Bottom" },
+            { "value": "left center",  "label": "Left" },
+            { "value": "right center", "label": "Right" }
+          ],
+          "default": "center"
+        },
+        { "type": "text",     "id": "eyebrow",   "label": "Eyebrow text" },
+        { "type": "text",     "id": "title",     "label": "Headline" },
+        { "type": "textarea", "id": "body",      "label": "Body text" },
+        { "type": "text",     "id": "cta_label", "label": "CTA label" },
+        { "type": "url",      "id": "cta_href",  "label": "CTA link" }
+      ]
+    }
   ],
   "presets": [
     {
       "name": "PM — Promotion Card",
-      "settings": {
-        "eyebrow":   "LIMITED-TIME OFFER",
-        "title":     "Cisco refresh window — Q4 pricing locked.",
-        "body":      "HPE, Cisco, and Dell lease returns arriving now. Fixed-price bundles, no auction, NASPO-aligned.",
-        "cta_label": "View the deal"
-      }
+      "blocks": [
+        { "type": "card", "settings": { "eyebrow": "LIMITED-TIME OFFER", "title": "Cisco refresh window — Q4 pricing locked.", "body": "HPE, Cisco, and Dell lease returns arriving now. Fixed-price bundles, no auction.", "cta_label": "View the deal" } },
+        { "type": "card", "settings": { "eyebrow": "NEW ARRIVALS", "title": "Latest enterprise storage in stock.", "body": "NVMe-ready NAS and rack units from Asustor, QNAP and Synology.", "cta_label": "Shop storage" } },
+        { "type": "card", "settings": { "eyebrow": "BULK PRICING", "title": "Volume quotes in 24 hours.", "body": "Tiered pricing for system integrators and public-sector buyers.", "cta_label": "Request a quote" } },
+        { "type": "card", "settings": { "eyebrow": "CERTIFIED REFURB", "title": "Refurbished gear, full warranty.", "body": "Up to 60% off list on tested, warrantied enterprise hardware.", "cta_label": "Browse refurb" } }
+      ]
     }
   ]
 }

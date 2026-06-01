@@ -91,20 +91,73 @@
           }
         }
       },
-      "block_order": ["card-1", "card-2", "card-3", "card-4", "card-5", "card-6"]
+      "block_order": [
+        "card-1",
+        "card-2",
+        "card-3",
+        "card-4",
+        "card-5",
+        "card-6"
+      ]
     },
     "pm-promotion-card": {
       "type": "pm-promotion-card",
       "settings": {
-        "eyebrow": "LIMITED-TIME OFFER",
-        "title": "Cisco refresh window — Q4 pricing locked.",
-        "body": "HPE, Cisco, and Dell lease returns arriving now. Fixed-price bundles, no auction, NASPO-aligned.",
-        "cta_label": "View the deal",
-        "cta_href": "/collections/bundles",
+        "section_bg": "#FBFAF7",
         "bg_color": "#0D2340",
         "accent_color": "#A63D2F",
-        "border_radius": 12
-      }
+        "border_radius": 12,
+        "padding_top": 64,
+        "padding_bottom": 64
+      },
+      "blocks": {
+        "card-1": {
+          "type": "card",
+          "settings": {
+            "eyebrow": "LIMITED-TIME OFFER",
+            "title": "Cisco refresh window — Q4 pricing locked.",
+            "body": "HPE, Cisco, and Dell lease returns arriving now. Fixed-price bundles, no auction, NASPO-aligned.",
+            "cta_label": "View the deal",
+            "cta_href": "/collections/bundles"
+          }
+        },
+        "card-2": {
+          "type": "card",
+          "settings": {
+            "eyebrow": "NEW ARRIVALS",
+            "title": "Latest enterprise storage in stock.",
+            "body": "NVMe-ready NAS and rack units from Asustor, QNAP and Synology.",
+            "cta_label": "Shop storage",
+            "cta_href": "/collections/storage"
+          }
+        },
+        "card-3": {
+          "type": "card",
+          "settings": {
+            "eyebrow": "BULK PRICING",
+            "title": "Volume quotes in 24 hours.",
+            "body": "Tiered pricing for system integrators and public-sector buyers.",
+            "cta_label": "Get a quote",
+            "cta_href": "/collections/all"
+          }
+        },
+        "card-4": {
+          "type": "card",
+          "settings": {
+            "eyebrow": "CERTIFIED REFURB",
+            "title": "Refurbished gear, full warranty.",
+            "body": "Up to 60% off list on tested, warrantied enterprise hardware.",
+            "cta_label": "Browse refurb",
+            "cta_href": "/collections/all"
+          }
+        }
+      },
+      "block_order": [
+        "card-1",
+        "card-2",
+        "card-3",
+        "card-4"
+      ]
     },
     "pm-brand-wall": {
       "type": "pm-brand-wall",
@@ -115,22 +168,92 @@
         "cta_href": "/collections/all"
       },
       "blocks": {
-        "brand-hpe":       { "type": "brand", "settings": { "name": "HPE" } },
-        "brand-dell":      { "type": "brand", "settings": { "name": "Dell" } },
-        "brand-cisco":     { "type": "brand", "settings": { "name": "Cisco" } },
-        "brand-lenovo":    { "type": "brand", "settings": { "name": "Lenovo" } },
-        "brand-intel":     { "type": "brand", "settings": { "name": "Intel" } },
-        "brand-amd":       { "type": "brand", "settings": { "name": "AMD" } },
-        "brand-samsung":   { "type": "brand", "settings": { "name": "Samsung" } },
-        "brand-seagate":   { "type": "brand", "settings": { "name": "Seagate" } },
-        "brand-wd":        { "type": "brand", "settings": { "name": "Western Digital" } },
-        "brand-microsoft": { "type": "brand", "settings": { "name": "Microsoft" } },
-        "brand-micron":    { "type": "brand", "settings": { "name": "Micron" } },
-        "brand-arctic":    { "type": "brand", "settings": { "name": "Arctic" } }
+        "brand-hpe": {
+          "type": "brand",
+          "settings": {
+            "name": "HPE"
+          }
+        },
+        "brand-dell": {
+          "type": "brand",
+          "settings": {
+            "name": "Dell"
+          }
+        },
+        "brand-cisco": {
+          "type": "brand",
+          "settings": {
+            "name": "Cisco"
+          }
+        },
+        "brand-lenovo": {
+          "type": "brand",
+          "settings": {
+            "name": "Lenovo"
+          }
+        },
+        "brand-intel": {
+          "type": "brand",
+          "settings": {
+            "name": "Intel"
+          }
+        },
+        "brand-amd": {
+          "type": "brand",
+          "settings": {
+            "name": "AMD"
+          }
+        },
+        "brand-samsung": {
+          "type": "brand",
+          "settings": {
+            "name": "Samsung"
+          }
+        },
+        "brand-seagate": {
+          "type": "brand",
+          "settings": {
+            "name": "Seagate"
+          }
+        },
+        "brand-wd": {
+          "type": "brand",
+          "settings": {
+            "name": "Western Digital"
+          }
+        },
+        "brand-microsoft": {
+          "type": "brand",
+          "settings": {
+            "name": "Microsoft"
+          }
+        },
+        "brand-micron": {
+          "type": "brand",
+          "settings": {
+            "name": "Micron"
+          }
+        },
+        "brand-arctic": {
+          "type": "brand",
+          "settings": {
+            "name": "Arctic"
+          }
+        }
       },
       "block_order": [
-        "brand-hpe","brand-dell","brand-cisco","brand-lenovo","brand-intel","brand-amd",
-        "brand-samsung","brand-seagate","brand-wd","brand-microsoft","brand-micron","brand-arctic"
+        "brand-hpe",
+        "brand-dell",
+        "brand-cisco",
+        "brand-lenovo",
+        "brand-intel",
+        "brand-amd",
+        "brand-samsung",
+        "brand-seagate",
+        "brand-wd",
+        "brand-microsoft",
+        "brand-micron",
+        "brand-arctic"
       ]
     },
     "pm-about-banner": {
