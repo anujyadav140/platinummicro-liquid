@@ -91,11 +91,17 @@
         Shopify component.
 
         The `menu` attribute references a Shopify navigation menu handle
-        used for the signed-in mini-dashboard. If "customer-account-main-menu"
-        doesn't exist in your admin, the component falls back to a
-        default set of links (Orders, Profile, Sign out).
+        (Profile / Orders / Lists) used for the signed-in mini-dashboard.
+
+        IMPORTANT: only emit `menu` when a customer is signed in. The
+        component renders the menu links inside its popup even in the
+        SIGNED-OUT state, which leaked account links (Profile/Orders/Lists)
+        into the guest sign-in card. Gating the attribute on `customer`
+        means guests get a pure auth card and signed-in users keep the
+        full dropdown — a deterministic server-side fix (a JS gate can't
+        reliably reach the component's shadow DOM).
       {%- endcomment -%}
-      <shopify-account class="pm-header__shopify-account" menu="customer-account-main-menu">
+      <shopify-account class="pm-header__shopify-account"{% if customer %} menu="customer-account-main-menu"{% endif %}>
         <span slot="signed-out-avatar" class="pm-header__action-btn">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           <span>Sign in</span>
