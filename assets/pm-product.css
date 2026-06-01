@@ -55,9 +55,12 @@
 }
 @media (min-width: 1024px) {
   .pm-pdp__main-grid {
-    grid-template-columns: minmax(0, 488px) minmax(0, 1fr);
-    gap: 48px;
+    grid-template-columns: minmax(0, 560px) minmax(0, 1fr);
+    gap: 64px;
   }
+}
+@media (min-width: 1440px) {
+  .pm-pdp__main-grid { gap: 80px; }
 }
 
 /* ── Gallery ──

@@ -264,7 +264,8 @@
 @media (min-width: 640px) { .pm-plp__grid { grid-template-columns: repeat(2, 1fr); gap: 18px; } }
 @media (min-width: 768px) { .pm-plp__grid { grid-template-columns: repeat(3, 1fr); } }
 @media (min-width: 1024px) { .pm-plp__grid { grid-template-columns: repeat(3, 1fr); gap: 20px; } }
-@media (min-width: 1280px) { .pm-plp__grid { grid-template-columns: repeat(3, 1fr); gap: 24px; } }
+@media (min-width: 1280px) { .pm-plp__grid { grid-template-columns: repeat(4, 1fr); gap: 24px; } }
+@media (min-width: 1600px) { .pm-plp__grid { gap: 28px; } }
 .pm-plp__grid > li { list-style: none; }
 
 /* List view — image left, body right */
