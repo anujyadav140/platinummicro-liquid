@@ -160,7 +160,7 @@
 }
 .pm-header__search {
   flex: 1;
-  max-width: 860px;
+  max-width: 688px;
   position: relative;
 }
 /* Pin the action buttons to the far right of the header row */
