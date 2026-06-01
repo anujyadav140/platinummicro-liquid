@@ -1,0 +1,15 @@
+# Shopify Theme Check configuration
+# Extends the recommended rule set; relaxes a couple of checks that conflict
+# with this theme's intentional conventions so the build stays green.
+extends: theme-check:recommended
+
+# This theme uses a deliberate `_pm` / leading-underscore convention for
+# local Liquid variables (documented in README) to mark them theme-local.
+# That trips the default snake_case naming rule, so it's disabled here.
+VariableName:
+  enabled: false
+
+# Partner-brand logos are intentionally hotlinked (logo CDN + the store's
+# own Shopify CDN file URLs), so the remote-asset check is disabled.
+RemoteAsset:
+  enabled: false

@@ -22,6 +22,9 @@
 
   {{ content_for_header }}
 
+  {%- comment -%} SEO: canonical, Open Graph, Twitter, JSON-LD structured data {%- endcomment -%}
+  {%- render 'pm-meta-tags' -%}
+
   {%- comment -%} Shopify front-end routes exposed to our JS (predictive search, etc.) {%- endcomment -%}
   <script>
     window.routes = window.routes || {};
