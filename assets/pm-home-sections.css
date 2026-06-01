@@ -475,7 +475,7 @@
   position: relative;
   display: flex;
   align-items: flex-end;
-  min-height: 300px;
+  min-height: 240px;
   border-radius: var(--pc-radius, 12px);
   overflow: hidden;
   background: var(--pc-bg, var(--pm-navy-deep));
