@@ -75,18 +75,15 @@
   min-width: 0;
 }
 
-/* Inner frame holds the thumb strip + main image.
-   Mobile (<640px): column-reverse → hero on top, thumbs scroll below.
-   Tablet+ (≥640px): row → thumbs left column, hero right. */
+/* Inner frame holds the main image + thumb strip.
+   All breakpoints: column-reverse → hero on top, thumbnails in a
+   horizontal strip directly below it. */
 .pm-pdp__gallery-frame {
   display: flex;
   flex-direction: column-reverse;
   gap: 12px;
   width: 100%;
   min-width: 0;
-}
-@media (min-width: 640px) {
-  .pm-pdp__gallery-frame { flex-direction: row; }
 }
 
 .pm-pdp__hero {
@@ -119,32 +116,19 @@
 }
 .pm-pdp__hero-empty { color: var(--pm-ink-300); }
 
+/* Horizontal strip under the hero. Wraps to as many rows as needed so
+   every thumb stays visible (no hidden horizontal scroll on desktop). */
 .pm-pdp__thumbs {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   gap: 8px;
   flex-shrink: 0;
-  overflow-x: auto;
   padding: 0 4px 4px;
   margin: 0 -4px;
   scrollbar-width: none;
 }
 .pm-pdp__thumbs::-webkit-scrollbar { display: none; }
-@media (min-width: 640px) {
-  .pm-pdp__thumbs {
-    flex-direction: column;
-    overflow-x: visible;
-    overflow-y: auto;
-    padding: 0;
-    margin: 0;
-    width: 62px;
-    /* No max-height + no overflow: column grows to fit every thumb the
-       product has. Up to 12 thumbs (12×56 + 11×8 = 760px) renders in
-       full. Gallery's vertical extent simply matches whichever side
-       (thumb column or hero) is taller. */
-    overflow: visible;
-  }
-}
 .pm-pdp__thumb {
   flex-shrink: 0;
   width: 56px;

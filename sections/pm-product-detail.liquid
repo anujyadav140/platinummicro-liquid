@@ -162,10 +162,9 @@
 
       {%- comment -%}
         ── Gallery ──
-        DOM order is thumbs → hero. Mobile uses column-reverse to flip
-        the visual order (hero on top, thumbs below). Tablet+ swaps to
-        row so thumbs sit in a vertical column to the LEFT of the hero
-        (mirrors the Hydrogen PmProductGallery layout).
+        DOM order is thumbs → hero; the frame uses column-reverse so the
+        hero shows on top with the thumbnails in a horizontal strip
+        directly below it (same layout on every breakpoint).
       {%- endcomment -%}
       <div class="pm-pdp__gallery{% if product.images.size > 1 %} pm-pdp__gallery--has-thumbs{% endif %}">
         {%- comment -%}
