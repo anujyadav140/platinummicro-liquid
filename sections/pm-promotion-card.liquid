@@ -32,8 +32,8 @@
         <article class="pm-promo-card" {{ block.shopify_attributes }}>
           {%- if block.settings.image != blank -%}
             <div
-              class="pm-promo-card__image"
-              style="background-image:url('{{ block.settings.image | image_url: width: 800 }}');background-position:{{ block.settings.image_position | default: 'center' }};"
+              class="pm-promo-card__bg"
+              style="background-image:url('{{ block.settings.image | image_url: width: 1000 }}');background-position:{{ block.settings.image_position | default: 'center' }};"
               role="img"
               aria-label="{{ block.settings.title | escape }}"
             ></div>

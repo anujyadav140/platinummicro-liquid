@@ -472,25 +472,43 @@
 }
 @media (min-width: 700px) { .pm-promo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .pm-promo-card {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  min-height: 300px;
   border-radius: var(--pc-radius, 12px);
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
   background: var(--pc-bg, var(--pm-navy-deep));
+  isolation: isolate;
 }
-.pm-promo-card__image {
-  width: 100%;
-  aspect-ratio: 16 / 10;
+/* Full-bleed background image */
+.pm-promo-card__bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
   background-size: cover;
   background-position: center;
-  flex-shrink: 0;
+}
+/* Dark scrim (bottom-weighted) so overlaid text reads on any image */
+.pm-promo-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: linear-gradient(to top,
+    rgba(7, 21, 37, 0.94) 0%,
+    rgba(7, 21, 37, 0.72) 38%,
+    rgba(7, 21, 37, 0.28) 70%,
+    rgba(7, 21, 37, 0.08) 100%);
 }
 .pm-promo-card__content {
-  flex: 1;
+  position: relative;
+  z-index: 2;
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 22px;
+  padding: 28px;
+  width: 100%;
 }
 .pm-promo-card__eyebrow {
   font-size: 10px;
@@ -500,12 +518,13 @@
   color: var(--pc-eyebrow, var(--pm-terracotta-light));
 }
 .pm-promo-card__title {
-  font-size: 19px;
+  font-size: 21px;
   font-weight: 800;
   line-height: 1.25;
   letter-spacing: -0.015em;
   color: var(--pc-title, white);
   margin: 0;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 .pm-promo-card__body {
   font-size: var(--pc-body-size, 14px);
