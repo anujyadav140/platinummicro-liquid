@@ -25,6 +25,74 @@
   // ───────────────────────────── Store ──────────────────────────────
   var STORAGE_KEY = 'pm:lists:v1';
 
+  // ──────────────────────── Auth gate + resume ──────────────────────────
+  // Lists require a signed-in customer. When a guest clicks "Add to List"
+  // we stash the product, scroll to the top, and open Shopify's sign-in
+  // popup (the same one the header trigger opens). Shopify's hosted auth
+  // returns the visitor to this product page; on load we detect the stashed
+  // intent and re-open the list popover for that product so they can pick a
+  // list. Intent lives in localStorage with a short TTL so a stale click
+  // never resurfaces days later.
+  var PENDING_KEY = 'pm:lists:pending:v1';
+  var PENDING_TTL_MS = 30 * 60 * 1000; // 30 minutes
+
+  function isSignedIn() {
+    return !!(document.body && document.body.getAttribute('data-pm-customer'));
+  }
+
+  function stashPending(sku) {
+    try {
+      window.localStorage.setItem(PENDING_KEY, JSON.stringify({
+        sku: sku,
+        href: window.location.pathname + window.location.search,
+        ts: Date.now(),
+      }));
+    } catch (e) { /* private mode — resume just won't fire */ }
+  }
+
+  function readPending() {
+    try {
+      var raw = window.localStorage.getItem(PENDING_KEY);
+      if (!raw) return null;
+      var p = JSON.parse(raw);
+      if (!p || !p.sku) return null;
+      if (Date.now() - (p.ts || 0) > PENDING_TTL_MS) { clearPending(); return null; }
+      return p;
+    } catch (e) { return null; }
+  }
+
+  function clearPending() {
+    try { window.localStorage.removeItem(PENDING_KEY); } catch (e) {}
+  }
+
+  // Scroll to top and trigger Shopify's <shopify-account> sign-in popup.
+  function routeToSignIn() {
+    try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) { window.scrollTo(0, 0); }
+    var sa = document.querySelector('shopify-account.pm-header__shopify-account');
+    if (!sa) { window.location.href = '/account'; return; }
+    var avatar = sa.querySelector('[slot="signed-out-avatar"]') || sa;
+    // Let the smooth-scroll start, then open the popup so it pins to the
+    // (sticky) header trigger in view.
+    setTimeout(function () { avatar.click(); }, 80);
+  }
+
+  // After returning from sign-in, re-open the list popover for the stashed
+  // product if its trigger is on this page.
+  function resumePending() {
+    if (!isSignedIn()) return;
+    var p = readPending();
+    if (!p) return;
+    var sel = '[data-pm-add-to-list-trigger][data-item-sku="' +
+      ((window.CSS && CSS.escape) ? CSS.escape(p.sku) : p.sku.replace(/"/g, '\\"')) + '"]';
+    var trigger = document.querySelector(sel);
+    if (!trigger) return; // not on the matching product page yet — keep intent
+    clearPending();
+    setTimeout(function () {
+      try { trigger.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+      setTimeout(function () { openPopover(trigger); }, 400);
+    }, 200);
+  }
+
   function readStore() {
     try {
       var raw = window.localStorage.getItem(STORAGE_KEY);
@@ -361,7 +429,8 @@
     popover.classList.remove('is-open');
     if (currentTrigger) currentTrigger.setAttribute('aria-expanded', 'false');
     currentTrigger = null;
-    recentlyAddedListId = null;
+    recentlyChangedListId = null;
+    recentlyChangedAction = null;
   }
 
   // ──────────────────────────── Wiring ──────────────────────────────
@@ -371,6 +440,14 @@
     if (t) {
       e.preventDefault();
       e.stopPropagation();
+      // Lists are gated behind sign-in. A guest who tries to add gets
+      // stashed + routed to the sign-in popup; resumePending() re-opens
+      // this popover for them once they're back and authenticated.
+      if (!isSignedIn()) {
+        stashPending(t.getAttribute('data-item-sku') || '');
+        routeToSignIn();
+        return;
+      }
       if (currentTrigger === t && popover && popover.classList.contains('is-open')) {
         closePopover();
       } else {
@@ -444,9 +521,10 @@
   // State stays in sync with the store across all surfaces.
   document.addEventListener('pm:lists-changed', syncAll);
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', syncAll);
+    document.addEventListener('DOMContentLoaded', function () { syncAll(); resumePending(); });
   } else {
     syncAll();
+    resumePending();
   }
 
   // Cross-tab sync (storage event)
