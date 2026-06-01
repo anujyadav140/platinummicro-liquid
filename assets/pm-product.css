@@ -653,6 +653,18 @@
   transition: background var(--pm-dur-fast), border-color var(--pm-dur-fast), color var(--pm-dur-fast);
 }
 .pm-pdp__cta:first-of-type { margin-top: 20px; }
+/* Datasheet + Email share sit side-by-side on one row. */
+.pm-pdp__cta-row {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+.pm-pdp__cta-row .pm-pdp__cta {
+  margin-top: 0;
+  width: auto;
+  flex: 1 1 0;
+  min-width: 0;
+}
 .pm-pdp__cta--cart {
   background: var(--pm-terracotta);
   color: #fff;
