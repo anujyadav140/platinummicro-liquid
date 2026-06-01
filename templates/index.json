@@ -31,6 +31,13 @@
         "cta_text_color": "#ffffff"
       }
     },
+    "pm-account-strip": {
+      "type": "pm-account-strip",
+      "settings": {
+        "enabled": true,
+        "phone": "818 505 6853"
+      }
+    },
     "pm-banner-strip": {
       "type": "pm-banner-strip",
       "settings": {
@@ -351,6 +358,7 @@
   },
   "order": [
     "pm-hero-banner",
+    "pm-account-strip",
     "pm-banner-strip",
     "pm-card-section",
     "pm-promotion-card",

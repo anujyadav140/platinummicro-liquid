@@ -6,7 +6,16 @@
   for guests and on the account dashboard (which already shows this).
   Styles: pm-account.css (.pm-acctstrip*).
 {%- endcomment -%}
-{%- if customer and section.settings.enabled -%}
+{%- comment -%}
+  Visible to signed-in customers. Also rendered inside the theme editor
+  (request.design_mode) even with no customer, so merchants can see and
+  drag the strip while positioning it. Guests on the live site see nothing.
+{%- endcomment -%}
+{%- assign _show_strip = false -%}
+{%- if section.settings.enabled -%}
+  {%- if customer or request.design_mode -%}{%- assign _show_strip = true -%}{%- endif -%}
+{%- endif -%}
+{%- if _show_strip -%}
   {%- comment -%} Build the New-Customer-Accounts sub-routes off routes.account_url {%- endcomment -%}
   {%- assign _parts = routes.account_url | split: '?' -%}
   {%- assign _abase = _parts | first -%}
@@ -72,6 +81,9 @@
     { "type": "text", "id": "phone", "label": "Support phone", "default": "818 505 6853" },
     { "type": "url", "id": "messages_url", "label": "Messages link", "info": "Defaults to /pages/contact" },
     { "type": "url", "id": "returns_url", "label": "Returns link", "info": "Defaults to /pages/shipping-returns" }
+  ],
+  "presets": [
+    { "name": "PM — Account Strip" }
   ]
 }
 {% endschema %}

@@ -117,9 +117,12 @@
 
   {%- section 'pm-header' -%}
 
-  {%- comment -%} Signed-in customer shortcuts strip (hidden for guests) {%- endcomment -%}
-  {%- section 'pm-account-strip' -%}
-
+  {%- comment -%}
+    The signed-in shortcuts strip (PM — Account Strip) is now a normal
+    template section so merchants can drag it to any position in the theme
+    editor. On the homepage it defaults to just below the hero. Add it to
+    other templates via Customize → Add section → "PM — Account Strip".
+  {%- endcomment -%}
   <main id="MainContent" class="pm-main" role="main" tabindex="-1">
     {{ content_for_layout }}
   </main>
