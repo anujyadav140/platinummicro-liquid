@@ -431,11 +431,19 @@
             doc.setFont('helvetica', 'normal');
             doc.setFontSize(10);
             setRGB(doc, 'setTextColor', INK_700);
+            var LH = 13; // line height
+            // Draw line-by-line and page-break per line, so a long block
+            // flows directly under the header and continues onto the next
+            // page instead of jumping there whole (which orphaned the
+            // header with an empty gap).
             paras.forEach(function (p) {
               var lines = doc.splitTextToSize(p, W - 2 * M);
-              y = ensureSpace(doc, y, lines.length * 13 + 6, M, H);
-              doc.text(lines, M, y);
-              y += lines.length * 13 + 6;
+              for (var li = 0; li < lines.length; li++) {
+                y = ensureSpace(doc, y, LH, M, H);
+                doc.text(lines[li], M, y + 9);
+                y += LH;
+              }
+              y += 6; // gap between paragraphs
             });
             y += 8;
           }
