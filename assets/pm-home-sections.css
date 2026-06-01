@@ -463,14 +463,14 @@
   letter-spacing: -0.02em;
   color: var(--pm-ink-900);
 }
-/* Responsive card row: 1-up → 2-up → up to --pc-cols (max 4) on desktop. */
+/* 2-up grid: 1 card on mobile, 2 columns from tablet up — so four cards
+   form a 2x2 grid (two rows of two) rather than a single wide row. */
 .pm-promo-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: 20px;
 }
-@media (min-width: 600px)  { .pm-promo-grid { grid-template-columns: repeat(2, 1fr); } }
-@media (min-width: 1000px) { .pm-promo-grid { grid-template-columns: repeat(var(--pc-cols, 4), minmax(0, 1fr)); } }
+@media (min-width: 700px) { .pm-promo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .pm-promo-card {
   border-radius: var(--pc-radius, 12px);
   overflow: hidden;
