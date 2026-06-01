@@ -568,6 +568,30 @@
             <span data-pm-pdp-pdf-label>Download datasheet (PDF)</span>
           </button>
 
+          {%- comment -%}
+            ── Email / share this product ──
+            Plain mailto: link prefilled with title, price and the absolute
+            product URL. No backend, works in any mail client. url_encode
+            uses '+' for spaces, which mailto bodies render literally — so
+            we swap '+' → '%20' (literal '+' chars are already '%2B').
+          {%- endcomment -%}
+          {%- capture _share_subject -%}{{ shop.name }}: {{ product.title }}{%- endcapture -%}
+          {%- capture _share_body -%}I thought you might be interested in this product from {{ shop.name }}:
+{{ product.title }} — {{ product.price | money }}
+{% if _sku != blank %}SKU: {{ _sku }}
+{% endif %}{{ shop.url }}{{ product.url }}{%- endcapture -%}
+          <a
+            class="pm-pdp__cta pm-pdp__cta--ghost pm-pdp__cta--share"
+            href="mailto:?subject={{ _share_subject | url_encode | replace: '+', '%20' }}&body={{ _share_body | url_encode | replace: '+', '%20' }}"
+            aria-label="Share {{ product.title | escape }} by email"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+              <rect x="3" y="5" width="18" height="14" rx="2"/>
+              <path d="M3 7l9 6 9-6"/>
+            </svg>
+            <span>Email this product</span>
+          </a>
+
           <label class="pm-pdp__compare">
             <input type="checkbox" data-pm-compare data-product-handle="{{ product.handle }}">
             <span>Compare</span>

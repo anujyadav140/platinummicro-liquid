@@ -641,6 +641,7 @@
   justify-content: center;
   gap: 8px;
   width: 100%;
+  text-decoration: none;
   min-height: 44px;
   padding: 10px 16px;
   border: 1px solid transparent;
