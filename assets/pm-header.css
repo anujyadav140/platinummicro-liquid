@@ -160,9 +160,11 @@
 }
 .pm-header__search {
   flex: 1;
-  max-width: 640px;
+  max-width: 860px;
   position: relative;
 }
+/* Pin the action buttons to the far right of the header row */
+.pm-header__actions { margin-left: auto; }
 .pm-header__search form {
   display: flex;
   align-items: center;
