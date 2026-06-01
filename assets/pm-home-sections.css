@@ -475,20 +475,23 @@
   position: relative;
   display: flex;
   align-items: flex-end;
-  min-height: 240px;
+  min-height: 380px;
   border-radius: var(--pc-radius, 12px);
   overflow: hidden;
   background: var(--pc-bg, var(--pm-navy-deep));
   isolation: isolate;
 }
-/* Full-bleed background image */
+@media (min-width: 1200px) { .pm-promo-card { min-height: 420px; } }
+/* Full-bleed background image with a subtle zoom-in on hover */
 .pm-promo-card__bg {
   position: absolute;
   inset: 0;
   z-index: 0;
   background-size: cover;
   background-position: center;
+  transition: transform 0.5s var(--pm-ease-standard, ease);
 }
+.pm-promo-card:hover .pm-promo-card__bg { transform: scale(1.06); }
 /* Dark scrim (bottom-weighted) so overlaid text reads on any image */
 .pm-promo-card::after {
   content: "";
