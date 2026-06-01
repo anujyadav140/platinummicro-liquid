@@ -1,0 +1,68 @@
+{%- comment -%}
+  PM — Chat CTA
+  An on-brand "talk to our team" band for the homepage. The button opens
+  Shopify Inbox's chat when the app is installed/enabled (progressive
+  enhancement via pm-chat-launch.js); until then it falls back to the
+  contact page, so the button always does something useful. Styled fully
+  in the PM design system — independent of Inbox's own (un-themable) bubble.
+  Styles: pm-home-sections.css (.pm-chat-cta*).
+{%- endcomment -%}
+{%- assign _contact = section.settings.contact_url | default: '/pages/contact' -%}
+<section
+  class="pm-chat-cta"
+  style="
+    --cc-pt:{{ section.settings.padding_top }}px;
+    --cc-pb:{{ section.settings.padding_bottom }}px;
+    --cc-bg:{{ section.settings.bg_color }};
+    --cc-eyebrow:{{ section.settings.eyebrow_color }};
+    --cc-heading:{{ section.settings.heading_color }};
+    --cc-body:{{ section.settings.body_color }};
+  "
+>
+  <div class="pm-container pm-chat-cta__inner">
+    {%- if section.settings.eyebrow != blank -%}
+      <div class="pm-chat-cta__eyebrow">{{ section.settings.eyebrow }}</div>
+    {%- endif -%}
+    {%- if section.settings.heading != blank -%}
+      <h2 class="pm-chat-cta__heading">{{ section.settings.heading }}</h2>
+    {%- endif -%}
+    {%- if section.settings.body != blank -%}
+      <p class="pm-chat-cta__body">{{ section.settings.body }}</p>
+    {%- endif -%}
+    <a
+      class="pm-chat-cta__btn"
+      href="{{ _contact }}"
+      data-pm-chat-open
+      aria-label="{{ section.settings.button_label | default: 'Chat with us' | escape }}"
+    >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+      <span>{{ section.settings.button_label | default: 'Chat with us' }}</span>
+    </a>
+  </div>
+</section>
+
+<script src="{{ 'pm-chat-launch.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "PM — Chat CTA",
+  "tag": "section",
+  "settings": [
+    { "type": "text",     "id": "eyebrow",       "label": "Eyebrow",       "default": "WE'RE HERE TO HELP" },
+    { "type": "text",     "id": "heading",       "label": "Heading",       "default": "Questions? Talk to our team." },
+    { "type": "textarea", "id": "body",          "label": "Body",          "default": "Chat with a Platinum Micro specialist about configs, lead times, or volume quotes — we usually reply in minutes." },
+    { "type": "text",     "id": "button_label",  "label": "Button label",  "default": "Chat with us" },
+    { "type": "url",      "id": "contact_url",   "label": "Fallback link", "info": "Where the button goes if live chat isn't available yet. Defaults to /pages/contact." },
+    { "type": "header",   "content": "Style" },
+    { "type": "color", "id": "bg_color",       "label": "Background",    "default": "#0D2340" },
+    { "type": "color", "id": "eyebrow_color",  "label": "Eyebrow color", "default": "#C04E3E" },
+    { "type": "color", "id": "heading_color",  "label": "Heading color", "default": "#FFFFFF" },
+    { "type": "color", "id": "body_color",     "label": "Body color",    "default": "#D2D7DE" },
+    { "type": "range", "id": "padding_top",    "label": "Padding top",    "min": 0, "max": 160, "step": 4, "unit": "px", "default": 72 },
+    { "type": "range", "id": "padding_bottom", "label": "Padding bottom", "min": 0, "max": 160, "step": 4, "unit": "px", "default": 72 }
+  ],
+  "presets": [
+    { "name": "PM — Chat CTA" }
+  ]
+}
+{% endschema %}

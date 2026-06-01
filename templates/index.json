@@ -323,6 +323,12 @@
         "scale_on_hover": true
       }
     },
+    "pm-chat-cta": {
+      "type": "pm-chat-cta",
+      "settings": {
+        "contact_url": "/pages/contact"
+      }
+    },
     "pm-about-banner": {
       "type": "pm-about-banner",
       "settings": {
@@ -349,6 +355,7 @@
     "pm-card-section",
     "pm-promotion-card",
     "pm-brand-wall",
+    "pm-chat-cta",
     "pm-about-banner"
   ]
 }
