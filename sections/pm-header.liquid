@@ -15,7 +15,7 @@
     </button>
 
     {%- comment -%} Logo {%- endcomment -%}
-    <a class="pm-header__logo" href="/" aria-label="{{ shop.name }} home">
+    <a class="pm-header__logo" href="{{ routes.root_url }}" aria-label="{{ shop.name }} home">
       {%- if section.settings.logo != blank -%}
         <img
           src="{{ section.settings.logo | image_url: height: 96 }}"
@@ -326,7 +326,7 @@
                               {%- assign _b_alt = _bp[0] -%}
                               {%- assign _b_file = _bp[1] -%}
                               {%- assign _b_handle = _bp[2] -%}
-                              <a class="pm-mega__brand" href="/collections/{{ _b_handle }}" aria-label="{{ _b_alt }}">
+                              <a class="pm-mega__brand" href="{{ routes.collections_url }}/{{ _b_handle }}" aria-label="{{ _b_alt }}">
                                 <img src="{{ _cdn_base | append: _b_file }}" alt="{{ _b_alt }}" width="120" height="48" loading="lazy">
                               </a>
                             {%- endfor -%}

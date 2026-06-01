@@ -24,7 +24,7 @@
         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
         <p class="pm-cart__empty-title">Your cart is empty.</p>
         <p class="pm-cart__empty-lead">Add SKUs with Quick order or browse the catalog to get started.</p>
-        <a href="/collections/all" class="pm-btn pm-btn--primary" data-cart-close>Browse catalog</a>
+        <a href="{{ routes.all_products_collection_url }}" class="pm-btn pm-btn--primary" data-cart-close>Browse catalog</a>
       </div>
       <ul class="pm-cart__items" id="pm-cart-items"></ul>
 
@@ -42,7 +42,7 @@
       <p class="pm-cart__fineprint">Shipping, tax, and coupon codes apply at checkout.</p>
       <div class="pm-cart__actions">
         <button type="button" class="pm-btn pm-btn--ghost" id="pm-cart-clear">Clear</button>
-        <a href="/cart" class="pm-btn pm-btn--primary">
+        <a href="{{ routes.cart_url }}" class="pm-btn pm-btn--primary">
           View cart
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>

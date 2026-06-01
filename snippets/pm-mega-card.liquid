@@ -46,7 +46,7 @@
   {%- assign _img_alt = _col.products.first.featured_image.alt | default: col_title -%}
 {%- endif -%}
 
-<a href="/collections/{{ col_handle }}" class="pm-mega__card">
+<a href="{{ routes.collections_url }}/{{ col_handle }}" class="pm-mega__card">
   <div class="pm-mega__card-head">
     <span class="pm-mega__card-badge">{{ _badge }}</span>
     <span class="pm-mega__card-title">{{ col_title }}</span>

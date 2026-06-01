@@ -4,7 +4,13 @@
   Two-column layout on a paper background:
     LEFT  – "Open a business account" pitch (paper bg, light card style)
     RIGHT – Returning customer sign-in form (paper bg, light card style)
+
+  NOTE: /account/login and /account/register are hardcoded ON PURPOSE — pm-plp.js
+  intercepts clicks on exactly `a[href="/account/login"]` / `a[href="/account/register"]`
+  and redirects to the New-Customer-Accounts hosted flow. Swapping to route objects
+  would change the href and break that interception, so HardcodedRoutes is disabled here.
 {%- endcomment -%}
+{% # theme-check-disable HardcodedRoutes %}
 
 {%- assign show_registered = false -%}
 {%- if request.path contains '?' -%}

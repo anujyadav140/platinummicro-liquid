@@ -148,7 +148,7 @@
 
     {%- comment -%} ── Breadcrumb ───────────────────────────────────────────── {%- endcomment -%}
     <nav class="pm-pdp__crumb" aria-label="Breadcrumb">
-      <a href="/" class="pm-pdp__crumb-link">
+      <a href="{{ routes.root_url }}" class="pm-pdp__crumb-link">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
         <span>Home</span>
       </a>
@@ -227,7 +227,7 @@
           <h1 class="pm-pdp__title">{{ product.title }}</h1>
 
           {%- if product.vendor != blank -%}
-            <a href="/collections/vendors?q={{ product.vendor | url_encode }}" class="pm-pdp__brand">{{ product.vendor }}</a>
+            <a href="{{ routes.collections_url }}/vendors?q={{ product.vendor | url_encode }}" class="pm-pdp__brand">{{ product.vendor }}</a>
           {%- endif -%}
 
           <div class="pm-pdp__ids">

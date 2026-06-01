@@ -3,7 +3,12 @@
   Centered card layout, business registration form.
   Styling lives in .pm-auth-* classes in pm-auth-misc.css.
   Inline onfocus/onblur on selects removed — replaced by :focus CSS.
+
+  NOTE: /account/login is hardcoded ON PURPOSE — pm-plp.js intercepts clicks on
+  exactly `a[href="/account/login"]` to redirect to the New-Customer-Accounts hosted
+  flow. A route object would change the href and break that, so HardcodedRoutes is off here.
 {%- endcomment -%}
+{% # theme-check-disable HardcodedRoutes %}
 
 <div class="pm-auth pm-auth--wide">
   <div class="pm-auth__inner pm-auth__inner--wide">

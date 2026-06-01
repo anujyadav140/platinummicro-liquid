@@ -113,7 +113,7 @@
         </div>
         <h2 class="pm-cart-empty__title">Your cart is empty</h2>
         <p class="pm-cart-empty__lede">Looks like you haven't added any items yet.</p>
-        <a href="/collections/all" class="pm-cart-page__btn pm-cart-page__btn--primary">
+        <a href="{{ routes.all_products_collection_url }}" class="pm-cart-page__btn pm-cart-page__btn--primary">
           Browse catalog
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </a>
@@ -169,7 +169,7 @@
             </button>
           </form>
 
-          <a href="/collections/all" class="pm-cart-card__continue">← Continue shopping</a>
+          <a href="{{ routes.all_products_collection_url }}" class="pm-cart-card__continue">← Continue shopping</a>
         </aside>
       {%- endif -%}
 

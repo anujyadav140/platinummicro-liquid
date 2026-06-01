@@ -117,6 +117,9 @@
 
   {%- section 'pm-header' -%}
 
+  {%- comment -%} Signed-in customer shortcuts strip (hidden for guests) {%- endcomment -%}
+  {%- section 'pm-account-strip' -%}
+
   <main id="MainContent" class="pm-main" role="main" tabindex="-1">
     {{ content_for_layout }}
   </main>
