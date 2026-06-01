@@ -115,10 +115,16 @@
     }
     mount.removeAttribute('hidden');
     var html = '<div class="pm-rv__inner pm-container">';
+    var chevL = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>';
+    var chevR = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>';
     html +=
       '<header class="pm-rv__head">' +
         '<h2 class="pm-rv__title">Recently viewed</h2>' +
-        '<button type="button" class="pm-rv__clear" data-pm-rv-clear>Clear</button>' +
+        '<div class="pm-rv__actions">' +
+          '<button type="button" class="pm-rv__nav" data-pm-rv-prev aria-label="Scroll left" hidden>' + chevL + '</button>' +
+          '<button type="button" class="pm-rv__nav" data-pm-rv-next aria-label="Scroll right" hidden>' + chevR + '</button>' +
+          '<button type="button" class="pm-rv__clear" data-pm-rv-clear>Clear</button>' +
+        '</div>' +
       '</header>';
     html += '<ul class="pm-rv__list">';
     for (var i = 0; i < items.length; i++) {
@@ -139,7 +145,38 @@
     }
     html += '</ul></div>';
     mount.innerHTML = html;
+    wireStripNav(mount);
   }
+
+  // Prev/next arrows for the horizontal card row. Re-wired on every render
+  // (innerHTML replaces the nodes). A single window-resize listener (below)
+  // re-checks overflow via rvStripUpdate.
+  var rvStripUpdate = null;
+  function wireStripNav(mount) {
+    var list = mount.querySelector('.pm-rv__list');
+    var prev = mount.querySelector('[data-pm-rv-prev]');
+    var next = mount.querySelector('[data-pm-rv-next]');
+    if (!list || !prev || !next) return;
+
+    function step() { return Math.max(220, Math.round(list.clientWidth * 0.85)); }
+    function update() {
+      var overflow = (list.scrollWidth - list.clientWidth) > 2;
+      prev.hidden = !overflow;
+      next.hidden = !overflow;
+      if (!overflow) return;
+      prev.disabled = list.scrollLeft <= 1;
+      next.disabled = list.scrollLeft >= (list.scrollWidth - list.clientWidth - 1);
+    }
+    prev.addEventListener('click', function () { list.scrollBy({ left: -step(), behavior: 'smooth' }); });
+    next.addEventListener('click', function () { list.scrollBy({ left: step(), behavior: 'smooth' }); });
+    list.addEventListener('scroll', update, { passive: true });
+
+    rvStripUpdate = update;
+    update();
+    // Re-check once images/layout settle (card widths can shift on load).
+    setTimeout(update, 80);
+  }
+  window.addEventListener('resize', function () { if (rvStripUpdate) rvStripUpdate(); });
 
   // ─────────────────────── Cart drawer mini-strip ──────────────────
   function renderDrawerStrip() {
