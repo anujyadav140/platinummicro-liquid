@@ -815,11 +815,18 @@
     var total = document.querySelector('[data-cart-total]');    if (total) total.textContent = formatMoney(subtotalCents);
     var lbl = document.querySelector('[data-cart-itemcount-label]');
     if (lbl) lbl.textContent = 'Subtotal (' + itemCount + ' ' + (itemCount === 1 ? 'item' : 'items') + ')';
-    var badge = document.querySelector('[data-cart-badge]');
-    if (badge) {
-      if (itemCount > 0) { badge.textContent = itemCount; badge.removeAttribute('hidden'); }
+    // Header + mobile badges show stocked cart lines PLUS pending quote lines,
+    // so a stepper edit here must update every badge and keep the quote count.
+    var quoteCount = 0;
+    try {
+      var _qraw = window.localStorage.getItem('pm:quote:v1');
+      if (_qraw) { var _qarr = JSON.parse(_qraw); if (Array.isArray(_qarr)) quoteCount = _qarr.length; }
+    } catch (e) {}
+    var badgeTotal = itemCount + quoteCount;
+    document.querySelectorAll('[data-cart-badge]').forEach(function (badge) {
+      if (badgeTotal > 0) { badge.textContent = badgeTotal; badge.removeAttribute('hidden'); }
       else { badge.setAttribute('hidden', ''); }
-    }
+    });
   }
 
   function flushChange(line) {

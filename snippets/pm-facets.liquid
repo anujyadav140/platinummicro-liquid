@@ -55,18 +55,18 @@
 {%- assign _min_price = 0 -%}
 {%- assign _max_price = 0 -%}
 {%- if _f_price -%}
-  {%- assign _max_price = _f_price.range_max | divided_by: 100 | ceil -%}
+  {%- assign _max_price = _f_price.range_max | divided_by: 100.0 | ceil -%}
 {%- else -%}
   {%- if _is_search -%}
     {%- for item in _results.results -%}
       {%- if item.object_type == 'product' -%}
-        {%- assign _p = item.price | divided_by: 100 | ceil -%}
+        {%- assign _p = item.price | divided_by: 100.0 | ceil -%}
         {%- if _p > _max_price -%}{%- assign _max_price = _p -%}{%- endif -%}
       {%- endif -%}
     {%- endfor -%}
   {%- else -%}
     {%- for p in _results.products -%}
-      {%- assign _pp = p.price_max | divided_by: 100 | ceil -%}
+      {%- assign _pp = p.price_max | divided_by: 100.0 | ceil -%}
       {%- if _pp > _max_price -%}{%- assign _max_price = _pp -%}{%- endif -%}
     {%- endfor -%}
   {%- endif -%}
@@ -77,8 +77,8 @@
 {%- assign _curr_min = 0 -%}
 {%- assign _curr_max = _max_price -%}
 {%- if _f_price -%}
-  {%- if _f_price.min_value.value != blank -%}{%- assign _curr_min = _f_price.min_value.value | divided_by: 100 -%}{%- endif -%}
-  {%- if _f_price.max_value.value != blank -%}{%- assign _curr_max = _f_price.max_value.value | divided_by: 100 -%}{%- endif -%}
+  {%- if _f_price.min_value.value != blank -%}{%- assign _curr_min = _f_price.min_value.value | divided_by: 100.0 -%}{%- endif -%}
+  {%- if _f_price.max_value.value != blank -%}{%- assign _curr_max = _f_price.max_value.value | divided_by: 100.0 -%}{%- endif -%}
 {%- endif -%}
 
 {%- comment -%} Active count for mobile badge {%- endcomment -%}

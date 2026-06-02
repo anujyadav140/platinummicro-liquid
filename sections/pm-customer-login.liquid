@@ -12,27 +12,25 @@
 {%- endcomment -%}
 {% # theme-check-disable HardcodedRoutes %}
 
-{%- assign show_registered = false -%}
-{%- if request.path contains '?' -%}
-  {%- assign _qs = request.path | split: '?' | last -%}
-  {%- if _qs contains 'registered=1' -%}
-    {%- assign show_registered = true -%}
-  {%- endif -%}
-{%- endif -%}
+{%- comment -%}
+  The success banner and return_to passthrough below are revealed / filled by the
+  inline script at the end of this section. Liquid's `request` object never
+  exposes the query string, so `?registered=1` and `?return_to=` can only be read
+  client-side — the old `request.path contains '?'` checks silently never matched
+  (request.path excludes the query string) and also emitted return_to unescaped.
+{%- endcomment -%}
 
 <div class="pm-auth-page">
   <div class="pm-auth-page__inner">
 
-    {%- comment -%} Success banner — shown after registration redirect {%- endcomment -%}
-    {%- if show_registered -%}
-      <div class="pm-auth-flash pm-auth-flash--ok">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-        <div>
-          <div class="pm-auth-flash__title">Account created!</div>
-          <div class="pm-auth-flash__body">Your business account is ready. Sign in below to get started.</div>
-        </div>
+    {%- comment -%} Success banner — revealed by the script below after a ?registered=1 redirect {%- endcomment -%}
+    <div class="pm-auth-flash pm-auth-flash--ok" data-pm-registered-flash hidden>
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2" aria-hidden="true"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      <div>
+        <div class="pm-auth-flash__title">Account created!</div>
+        <div class="pm-auth-flash__body">Your business account is ready. Sign in below to get started.</div>
       </div>
-    {%- endif -%}
+    </div>
 
     <div class="pm-login-layout">
 
@@ -69,10 +67,8 @@
 
         {%- form 'customer_login' -%}
 
-          {%- comment -%} Pass returnTo through if present {%- endcomment -%}
-          {%- if request.path contains 'return_to' -%}
-            <input type="hidden" name="return_to" value="{{ request.path | split: 'return_to=' | last | url_decode }}">
-          {%- endif -%}
+          {%- comment -%} return_to is read from the URL and validated same-origin by the script below {%- endcomment -%}
+          <input type="hidden" name="return_to" data-pm-return-to>
 
           {%- if form.errors -%}
             <div class="pm-auth-flash pm-auth-flash--err">
@@ -161,6 +157,30 @@
     </div>
   </div>
 </div>
+
+<script>
+  // Liquid can't read the query string, so reveal the post-registration banner
+  // and fill the login form's return_to from the URL here — client-side.
+  (function () {
+    var params;
+    try { params = new URLSearchParams(window.location.search); } catch (e) { return; }
+
+    // Reveal the "Account created!" banner after a ?registered=1 redirect.
+    if (params.get('registered') === '1') {
+      var flash = document.querySelector('[data-pm-registered-flash]');
+      if (flash) flash.removeAttribute('hidden');
+    }
+
+    // Pass a same-origin return_to through the login form. Accept only a plain
+    // relative path ("/something") — never "//host", a backslash, or an absolute
+    // URL — so a crafted ?return_to= can't turn this into an open redirect.
+    var rt = params.get('return_to');
+    var input = document.querySelector('input[name="return_to"][data-pm-return-to]');
+    if (input && rt && rt.charAt(0) === '/' && rt.charAt(1) !== '/' && rt.indexOf('\\') === -1) {
+      input.value = rt;
+    }
+  })();
+</script>
 
 <style>
   /* Local styles for the auth pages — kept here so they ship with the section */

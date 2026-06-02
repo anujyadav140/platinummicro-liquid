@@ -348,6 +348,12 @@
   position: relative;
   z-index: 600;
 }
+/* Hide the account trigger until the <shopify-account> custom element is
+   upgraded by Shopify's script. Before upgrade the signed-in/out slots can
+   paint in a half-resolved state for a frame (the "sign-in flash"); once the
+   element is :defined it projects the correct slot from client-resolved auth.
+   visibility (not display) keeps the layout box so the header doesn't shift. */
+shopify-account:not(:defined) { visibility: hidden; }
 .pm-header__shopify-account span.pm-header__action-btn {
   cursor: pointer;
   user-select: none;

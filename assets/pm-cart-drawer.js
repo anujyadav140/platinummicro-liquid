@@ -75,10 +75,13 @@
     });
 
     // Listen for external cart changes
-    document.addEventListener('pm:cart-changed', function () {
+    document.addEventListener('pm:cart-changed', function (e) {
+      var src = (e && e.detail && e.detail.source) || '';
       refresh().then(function () {
-        // Auto-open after a Quick Order success
-        open();
+        // Auto-open the drawer only after a genuine add-to-cart action (product
+        // card, PDP, or quick-order). Quote edits, cart clears, and cross-tab
+        // storage syncs reconcile the badge silently without popping the drawer.
+        if (src === 'pcard' || src === 'pdp' || src === 'quick-order') open();
       });
     });
 
@@ -378,17 +381,23 @@
   }
 
   function syncBadgeFromStorage() {
-    // Read the Shopify baseline from the FIRST badge (the header, which is
-    // earliest in the DOM and still holds the clean server-rendered line
-    // count) BEFORE writing, so we never double-count across badges.
+    // The server stamps the authoritative Shopify line count on each badge as
+    // data-cart-shopify-lines, so read THAT — never textContent, which already
+    // includes any quote lines a previous pass added. That keeps this fully
+    // idempotent no matter how many times it runs.
     var badge = document.querySelector('[data-cart-badge]');
     if (!badge) return;
-    var shopifyLines = parseInt(badge.textContent, 10);
+    var shopifyLines = parseInt(badge.getAttribute('data-cart-shopify-lines'), 10);
     if (isNaN(shopifyLines)) shopifyLines = 0;
     setAllBadges(shopifyLines + readQuoteLineCount());
   }
 
   syncBadgeFromStorage();
+
+  // Re-derive the badge when the page is restored from the bfcache (back/forward
+  // navigation): the DOM is frozen at its old paint but localStorage quotes may
+  // have changed, so recompute from the stable server baseline + current quotes.
+  window.addEventListener('pageshow', function (e) { if (e.persisted) syncBadgeFromStorage(); });
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

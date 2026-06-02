@@ -223,7 +223,12 @@
     var interval = parseInt(wrap.getAttribute('data-promo-interval'), 10) || 4500;
     var i = 0;
     items.forEach(function (el, idx) { el.style.display = idx === 0 ? '' : 'none'; });
-    setInterval(function () {
+    // Track the rotation timer per bar id and clear any prior one first, so a
+    // theme-editor re-render (which re-runs this script against fresh DOM) can't
+    // stack intervals that keep firing on detached nodes.
+    window.__pmTopbarTimers = window.__pmTopbarTimers || {};
+    if (window.__pmTopbarTimers['{{ _bar_id }}']) clearInterval(window.__pmTopbarTimers['{{ _bar_id }}']);
+    window.__pmTopbarTimers['{{ _bar_id }}'] = setInterval(function () {
       items[i].style.display = 'none';
       i = (i + 1) % items.length;
       items[i].style.display = '';

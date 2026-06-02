@@ -175,7 +175,7 @@
         {%- endcomment -%}
         <button type="button" class="pm-mobile-nav__link pm-mobile-nav__cart" data-cart-open>
           <span>Cart</span>
-          <span class="pm-mobile-nav__cart-count" data-cart-badge {% if cart.items.size == 0 %}hidden{% endif %}>{{ cart.items.size }}</span>
+          <span class="pm-mobile-nav__cart-count" data-cart-badge data-cart-shopify-lines="{{ cart.items.size }}" {% if cart.items.size == 0 %}hidden{% endif %}>{{ cart.items.size }}</span>
         </button>
       </div>
     </nav>
