@@ -1,0 +1,39 @@
+{%- comment -%}
+  PM — Tidio visitor identify
+  When a customer is signed in, hand their name + email to Tidio so the chat
+  recognises them and skips the "introduce yourself" pre-chat form.
+
+  Two methods, for robustness:
+    1. document.tidioIdentify — set BEFORE the Tidio widget loads. This is
+       Tidio's preferred path; it also merges prior conversations for the
+       same person in the admin panel.
+    2. tidioChatApi.setVisitorData() on the tidioChatApiReady event — a
+       fallback in case the widget initialised before this ran.
+
+  Rendered in <head> (before content_for_header) from layout/theme.liquid,
+  and gated on `customer` so guests are unaffected.
+  Ref: https://developers.tidio.com/docs/widget-visitor-identification
+{%- endcomment -%}
+{%- if customer -%}
+  <script>
+    (function () {
+      var _pmId = {
+        distinct_id: {{ customer.id | json }},
+        email: {{ customer.email | json }},
+        name: {{ customer.name | json }}{% if customer.phone != blank %},
+        phone: {{ customer.phone | json }}{% endif %}
+      };
+      // 1) Preferred: identify before Tidio initialises.
+      document.tidioIdentify = _pmId;
+      window.tidioIdentify = _pmId;
+      // 2) Fallback: push via SDK if the widget is already (or becomes) ready.
+      function _pmTidioIdentify() {
+        if (window.tidioChatApi && window.tidioChatApi.setVisitorData) {
+          try { window.tidioChatApi.setVisitorData(_pmId); } catch (e) {}
+        }
+      }
+      if (window.tidioChatApi) { _pmTidioIdentify(); }
+      document.addEventListener('tidioChatApiReady', _pmTidioIdentify);
+    })();
+  </script>
+{%- endif -%}

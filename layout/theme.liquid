@@ -20,6 +20,9 @@
     <meta name="description" content="{{ page_description | escape }}">
   {% endif %}
 
+  {%- comment -%} Identify signed-in customers to Tidio (skip the pre-chat form). Must precede the app embed. {%- endcomment -%}
+  {%- render 'pm-tidio-identify' -%}
+
   {{ content_for_header }}
 
   {%- comment -%} SEO: canonical, Open Graph, Twitter, JSON-LD structured data {%- endcomment -%}
