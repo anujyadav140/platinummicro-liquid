@@ -82,35 +82,26 @@
 
 
       {%- comment -%}
-        Account control.
-          • Signed OUT → our own "Sign in" link, NOT Shopify's <shopify-account>
-            web component. The component's popup renders default Orders/Profile
-            shortcuts inside a CLOSED shadow DOM that the theme can't reach to
-            hide — so for guests we skip the component entirely and own the
-            markup. The link points at /account/login, which pm-plp.js
-            intercepts and redirects to the New-Customer-Accounts hosted login
-            (Shop Pay + email). The same interception every other auth link uses.
-          • Signed IN  → keep <shopify-account> (its account menu belongs here)
-            PLUS an explicit Sign out button so users can log out from anywhere.
+        Account button — Shopify's <shopify-account> web component handles both
+        states: the signed-out sign-in card (Shop Pay + email, in-page) and the
+        signed-in name + account menu. For signed-in customers we add an
+        explicit Sign out button next to it for quick logout.
       {%- endcomment -%}
+      <shopify-account class="pm-header__shopify-account" menu="customer-account-main-menu">
+        <span slot="signed-out-avatar" class="pm-header__action-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>Sign in</span>
+        </span>
+        <span slot="signed-in-avatar" class="pm-header__action-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>{% if customer %}{{ customer.first_name | default: 'Account' }}{% else %}Account{% endif %}</span>
+        </span>
+      </shopify-account>
       {%- if customer -%}
-        <shopify-account class="pm-header__shopify-account" menu="customer-account-main-menu">
-          <span slot="signed-in-avatar" class="pm-header__action-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <span>{{ customer.first_name | default: 'Account' }}</span>
-          </span>
-        </shopify-account>
         <a class="pm-header__action-btn pm-header__signout" href="{{ routes.account_logout_url }}" rel="nofollow" aria-label="Sign out">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
           <span>Sign out</span>
         </a>
-      {%- else -%}
-        {% # theme-check-disable HardcodedRoutes %}
-        <a class="pm-header__action-btn" href="/account/login">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-          <span>Sign in</span>
-        </a>
-        {% # theme-check-enable HardcodedRoutes %}
       {%- endif -%}
 
       <button type="button" class="pm-header__action-btn pm-header__cart-btn" data-cart-open aria-haspopup="dialog" aria-label="Cart ({{ cart.item_count }} items)">

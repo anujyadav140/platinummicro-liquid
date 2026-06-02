@@ -154,20 +154,16 @@
         {%- endfor -%}
 
         {%- comment -%}
-          Account — mirrors the desktop header. Signed-out guests get a plain
-          "Sign in" link (not <shopify-account>) so the component's closed-
-          shadow-DOM Orders/Profile shortcuts never appear. Signed-in customers
-          get the component (account menu) plus a Sign out link.
+          Account — same <shopify-account> web component as the desktop header,
+          handling both signed-out and signed-in states. Signed-in customers
+          also get a Sign out link below it.
         {%- endcomment -%}
+        <shopify-account class="pm-mobile-nav__link pm-mobile-nav__account" menu="customer-account-main-menu">
+          <span slot="signed-out-avatar">Sign in</span>
+          <span slot="signed-in-avatar">{% if customer %}{{ customer.first_name | default: 'Account' }}{% else %}Account{% endif %}</span>
+        </shopify-account>
         {%- if customer -%}
-          <shopify-account class="pm-mobile-nav__link pm-mobile-nav__account" menu="customer-account-main-menu">
-            <span slot="signed-in-avatar">{{ customer.first_name | default: 'Account' }}</span>
-          </shopify-account>
           <a class="pm-mobile-nav__link" href="{{ routes.account_logout_url }}" rel="nofollow">Sign out</a>
-        {%- else -%}
-          {% # theme-check-disable HardcodedRoutes %}
-          <a class="pm-mobile-nav__link" href="/account/login">Sign in</a>
-          {% # theme-check-enable HardcodedRoutes %}
         {%- endif -%}
 
         {%- comment -%}
