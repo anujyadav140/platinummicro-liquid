@@ -103,6 +103,29 @@
           "button_vertical_position": "lowest",
           "greeting_message": ""
         }
+      },
+      "6143736321357441667": {
+        "type": "shopify://apps/tidio-live-chat-chatbots/blocks/app-embed/1002274d-fb18-4939-98f6-5f05a8deeadc",
+        "disabled": false,
+        "settings": {}
+      },
+      "7974659707553285070": {
+        "type": "shopify://apps/quotify/blocks/app-embed/e72a6125-4dd6-4154-a361-ca94e10e6d52",
+        "disabled": false,
+        "settings": {}
+      },
+      "15562191488504292397": {
+        "type": "shopify://apps/quotify/blocks/sticky-cart-button/e72a6125-4dd6-4154-a361-ca94e10e6d52",
+        "disabled": false,
+        "settings": {
+          "floating_quote_cart_button_text": "Show Quote Cart",
+          "floating_quote_cart_button_background_color": "#0D2340",
+          "floating_quote_cart_button_text_color": "#FFFFFF",
+          "floating_quote_cart_button_border_color": "#0D2340",
+          "floating_quote_cart_button_padding": 12,
+          "floating_quote_cart_button_border_radius": 8,
+          "floating_quote_cart_button_css": ""
+        }
       }
     }
   },
