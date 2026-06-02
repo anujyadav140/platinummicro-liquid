@@ -18,9 +18,9 @@
 .pm-top-bar__inner {
   max-width: var(--pm-container);
   margin: 0 auto;
-  /* extra right padding reserves room so promo text never slides under the
-     dismiss X, which is pinned to the far right edge of the bar (below). */
-  padding: 0 3rem 0 1rem;
+  /* Symmetric gutters clear the dismiss button on the right AND keep the
+     centered message visually centered in the bar (matching gutter on the left). */
+  padding: 0 44px;
   width: 100%;
   display: flex;
   align-items: center;
@@ -30,7 +30,7 @@
 .pm-top-bar__trust {
   display: flex;
   align-items: center;
-  justify-content: var(--ptb-align, flex-start);
+  justify-content: var(--ptb-align, center);
   flex: 1;
   gap: 4px;
   font-weight: 600;
@@ -47,7 +47,7 @@
 .pm-top-bar__promos {
   display: flex;
   align-items: center;
-  justify-content: var(--ptb-align, flex-start);
+  justify-content: var(--ptb-align, center);
   flex: 1;
   gap: 8px;
   min-width: 0;
@@ -79,10 +79,11 @@
   font-family: var(--pm-font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
 }
 .pm-top-bar__right {
-  /* pinned flush to the far right of the bar (not the centered container),
-     vertically centered, so the dismiss X always hugs the viewport edge. */
+  /* pinned to the far right of the bar (not the centered container),
+     vertically centered, so the dismiss button sits in the right gutter
+     while the promo message stays centered in the bar. */
   position: absolute;
-  right: 10px;
+  right: 12px;
   top: 50%;
   transform: translateY(-50%);
   display: flex;
@@ -109,20 +110,30 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: none;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  background: rgba(255,255,255,0.06);
   border: none;
-  color: rgba(255,255,255,0.5);
-  margin-left: 4px;
-  padding: 4px;
-  border-radius: 4px;
-  transition: color var(--pm-dur-fast);
+  border-radius: 50%;
+  color: rgba(255,255,255,0.6);
+  cursor: pointer;
+  transition: background var(--pm-dur-fast) var(--pm-ease-standard),
+              color var(--pm-dur-fast) var(--pm-ease-standard);
 }
-.pm-top-bar__dismiss:hover { color: #fff; }
+.pm-top-bar__dismiss svg { width: 13px; height: 13px; }
+.pm-top-bar__dismiss:hover { background: rgba(255,255,255,0.18); color: #fff; }
+.pm-top-bar__dismiss:focus-visible {
+  outline: 2px solid rgba(255,255,255,0.55);
+  outline-offset: 1px;
+}
 @media (max-width: 767px) {
+  .pm-top-bar__inner { padding: 0 38px; }
   .pm-top-bar__trust,
   .pm-top-bar__promo { font-size: 10px; }
   .pm-top-bar__promo-code { font-size: 9.5px; padding: 1px 6px; }
   .pm-top-bar { height: auto; min-height: var(--pm-trust-bar-h); padding: 4px 0; }
+  .pm-top-bar__dismiss { width: 24px; height: 24px; }
 }
 
 /* --- Header --------------------------------------------------------------- */
