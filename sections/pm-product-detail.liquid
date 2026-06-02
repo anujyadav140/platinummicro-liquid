@@ -245,23 +245,35 @@
             {%- endif -%}
           </div>
 
-          {%- comment -%} ── Price ───────────────────────────────────── {%- endcomment -%}
-          <div class="pm-pdp__price-block">
-            {%- if product.compare_at_price > product.price -%}
-              <div class="pm-pdp__price pm-pdp__price--sale" id="pm-pdp-price">{{ product.price | money }}</div>
-              <div class="pm-pdp__price-meta">
-                <span class="pm-pdp__price-was">{{ product.compare_at_price | money }}</span>
-                <span class="pm-pdp__price-flag">Sale</span>
-              </div>
-            {%- else -%}
-              <div class="pm-pdp__price" id="pm-pdp-price">{{ product.price | money }}</div>
-            {%- endif -%}
-            {%- if _has_bundle -%}
-              <div class="pm-pdp__price-bundle-note" data-pm-pdp-bundle-note hidden>
-                Includes {{ product.price | money }} base + bundle add-ons
-              </div>
-            {%- endif -%}
-          </div>
+          {%- comment -%}
+            ── Price ──
+            Quote-only products (out of stock here) hide the price and the
+            Add-to-Cart button so the page leads with the Quotify quote flow.
+            In-stock products show price + buy controls as normal.
+          {%- endcomment -%}
+          {%- if _instock -%}
+            <div class="pm-pdp__price-block">
+              {%- if product.compare_at_price > product.price -%}
+                <div class="pm-pdp__price pm-pdp__price--sale" id="pm-pdp-price">{{ product.price | money }}</div>
+                <div class="pm-pdp__price-meta">
+                  <span class="pm-pdp__price-was">{{ product.compare_at_price | money }}</span>
+                  <span class="pm-pdp__price-flag">Sale</span>
+                </div>
+              {%- else -%}
+                <div class="pm-pdp__price" id="pm-pdp-price">{{ product.price | money }}</div>
+              {%- endif -%}
+              {%- if _has_bundle -%}
+                <div class="pm-pdp__price-bundle-note" data-pm-pdp-bundle-note hidden>
+                  Includes {{ product.price | money }} base + bundle add-ons
+                </div>
+              {%- endif -%}
+            </div>
+          {%- else -%}
+            <div class="pm-pdp__price-block pm-pdp__price-block--quote">
+              <div class="pm-pdp__price-quote">Pricing by quote</div>
+              <div class="pm-pdp__price-quote-sub">Request a quote for current pricing &amp; availability.</div>
+            </div>
+          {%- endif -%}
 
           {%- if _upc != blank -%}
             <div class="pm-pdp__upc">

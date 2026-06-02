@@ -469,8 +469,8 @@
   padding-top: 12px;
   padding-bottom: 12px;
 }
-@media (min-width: 600px)  { .pm-acctstrip__row { grid-template-columns: repeat(2, 1fr); } }
-@media (min-width: 1000px) { .pm-acctstrip__row { grid-template-columns: repeat(5, 1fr); } }
+@media (min-width: 600px)  { .pm-acctstrip__row { grid-template-columns: repeat(3, 1fr); } }
+@media (min-width: 1000px) { .pm-acctstrip__row { grid-template-columns: repeat(6, 1fr); } }
 .pm-acctstrip__card {
   display: flex;
   align-items: center;

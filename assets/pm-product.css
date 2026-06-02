@@ -225,6 +225,19 @@
 }
 @media (min-width: 640px) { .pm-pdp__price { font-size: 30px; } }
 @media (min-width: 768px) { .pm-pdp__price { font-size: 32px; } }
+/* Quote-only products: price hidden, lead with the quote flow. */
+.pm-pdp__price-quote {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--pm-navy-deep, #0D2340);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+.pm-pdp__price-quote-sub {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--pm-ink-500);
+}
 .pm-pdp__price--sale { color: var(--pm-terracotta); }
 .pm-pdp__price-meta {
   display: flex;
