@@ -86,8 +86,12 @@
         states: the signed-out sign-in card (Shop Pay + email, in-page) and the
         signed-in name + account menu. For signed-in customers we add an
         explicit Sign out button next to it for quick logout.
+
+        The `menu` attribute (Profile / Orders / Lists) is only emitted when
+        signed IN. Signed-out guests then get the component's default shortcuts
+        (Profile / Orders) with no custom "Lists" link in the sign-in card.
       {%- endcomment -%}
-      <shopify-account class="pm-header__shopify-account" menu="customer-account-main-menu">
+      <shopify-account class="pm-header__shopify-account"{% if customer %} menu="customer-account-main-menu"{% endif %}>
         <span slot="signed-out-avatar" class="pm-header__action-btn">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
           <span>Sign in</span>

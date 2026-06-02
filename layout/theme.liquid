@@ -158,7 +158,7 @@
           handling both signed-out and signed-in states. Signed-in customers
           also get a Sign out link below it.
         {%- endcomment -%}
-        <shopify-account class="pm-mobile-nav__link pm-mobile-nav__account" menu="customer-account-main-menu">
+        <shopify-account class="pm-mobile-nav__link pm-mobile-nav__account"{% if customer %} menu="customer-account-main-menu"{% endif %}>
           <span slot="signed-out-avatar">Sign in</span>
           <span slot="signed-in-avatar">{% if customer %}{{ customer.first_name | default: 'Account' }}{% else %}Account{% endif %}</span>
         </shopify-account>
