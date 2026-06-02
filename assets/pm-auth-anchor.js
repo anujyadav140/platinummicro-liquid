@@ -56,6 +56,51 @@
     pinnedEl = el;
   }
 
+  // ── Signed-out menu gate ──────────────────────────────────────────────
+  // When SIGNED OUT, Shopify's <shopify-account> still renders account-only
+  // shortcuts (Orders, Profile, …) inside its popup — as <button>s, in the
+  // (open) shadow DOM. Those make no sense pre-auth. We hide them by label
+  // whenever no customer is present. Signed-in visitors keep the full menu.
+  // Safe-degrading: only ever hides, never throws.
+  var HIDE_LABELS = [
+    'orders', 'profile', 'lists', 'addresses', 'wishlist',
+    'your orders', 'your profile', 'order history', 'account details'
+  ];
+
+  function isSignedIn() {
+    return !!(document.body && document.body.getAttribute('data-pm-customer'));
+  }
+
+  // Collect clickable menu nodes (links, buttons, menuitems) across the
+  // element's subtree AND every nested open shadow root.
+  function collectMenuNodes(root, depth, acc) {
+    if (!root || depth > 14) return acc;
+    var nodes = root.querySelectorAll
+      ? root.querySelectorAll('a, button, [role="menuitem"], [role="button"]')
+      : [];
+    for (var i = 0; i < nodes.length; i++) acc.push(nodes[i]);
+    var all = root.querySelectorAll ? root.querySelectorAll('*') : [];
+    for (var j = 0; j < all.length; j++) {
+      if (all[j].shadowRoot) collectMenuNodes(all[j].shadowRoot, depth + 1, acc);
+    }
+    return acc;
+  }
+
+  function gateAccountMenu() {
+    if (isSignedIn()) return;
+    var sa = document.querySelector('shopify-account.pm-header__shopify-account');
+    if (!sa) return;
+    var nodes = collectMenuNodes(sa, 0, []);
+    for (var i = 0; i < nodes.length; i++) {
+      var el = nodes[i];
+      var txt = (el.textContent || '').replace(/\s+/g, ' ').trim().toLowerCase();
+      if (HIDE_LABELS.indexOf(txt) === -1) continue;
+      el.style.setProperty('display', 'none', 'important');
+      var li = el.closest && el.closest('li');
+      if (li) li.style.setProperty('display', 'none', 'important');
+    }
+  }
+
   // Test whether an element looks like a popup we should pin.
   function looksLikePopup(el) {
     if (!el || el.nodeType !== 1) return false;
@@ -93,6 +138,8 @@
         if (found && found !== pinnedEl) pinTo(found);
         // Even if same element, re-pin in case Shopify re-rendered its style
         if (pinnedEl) pinTo(pinnedEl);
+        // Hide Orders/Profile/etc. when signed out (re-runs on every mutation).
+        gateAccountMenu();
       });
       try {
         mo.observe(root.host ? root : root, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class', 'open', 'hidden'] });
@@ -125,6 +172,7 @@
       var found = scanForPopup(sa, 0);
       if (!found && sa.shadowRoot) found = scanForPopup(sa.shadowRoot, 0);
       if (found) pinTo(found);
+      gateAccountMenu();
       // Set up observers for any future changes (shopify may re-render).
       observeAll(sa, 0);
       if (sa.shadowRoot) observeAll(sa.shadowRoot, 0);
@@ -137,6 +185,7 @@
     var burst = setInterval(function () {
       var found = pinnedEl || scanForPopup(sa, 0) || (sa.shadowRoot && scanForPopup(sa.shadowRoot, 0));
       if (found) pinTo(found);
+      gateAccountMenu();
       if (Date.now() - t0 > 2000) clearInterval(burst);
     }, 60);
   }, true);
