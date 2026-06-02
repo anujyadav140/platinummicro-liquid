@@ -75,28 +75,20 @@
         </button>
       {%- else -%}
         {%- comment -%}
-          Out-of-stock products route into the local quote store (pm-quote.js)
-          rather than Shopify's /cart/add.js. The cart drawer merges quote
-          items into its render with a QUOTE pill so the line is visually
-          distinct from regular stocked items.
+          Out-of-stock products use Quotify's request-a-quote button (the
+          Quotify app embed binds to [data-quotify]) instead of Shopify's
+          /cart/add.js. Keeps the PM card-button styling.
         {%- endcomment -%}
         <button
           type="button"
-          class="pm-pcard__add pm-pcard__add--quote"
-          data-pm-quote-add
-          data-quote-sku="{{ _v.sku | escape }}"
-          data-quote-variant-id="{{ _v.id }}"
-          data-quote-product-id="{{ product.id }}"
-          data-quote-name="{{ product.title | escape }}"
-          data-quote-brand="{{ product.vendor | escape }}"
-          data-quote-image="{% if _img %}{{ _img | image_url: width: 200 }}{% endif %}"
-          data-quote-price="{{ product.price | money }}"
-          data-quote-price-cents="{{ product.price }}"
-          data-quote-href="{{ product.url }}"
-          aria-label="Add {{ product.title | escape }} to quote"
+          class="pm-pcard__add pm-pcard__add--quote quotify-request-quote-btn"
+          data-quotify
+          data-product-id="{{ product.id }}"
+          data-variant="{{ _v.id }}"
+          aria-label="Request a quote for {{ product.title | escape }}"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          <span>Add to Quote</span>
+          <span>Request Quote</span>
         </button>
       {%- endif -%}
     </div>

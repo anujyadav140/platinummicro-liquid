@@ -510,15 +510,12 @@
           </button>
 
           {%- comment -%}
-            ── Add to Quote ──
-            Routes through pm-quote.js → drops into the local
-            pm:quote:v1 store → renders in the cart drawer as a Quote
-            line. Same `data-pm-quote-add` mechanism the OOS product
-            card uses (pm-product-card.liquid), so the PDP and PLP
-            paths are unified.
-
-            Quantity is read live from #pm-pdp-qty by pm-quote.js at
-            click time, so the buyer's selected qty applies.
+            ── Request a Quote (Quotify) ──
+            Quotify's quote-request trigger. The Quotify app embed (enabled in
+            config/settings_data.json) loads the script that binds to
+            [data-quotify] and opens the quote form / adds to the Quotify quote
+            cart. Replaces the old localStorage Add-to-Quote (pm-quote.js).
+            Keeps the PM CTA classes so it matches the other PDP actions.
           {%- endcomment -%}
           {%- assign _quote_btn_class = 'pm-pdp__cta pm-pdp__cta--ghost' -%}
           {%- assign _quote_svg_size  = '14' -%}
@@ -528,21 +525,14 @@
           {%- endunless -%}
           <button
             type="button"
-            class="{{ _quote_btn_class }}"
-            data-pm-quote-add
-            data-quote-sku="{{ _sku | escape }}"
-            data-quote-variant-id="{{ _v.id }}"
-            data-quote-product-id="{{ product.id }}"
-            data-quote-name="{{ product.title | escape }}"
-            data-quote-brand="{{ product.vendor | escape }}"
-            data-quote-image="{% if product.featured_image %}{{ product.featured_image | image_url: width: 200 }}{% endif %}"
-            data-quote-price="{{ product.price | money }}"
-            data-quote-price-cents="{{ product.price }}"
-            data-quote-href="{{ product.url }}"
-            aria-label="Add {{ product.title | escape }} to quote"
+            class="{{ _quote_btn_class }} quotify-request-quote-btn"
+            data-quotify
+            data-product-id="{{ product.id }}"
+            data-variant="{{ _v.id }}"
+            aria-label="Request a quote for {{ product.title | escape }}"
           >
             <svg width="{{ _quote_svg_size }}" height="{{ _quote_svg_size }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            <span>Add to Quote</span>
+            <span>Request a Quote</span>
           </button>
 
           {%- comment -%}
