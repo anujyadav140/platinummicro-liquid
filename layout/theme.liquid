@@ -155,16 +155,13 @@
 
         {%- comment -%}
           Account — same <shopify-account> web component as the desktop header,
-          handling both signed-out and signed-in states. Signed-in customers
-          also get a Sign out link below it.
+          handling both signed-out and signed-in states. Sign out lives inside
+          the account menu (customer-account-main-menu), not as a separate link.
         {%- endcomment -%}
         <shopify-account class="pm-mobile-nav__link pm-mobile-nav__account"{% if customer %} menu="customer-account-main-menu"{% endif %}>
           <span slot="signed-out-avatar">Sign in</span>
           <span slot="signed-in-avatar">{% if customer %}{{ customer.first_name | default: 'Account' }}{% else %}Account{% endif %}</span>
         </shopify-account>
-        {%- if customer -%}
-          <a class="pm-mobile-nav__link" href="{{ routes.account_logout_url }}" rel="nofollow">Sign out</a>
-        {%- endif -%}
 
         {%- comment -%}
           Cart count must match the header badge, which folds local "quote"

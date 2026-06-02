@@ -84,10 +84,10 @@
       {%- comment -%}
         Account button — Shopify's <shopify-account> web component handles both
         states: the signed-out sign-in card (Shop Pay + email, in-page) and the
-        signed-in name + account menu. For signed-in customers we add an
-        explicit Sign out button next to it for quick logout.
+        signed-in name + account menu. Sign out lives inside that menu
+        (customer-account-main-menu) rather than as a separate header button.
 
-        The `menu` attribute (Profile / Orders / Lists) is only emitted when
+        The `menu` attribute (Profile / Orders / Lists / Sign out) is only emitted when
         signed IN. Signed-out guests then get the component's default shortcuts
         (Profile / Orders) with no custom "Lists" link in the sign-in card.
       {%- endcomment -%}
@@ -101,12 +101,6 @@
           <span>{% if customer %}{{ customer.first_name | default: 'Account' }}{% else %}Account{% endif %}</span>
         </span>
       </shopify-account>
-      {%- if customer -%}
-        <a class="pm-header__action-btn pm-header__signout" href="{{ routes.account_logout_url }}" rel="nofollow" aria-label="Sign out">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          <span>Sign out</span>
-        </a>
-      {%- endif -%}
 
       <button type="button" class="pm-header__action-btn pm-header__cart-btn" data-cart-open aria-haspopup="dialog" aria-label="Cart ({{ cart.item_count }} items)">
         <span class="pm-header__cart-icon">
