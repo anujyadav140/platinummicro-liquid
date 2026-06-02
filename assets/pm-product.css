@@ -673,6 +673,9 @@
 }
 .pm-pdp__cta--cart:hover { background: var(--pm-terracotta-light); }
 .pm-pdp__cta--cart[disabled] { opacity: 0.7; cursor: wait; }
+/* Quotify wrapper form: invisible to layout so the button still flows in the
+   buybox CTA stack exactly as before. */
+.pm-quotify-form { display: contents; }
 .pm-pdp__cta--ghost {
   background: #fff;
   border-color: var(--pm-ink-300);

@@ -523,18 +523,27 @@
             {%- assign _quote_btn_class = 'pm-pdp__cta pm-pdp__cta--quote' -%}
             {%- assign _quote_svg_size  = '15' -%}
           {%- endunless -%}
-          <button
-            type="button"
-            class="{{ _quote_btn_class }} quotify-request-quote-btn"
-            data-quotify
-            data-product-id="{{ product.id }}"
-            data-variant="{{ _v.id }}"
-            data-product="{{ product | json | escape }}"
-            aria-label="Request a quote for {{ product.title | escape }}"
-          >
-            <svg width="{{ _quote_svg_size }}" height="{{ _quote_svg_size }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-            <span>Request a Quote</span>
-          </button>
+          {%- comment -%}
+            This theme adds to cart via fetch('/cart/add.js') — there's no
+            product <form>. Quotify's button is expected inside a product form,
+            so wrap it in a no-op form (no action, never submits, display:contents
+            so layout is unaffected) to give Quotify's script a form to anchor to.
+          {%- endcomment -%}
+          <form class="pm-quotify-form" onsubmit="return false;">
+            <input type="hidden" name="id" value="{{ _v.id }}">
+            <button
+              type="button"
+              class="{{ _quote_btn_class }} quotify-request-quote-btn"
+              data-quotify
+              data-product-id="{{ product.id }}"
+              data-variant="{{ _v.id }}"
+              data-product="{{ product | json | escape }}"
+              aria-label="Request a quote for {{ product.title | escape }}"
+            >
+              <svg width="{{ _quote_svg_size }}" height="{{ _quote_svg_size }}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span>Request a Quote</span>
+            </button>
+          </form>
 
           {%- comment -%}
             ── Download datasheet (PDF) ──
