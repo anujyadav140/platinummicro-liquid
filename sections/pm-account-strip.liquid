@@ -33,7 +33,8 @@
         <svg class="pm-acctstrip__ico" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
         <div class="pm-acctstrip__body">
           <span class="pm-acctstrip__label">Welcome back, {{ customer.first_name | default: 'there' | escape }}</span>
-          <a class="pm-acctstrip__link" href="{{ routes.account_url }}">Go to your account</a>
+          {%- comment -%} routes.account_url lands on the Orders tab by default; point at /profile explicitly. {%- endcomment -%}
+          <a class="pm-acctstrip__link" href="{{ _abase }}/profile{{ _aqs }}">Go to your account</a>
         </div>
       </div>
 
