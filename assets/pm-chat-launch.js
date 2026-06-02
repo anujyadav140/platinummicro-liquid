@@ -1,27 +1,38 @@
 /**
- * PmChatLaunch — bridge the PM "Chat with us" CTA to Shopify Inbox.
+ * PmChatLaunch — bridge the PM "Chat with us" CTA to the store's live chat.
  *
- * Shopify Inbox renders its own chat widget (a floating bubble) once the
- * app is installed and its app embed is enabled. It exposes no official
- * "open chat" API, so we best-effort locate its launcher and click it.
+ * Primary target: Tidio (Lyro AI). Tidio exposes an official JS API
+ * (window.tidioChatApi / document.tidioChatApi) with .open() / .show(), so
+ * we use that — reliable, no DOM guessing. Falls back to Shopify Inbox
+ * (no public API, best-effort DOM click) and finally to the link's href
+ * (the contact page), so the button always does something useful no matter
+ * which app — if any — is currently installed.
  *
  * Behaviour on click of any [data-pm-chat-open] element:
- *   - If we find + trigger the Inbox launcher → open the chat in place
- *     (preventDefault, stay on the page).
- *   - Otherwise → let the link's href fall through (defaults to the
- *     contact page), so the button always does something useful even
- *     before Inbox is live.
- *
- * If Inbox is installed and the chat still doesn't open, the selector list
- * below may need one entry added for your Inbox version — inspect the
- * launcher element and add its selector to INBOX_LAUNCHER_SELECTORS.
+ *   1. Tidio present  → open its chat in place (preventDefault).
+ *   2. Inbox present  → click its launcher (preventDefault).
+ *   3. Neither        → let the href fall through to the contact page.
  */
 (function () {
   'use strict';
   if (window.__pmChatLaunchBound) return;
   window.__pmChatLaunchBound = true;
 
-  // Known/likely hooks for the Shopify Inbox launcher, most specific first.
+  // ── Tidio (preferred) ────────────────────────────────────────────────
+  // Public API: https://docs.tidio.com/docs/javascript-api
+  function tryOpenTidio() {
+    var api = window.tidioChatApi || document.tidioChatApi;
+    if (!api || typeof api.open !== 'function') return false;
+    try {
+      if (typeof api.show === 'function') api.show(); // un-hide launcher if hidden
+      api.open();
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // ── Shopify Inbox (fallback, no public API) ──────────────────────────
   var INBOX_LAUNCHER_SELECTORS = [
     '#shopify-chat button',
     '#shopify-chat [role="button"]',
@@ -49,7 +60,7 @@
     var trigger = e.target.closest('[data-pm-chat-open]');
     if (!trigger) return;
     // Open the live chat if we can; otherwise the href (contact page) wins.
-    if (tryOpenInbox()) {
+    if (tryOpenTidio() || tryOpenInbox()) {
       e.preventDefault();
     }
   });
