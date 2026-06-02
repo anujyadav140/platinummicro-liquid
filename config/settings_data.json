@@ -1,3 +1,12 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "current": {
     "color_navy_deep": "#0D2340",
@@ -5,7 +14,97 @@
     "color_terracotta": "#A63D2F",
     "color_brand_primary": "#0D2340",
     "color_paper": "#FBFAF7",
-    "page_width": 1280
+    "page_width": 1280,
+    "sections": {
+      "pm-header": {
+        "type": "pm-header",
+        "blocks": {
+          "pm-header-0": {
+            "type": "partner_brand",
+            "settings": {
+              "image_url": "https://cdn.shopify.com/s/files/1/0715/8841/3523/files/HPE_BIG.png",
+              "name": "Hewlett Packard Enterprise",
+              "link": "/collections/hewlett-packard-enterprise"
+            }
+          },
+          "pm-header-1": {
+            "type": "partner_brand",
+            "settings": {
+              "image_url": "https://cdn.shopify.com/s/files/1/0715/8841/3523/files/INTC.png",
+              "name": "Intel",
+              "link": "/collections/intel"
+            }
+          },
+          "pm-header-2": {
+            "type": "partner_brand",
+            "settings": {
+              "image_url": "https://cdn.shopify.com/s/files/1/0715/8841/3523/files/AMD_BIG.png",
+              "name": "AMD",
+              "link": "/collections/amd"
+            }
+          },
+          "pm-header-3": {
+            "type": "partner_brand",
+            "settings": {
+              "image_url": "https://cdn.shopify.com/s/files/1/0715/8841/3523/files/005930.KS_BIG.png",
+              "name": "Samsung",
+              "link": "/collections/samsung"
+            }
+          },
+          "pm-header-4": {
+            "type": "partner_brand",
+            "settings": {
+              "image_url": "https://cdn.shopify.com/s/files/1/0715/8841/3523/files/STX_BIG.png",
+              "name": "Seagate",
+              "link": "/collections/seagate"
+            }
+          },
+          "pm-header-5": {
+            "type": "partner_brand",
+            "settings": {
+              "image_url": "https://cdn.shopify.com/s/files/1/0715/8841/3523/files/WDC_BIG.png",
+              "name": "WD",
+              "link": "/collections/wd"
+            }
+          }
+        },
+        "block_order": [
+          "pm-header-0",
+          "pm-header-1",
+          "pm-header-2",
+          "pm-header-3",
+          "pm-header-4",
+          "pm-header-5"
+        ],
+        "settings": {
+          "menu": "main-menu",
+          "search_placeholder": "Search by keyword, brand, or SKU"
+        }
+      },
+      "pm-footer": {
+        "type": "pm-footer",
+        "settings": {
+          "tagline": "Two decades stocking servers, storage, and networking for system integrators, public sector, and healthcare buyers worldwide."
+        }
+      }
+    },
+    "content_for_index": [],
+    "blocks": {
+      "15683396631634586217": {
+        "type": "shopify://apps/inbox/blocks/chat/841fc607-4181-4ad1-842d-e24d7f8bad6b",
+        "disabled": false,
+        "settings": {
+          "button_color": "#0D2340",
+          "secondary_color": "#FFFFFF",
+          "ternary_color": "#A63D2F",
+          "button_icon": "chat_bubble",
+          "button_text": "chat_with_us",
+          "button_horizontal_position": "bottom_right",
+          "button_vertical_position": "lowest",
+          "greeting_message": ""
+        }
+      }
+    }
   },
   "presets": {}
 }
