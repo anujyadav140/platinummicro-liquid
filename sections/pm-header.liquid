@@ -202,18 +202,19 @@
         {%- if _has_admin_children or _has_static_children -%}{%- assign _has_mega = true -%}{%- endif -%}
 
         {%- comment -%}
-          Curated card-grid wins over the Shopify admin nav menu. The admin
-          menu stores tag-search hrefs (e.g. /search?q=tag:"GPU SERVERS"), which
-          would render as broken /collections/search?... cards or, when nested,
-          push the panel into the link-list COLUMN layout that has no brands
-          rail. So for any category we curate (_has_static_children) we ignore
-          the admin children entirely and drive the panel from _static_children,
-          whose handles all resolve to real /collections/<handle> pages via
-          pm-mega-card. Only categories we DON'T curate fall back to the admin
-          menu (_use_admin). (TC-005 + TC-006)
+          NAV-DRIVEN mega menu. A category's sub-category cards come from its
+          CHILDREN in Online Store → Navigation (main-menu), so a merchant adds /
+          removes / reorders sub-categories from the admin with zero code. Each
+          child link should point to /collections/<handle>; pm-mega-card derives
+          the handle from that URL and pulls the card image + product count from
+          the live collection.
+
+          Nav children win whenever they exist. The hardcoded _children_* maps
+          below are kept ONLY as a fallback for a category that has no nav
+          children yet, so a panel is never empty during setup. (TC-006)
         {%- endcomment -%}
         {%- assign _use_admin = false -%}
-        {%- if _has_admin_children and _has_static_children == false -%}{%- assign _use_admin = true -%}{%- endif -%}
+        {%- if _has_admin_children -%}{%- assign _use_admin = true -%}{%- endif -%}
 
         <div
           class="pm-nav__item{% if _show_brands %} pm-nav__item--with-brands{% endif %}"
