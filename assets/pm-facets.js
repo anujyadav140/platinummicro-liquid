@@ -161,10 +161,17 @@
       .then(function (r) { return r.text(); })
       .then(function (html) {
         var dom = new DOMParser().parseFromString(html, 'text/html');
-        // Preserve <details open> state so the user doesn't lose their place
+        // Preserve <details open> state AND the inner scroll position of the
+        // scrollable facet lists (e.g. the Brand list, which is its own
+        // max-height/overflow scroll container) so the user doesn't get
+        // yanked back to the top when we rebuild the form's innerHTML.
         var openSet = {};
         formEl.querySelectorAll('[data-pm-facet]').forEach(function (d, i) {
           openSet[i] = d.hasAttribute('open');
+        });
+        var scrollSet = {};
+        formEl.querySelectorAll('.pm-facet__values').forEach(function (el, i) {
+          scrollSet[i] = el.scrollTop;
         });
         var newForm = dom.getElementById('pm-facets-form');
         if (newForm) {
@@ -172,6 +179,11 @@
           formEl.querySelectorAll('[data-pm-facet]').forEach(function (d, i) {
             if (openSet[i] === false) d.removeAttribute('open');
             else d.setAttribute('open', '');
+          });
+          // Restore scroll AFTER the open-state pass so the lists are laid
+          // out (a collapsed <details> has no scrollable height yet).
+          formEl.querySelectorAll('.pm-facet__values').forEach(function (el, i) {
+            if (scrollSet[i]) el.scrollTop = scrollSet[i];
           });
         }
         var newGrid = dom.getElementById('pm-plp-grid-wrap');
