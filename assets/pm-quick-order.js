@@ -191,12 +191,18 @@
     form.appendChild(hidden);
     form.appendChild(btn);
     document.body.appendChild(form);
-    // Quotify delegates from document.body and, on DESKTOP, listens for
-    // `mousedown` (mobile listens for `click`) before resolving the closest
-    // [data-quotify]. A plain .click() only fires 'click', so it never triggered
-    // on desktop — dispatch the full mouse sequence so both paths fire.
+    // Quotify delegates from document.body and, on DESKTOP, fires its handler on
+    // `mousedown` (mobile uses `click`), resolving the closest [data-quotify]. A
+    // plain .click() emits only a 'click' event, so it never triggered on desktop.
+    // Dispatch the full mouse sequence and make each event look like a genuine
+    // left-click (button/buttons/which) so any button-guard in Quotify passes.
     ['mousedown', 'mouseup', 'click'].forEach(function (type) {
-      btn.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true, view: window }));
+      var ev = new MouseEvent(type, {
+        bubbles: true, cancelable: true, view: window,
+        button: 0, buttons: type === 'mousedown' ? 1 : 0
+      });
+      try { Object.defineProperty(ev, 'which', { value: 1 }); } catch (e) {}
+      btn.dispatchEvent(ev);
     });
     // Quotify opens its own flow off that event; drop our scaffold afterward.
     setTimeout(function () { try { form.remove(); } catch (e) {} }, 5000);
