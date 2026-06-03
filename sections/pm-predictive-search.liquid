@@ -21,6 +21,27 @@
   endcomment
   assign _cdn = 'https://cdn.shopify.com/s/files/1/0715/8841/3523/files/'
   assign _brand_logos = 'amd:AMD_BIG.png|intel:INTC.png|samsung:005930.KS_BIG.png|seagate:STX_BIG.png|wd:WDC_BIG.png|hewlett-packard-enterprise:HPE_BIG.png|dell:DELL.png|cisco:CSCO.png|lenovo:0992.HK.png|microsoft:MSFT_BIG.png|micron:MU_BIG.png'
+
+  comment
+    Term → brand collection (term~handle~title~logo). Surfaces a brand suggestion
+    the INSTANT the brand is typed, without waiting for Shopify's predictive index
+    to pick up a newly-created collection. Aliases (hpe, western digital) included;
+    Arctic has no light logo so it falls back to the icon.
+  endcomment
+  assign _bnav = 'dell~dell~Dell~DELL.png|cisco~cisco~Cisco~CSCO.png|lenovo~lenovo~Lenovo~0992.HK.png|microsoft~microsoft~Microsoft~MSFT_BIG.png|micron~micron~Micron~MU_BIG.png|amd~amd~AMD~AMD_BIG.png|intel~intel~Intel~INTC.png|samsung~samsung~Samsung~005930.KS_BIG.png|seagate~seagate~Seagate~STX_BIG.png|wd~wd~WD~WDC_BIG.png|western digital~wd~WD~WDC_BIG.png|hpe~hewlett-packard-enterprise~HPE~HPE_BIG.png|hewlett packard enterprise~hewlett-packard-enterprise~Hewlett Packard Enterprise~HPE_BIG.png|arctic~arctic~Arctic~'
+  assign _t = predictive_search.terms | downcase | strip
+  assign _bm_handle = ''
+  assign _bm_title = ''
+  assign _bm_logo = ''
+  assign _bnav_list = _bnav | split: '|'
+  for _e in _bnav_list
+    assign _ef = _e | split: '~'
+    if _ef[0] == _t
+      assign _bm_handle = _ef[1]
+      assign _bm_title = _ef[2]
+      assign _bm_logo = _ef[3]
+    endif
+  endfor
 -%}
 <div class="pm-psr" id="pm-psr" data-terms="{{ predictive_search.terms | escape }}" data-total="{{ total }}">
   {%- if predictive_search.performed -%}
@@ -70,32 +91,47 @@
         markup as Products so the existing pm-header.css styles it — no CSS edit
         needed. Product count rides in the already-styled .pm-psr__vendor span.
       {%- endcomment -%}
-      {%- if collections.size > 0 -%}
+      {%- if collections.size > 0 or _bm_handle != blank -%}
         <div class="pm-psr__group">
           <div class="pm-psr__group-title">Collections</div>
           <ul role="group" aria-label="Collections">
-            {%- for collection in collections limit: 4 -%}
-              {%- comment -%} Brand collections show their logo; categories keep the generic grid icon. {%- endcomment -%}
-              {%- assign _ch = collection.title | handleize -%}
-              {%- assign _logo = '' -%}
-              {%- assign _bpairs = _brand_logos | split: '|' -%}
-              {%- for _bp in _bpairs -%}
-                {%- assign _kv = _bp | split: ':' -%}
-                {%- if _kv[0] == _ch -%}{%- assign _logo = _cdn | append: _kv[1] -%}{%- endif -%}
-              {%- endfor -%}
+            {%- comment -%} Index-independent brand suggestion — shows the instant a brand is typed. {%- endcomment -%}
+            {%- if _bm_handle != blank -%}
               <li>
-                <a class="pm-psr__row pm-psr__collection" href="{{ collection.url }}">
-                  {%- if _logo != blank -%}
-                    <span class="pm-psr__thumb"><img src="{{ _logo }}" alt="{{ collection.title | escape }}" width="48" height="48" loading="lazy" style="object-fit:contain;padding:5px;"></span>
+                <a class="pm-psr__row pm-psr__collection" href="{{ routes.collections_url }}/{{ _bm_handle }}">
+                  {%- if _bm_logo != blank -%}
+                    <span class="pm-psr__thumb"><img src="{{ _cdn | append: _bm_logo }}" alt="{{ _bm_title | escape }}" width="48" height="48" loading="lazy" style="object-fit:contain;padding:5px;"></span>
                   {%- else -%}
                     <svg class="pm-psr__ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
                   {%- endif -%}
-                  <span class="pm-psr__meta">
-                    <span class="pm-psr__title">{{ collection.title }}</span>
-                    {%- if collection.products_count > 0 -%}<span class="pm-psr__vendor">{{ collection.products_count }} product{% unless collection.products_count == 1 %}s{% endunless %}</span>{%- endif -%}
-                  </span>
+                  <span class="pm-psr__meta"><span class="pm-psr__title">{{ _bm_title }}</span></span>
                 </a>
               </li>
+            {%- endif -%}
+            {%- for collection in collections limit: 4 -%}
+              {%- assign _ch = collection.title | handleize -%}
+              {%- comment -%} Skip the brand already injected above so it never double-lists once Shopify indexes it. {%- endcomment -%}
+              {%- unless _ch == _bm_handle -%}
+                {%- assign _logo = '' -%}
+                {%- assign _bpairs = _brand_logos | split: '|' -%}
+                {%- for _bp in _bpairs -%}
+                  {%- assign _kv = _bp | split: ':' -%}
+                  {%- if _kv[0] == _ch -%}{%- assign _logo = _cdn | append: _kv[1] -%}{%- endif -%}
+                {%- endfor -%}
+                <li>
+                  <a class="pm-psr__row pm-psr__collection" href="{{ collection.url }}">
+                    {%- if _logo != blank -%}
+                      <span class="pm-psr__thumb"><img src="{{ _logo }}" alt="{{ collection.title | escape }}" width="48" height="48" loading="lazy" style="object-fit:contain;padding:5px;"></span>
+                    {%- else -%}
+                      <svg class="pm-psr__ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+                    {%- endif -%}
+                    <span class="pm-psr__meta">
+                      <span class="pm-psr__title">{{ collection.title }}</span>
+                      {%- if collection.products_count > 0 -%}<span class="pm-psr__vendor">{{ collection.products_count }} product{% unless collection.products_count == 1 %}s{% endunless %}</span>{%- endif -%}
+                    </span>
+                  </a>
+                </li>
+              {%- endunless -%}
             {%- endfor -%}
           </ul>
         </div>
