@@ -127,20 +127,34 @@
   function showAlert(problems) {
     alertSkusEl.innerHTML = '';
     problems.forEach(function (p) {
+      var reason = (p && p.reason) || '';
+      var isOOS  = reason === 'out of stock';
+
       var row = document.createElement('div');
-      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;padding:1px 0;';
-      var label = document.createElement('span');
-      label.textContent = (p && p.reason) ? (p.sku + ' — ' + p.reason) : (p && p.sku ? p.sku : p);
-      row.appendChild(label);
-      // Out-of-stock items we DID find → offer to add them to a quote instead.
-      if (p && p.reason === 'out of stock' && p.match && p.match.product) {
+      row.className = 'pm-qo__problem';
+
+      var sku = document.createElement('span');
+      sku.className = 'pm-qo__problem-sku';
+      sku.textContent = (p && p.sku) ? p.sku : String(p);
+      row.appendChild(sku);
+
+      if (reason) {
+        var status = document.createElement('span');
+        status.className = 'pm-qo__problem-status ' + (isOOS ? 'pm-qo__problem-status--oos' : 'pm-qo__problem-status--missing');
+        status.textContent = isOOS ? 'Out of stock' : (reason === 'not found' ? 'Not found' : reason);
+        row.appendChild(status);
+      }
+
+      // Out-of-stock items we found → one-tap "Add to quote".
+      if (isOOS && p.match && p.match.product) {
         var qbtn = document.createElement('button');
         qbtn.type = 'button';
-        qbtn.textContent = 'Add to quote →';
-        qbtn.style.cssText = 'flex:none;background:none;border:none;color:var(--pm-terracotta,#A63D2F);font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;text-decoration:underline;padding:2px 0;';
+        qbtn.className = 'pm-qo__quote-btn';
+        qbtn.textContent = 'Add to quote';
         (function (m) { qbtn.addEventListener('click', function () { addToQuote(m); }); })(p.match);
         row.appendChild(qbtn);
       }
+
       alertSkusEl.appendChild(row);
     });
     alertEl.removeAttribute('hidden');

@@ -220,33 +220,56 @@
   gap: 8px;
 }
 .pm-qo__alert {
-  display: flex;
-  gap: 12px;
-  background: var(--pm-warning-bg);
-  border: 1px solid rgba(181, 120, 31, 0.35);
-  border-radius: 10px;
-  padding: 12px 14px;
-  margin-bottom: 8px;
-  color: var(--pm-warning);
+  background: var(--pm-paper, #FBFAF7);
+  border: 1px solid var(--pm-ink-150, #E7E5DF);
+  border-radius: 14px;
+  padding: 6px;
+  margin-bottom: 14px;
 }
-.pm-qo__alert svg { color: var(--pm-warning); flex-shrink: 0; margin-top: 1px; }
-.pm-qo__alert-title {
-  font-size: 13.5px;
-  font-weight: 700;
+.pm-qo__alert-skus { display: flex; flex-direction: column; }
+.pm-qo__problem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  border-radius: 10px;
+}
+.pm-qo__problem + .pm-qo__problem { box-shadow: inset 0 1px 0 var(--pm-ink-100, #EFEDE8); }
+.pm-qo__problem-sku {
+  font-family: var(--pm-font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
   color: var(--pm-ink-900);
 }
-.pm-qo__alert-skus {
-  margin-top: 2px;
-  font-size: 13px;
-  color: var(--pm-ink-700);
-  font-family: var(--pm-font-mono);
+.pm-qo__problem-status {
+  margin-left: auto;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 3px 9px;
+  border-radius: 999px;
+  white-space: nowrap;
 }
-.pm-qo__alert-skus > div { line-height: 1.5; }
-.pm-qo__alert-hint {
-  margin-top: 6px;
+.pm-qo__problem-status--oos     { background: #FCEFD9; color: #9A6514; }
+.pm-qo__problem-status--missing { background: #FBE7E6; color: #B23A2E; }
+.pm-qo__quote-btn {
+  display: inline-flex;
+  align-items: center;
+  background: var(--pm-terracotta, #A63D2F);
+  color: #fff;
+  border: none;
+  border-radius: 9px;
+  padding: 7px 13px;
   font-size: 12.5px;
-  color: var(--pm-ink-600);
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .15s ease, transform .05s ease;
 }
+.pm-qo__quote-btn:hover  { background: var(--pm-terracotta-light, #C04E3E); }
+.pm-qo__quote-btn:active { transform: translateY(1px); }
 .pm-qo__cols {
   display: grid;
   grid-template-columns: 1fr 90px 32px;

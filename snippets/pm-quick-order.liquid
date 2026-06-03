@@ -28,13 +28,9 @@
 
     <div class="pm-qo__body">
       {%- comment -%} Error banner (hidden by default; populated by JS) {%- endcomment -%}
+      {%- comment -%} Per-SKU problem rows (out of stock / not found) rendered by JS. {%- endcomment -%}
       <div class="pm-qo__alert" id="pm-qo-alert" hidden>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        <div class="pm-qo__alert-text">
-          <div class="pm-qo__alert-title">Some items couldn't be added</div>
-          <div class="pm-qo__alert-skus" id="pm-qo-alert-skus"></div>
-          <div class="pm-qo__alert-hint">Out-of-stock items can't go in the cart — tap &ldquo;Add to quote&rdquo; to request them. Double-check the spelling on any &ldquo;not found&rdquo; SKUs; everything else has been added.</div>
-        </div>
+        <div class="pm-qo__alert-skus" id="pm-qo-alert-skus"></div>
       </div>
 
       <div class="pm-qo__cols">
