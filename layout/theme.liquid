@@ -100,6 +100,33 @@
       html[data-pm-static-pending] #pm-404-default { display: none !important; }
     </style>
   {%- endif -%}
+
+  {%- if template.name == 'search' -%}
+    {%- comment -%}
+      Brand-navigation tag links — q=tag:"INTEL" etc. emitted by older brand
+      logos, cached headers, the 404 safety net, or the brand banners' CTAs —
+      now resolve to the real brand collection instead of a tag-search. Only the
+      brand collections that actually exist are mapped, so a genuinely missing
+      collection still falls through to search (no /collections ⇄ /search loop).
+    {%- endcomment -%}
+    <script>
+      (function () {
+        try {
+          var q = new URLSearchParams(window.location.search).get('q') || '';
+          var map = {
+            'tag:"INTEL"': '/collections/intel',
+            'tag:"AMD"': '/collections/amd',
+            'tag:"HEWLETT PACKARD ENTERPRISE"': '/collections/hewlett-packard-enterprise',
+            'tag:"SAMSUNG"': '/collections/samsung',
+            'tag:"SEAGATE"': '/collections/seagate',
+            'tag:"WD"': '/collections/wd'
+          };
+          if (map[q]) { document.documentElement.dataset.pmRedirecting = '1'; window.location.replace(map[q]); }
+        } catch (e) {}
+      })();
+    </script>
+    <style>html[data-pm-redirecting] body { visibility: hidden; }</style>
+  {%- endif -%}
 </head>
 
 <body class="pm-body" data-pm-customer="{{ customer.id | default: '' }}" data-pm-customer-name="{{ customer.first_name | default: '' | escape }}">

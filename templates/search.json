@@ -16,7 +16,7 @@
             "headline": "Built on AMD EPYC. Backed by HPE. Stocked by Platinum Micro.",
             "body": "HPE ProLiant Gen11 servers with 5th Gen AMD EPYC™ 9005 processors — up to 192 \"Zen 5\" cores per socket, 3 TB of DDR5-6400, PCIe Gen5 across the board, AMD Secure Processor at the silicon root of trust.",
             "cta_label": "Shop HPE Servers",
-            "cta_href": "/search?q=tag%3A%22HEWLETT+PACKARD+ENTERPRISE%22&type=product",
+            "cta_href": "/collections/hewlett-packard-enterprise",
             "height_px": 460
           }
         },
@@ -55,7 +55,7 @@
             "headline": "Intel inside. Every socket, every generation, on the shelf.",
             "body": "228 Intel-side SKUs in stock — Core desktop CPUs, NUC barebones and chassis, Xeon-compatible thermal kits spanning LGA 1150 / 1155 / 1156 / 1366 / 2011-3 / 1700 / 4677. From legacy refresh builds to current platforms, the parts ship the day you order.",
             "cta_label": "Shop Intel",
-            "cta_href": "/search?q=tag%3A%22INTEL%22&type=product",
+            "cta_href": "/collections/intel",
             "height_px": 460
           }
         },
@@ -94,7 +94,7 @@
             "headline": "Ryzen. Radeon. AM4 to SP6. Real availability.",
             "body": "86 AMD-side SKUs across processors, graphics-grade storage, and the thermal solutions that keep them quiet — Ryzen retail CPUs, Radeon-branded SSDs, plus coolers covering AM2 / AM3 / AM4 / AM5 sockets from Arctic, Dynatron, and Scythe.",
             "cta_label": "Shop AMD",
-            "cta_href": "/search?q=tag%3A%22AMD%22&type=product",
+            "cta_href": "/collections/amd",
             "height_px": 460
           }
         },
