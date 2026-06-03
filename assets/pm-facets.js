@@ -141,8 +141,18 @@
   function fetchAndSwap() {
     var formData = new FormData(formEl);
     var qs = new URLSearchParams();
+    // A full-range price (gte 0 / lte bound) is NOT a real constraint, but the
+    // number inputs always carry those values — so submitting them on every
+    // facet change spuriously activates a "$0–max" price filter (adds a price
+    // chip AND makes Shopify re-derive the price bounds from each brand's
+    // results, so min/max appear to "jump" when you tick a brand). Drop them
+    // unless the user actually narrowed the range.
+    var rangeEl = formEl.querySelector('[data-pm-range]');
+    var priceBound = rangeEl ? parseFloat(rangeEl.getAttribute('data-bound-max')) : NaN;
     formData.forEach(function (v, k) {
       if (v === '' || v == null) return;
+      if (k === 'filter.v.price.gte' && parseFloat(v) <= 0) return;
+      if (k === 'filter.v.price.lte' && !isNaN(priceBound) && parseFloat(v) >= priceBound) return;
       qs.append(k, v);
     });
 
