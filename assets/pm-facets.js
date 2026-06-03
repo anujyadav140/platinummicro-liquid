@@ -49,23 +49,32 @@
       document.__pmPlpControlBound = true;
       document.addEventListener('change', function (e) {
         var el = e.target.closest('[data-pm-plp-control]');
-        if (!el || !formEl) return;
+        if (!el) return;
         var name = el.getAttribute('name');
         if (!name) return;
-        var val  = el.value;
-        var safe = name.replace(/[^a-z0-9_.]/gi, '');
-        var hidden = formEl.querySelector('input[type="hidden"][data-toolbar="' + safe + '"]');
-        if (!hidden) {
-          hidden = document.createElement('input');
-          hidden.type = 'hidden';
-          hidden.name = name;
-          hidden.setAttribute('data-toolbar', safe);
-          formEl.appendChild(hidden);
-        }
-        hidden.value = val;
-        onChange();
+        applyToolbarParam(name, el.value);
       });
     }
+  }
+
+  // Mirror a toolbar control (e.g. Sort's `sort_by`) into the facets form
+  // as a hidden input, then trigger the debounced AJAX swap. Exposed on
+  // window.PmFacets so pm-plp.js can drive the Sort change deterministically
+  // (TC-022) instead of relying solely on a synthetic `change` bubbling up.
+  function applyToolbarParam(name, val) {
+    if (!formEl || !name) return false;
+    var safe = name.replace(/[^a-z0-9_.]/gi, '');
+    var hidden = formEl.querySelector('input[type="hidden"][data-toolbar="' + safe + '"]');
+    if (!hidden) {
+      hidden = document.createElement('input');
+      hidden.type = 'hidden';
+      hidden.name = name;
+      hidden.setAttribute('data-toolbar', safe);
+      formEl.appendChild(hidden);
+    }
+    hidden.value = val;
+    onChange();
+    return true;
   }
 
   function onChange() {
@@ -128,6 +137,7 @@
   }
 
   // ── AJAX fetch + swap ────────────────────────────────────────────────
+  // Build the URL from the current facets-form state, then swap.
   function fetchAndSwap() {
     var formData = new FormData(formEl);
     var qs = new URLSearchParams();
@@ -136,9 +146,15 @@
       qs.append(k, v);
     });
 
-    var basePath = (formEl.getAttribute('action') || window.location.pathname).split('?')[0];
-    var url = basePath + (qs.toString() ? '?' + qs.toString() : '');
+    var base = (formEl.getAttribute('action') || window.location.pathname).split('?')[0];
+    var url = base + (qs.toString() ? '?' + qs.toString() : '');
+    swapToUrl(url);
+  }
 
+  // Fetch an explicit URL and swap the facets form, grid and header.
+  // Shared by fetchAndSwap (facet changes / sort) and the Clear-all /
+  // filter-chip handlers (TC-021), which build their own target URL.
+  function swapToUrl(url) {
     if (gridEl) gridEl.classList.add('is-loading');
 
     fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
@@ -173,6 +189,92 @@
         if (gridEl) gridEl.classList.remove('is-loading');
       });
   }
+
+  // ── Clear-all / individual filter removal (TC-021) ──────────────────
+  // Active-filter chips + the "Clear all" button live in the swapped
+  // header (#pm-plp-header). Their click handlers are delegated from the
+  // document so they survive every AJAX swap.
+  //
+  // We treat `filter.*` as the only filter params. Everything else
+  // (sort_by, page_size, q, type, options[prefix]) is NOT a filter and is
+  // preserved when clearing.
+  var FILTER_RE = /^filter\./;
+
+  function basePath() {
+    return (formEl && formEl.getAttribute('action') || window.location.pathname).split('?')[0];
+  }
+
+  // Build a URL from the current location, mutating its filter params.
+  // `drop` (optional) — { name: <param>, value: <value|null> }. When value
+  // is null, all values for that param are removed; otherwise only the
+  // matching value is removed. When `drop` is omitted, ALL filter.* params
+  // are removed (Clear all).
+  function buildUrl(drop) {
+    var params;
+    try { params = new URL(window.location.href).searchParams; }
+    catch (e) { params = new URLSearchParams(window.location.search); }
+
+    // An empty/absent drop.value means "remove every value of this param".
+    // We also match by prefix in that case so a price chip named
+    // "filter.v.price" drops both filter.v.price.gte AND .lte in one go.
+    var dropAllValues = drop && (drop.value == null || drop.value === '');
+
+    var keep = new URLSearchParams();
+    params.forEach(function (v, k) {
+      var isFilter = FILTER_RE.test(k);
+      if (!isFilter) {
+        // Non-filter param: always keep (sort_by, page_size, q, …).
+        keep.append(k, v);
+        return;
+      }
+      if (!drop) return;                       // Clear all → drop every filter
+      var nameMatch = dropAllValues
+        ? (k === drop.name || k.indexOf(drop.name + '.') === 0) // exact or prefixed
+        : (k === drop.name);
+      if (!nameMatch) { keep.append(k, v); return; }
+      if (!dropAllValues && v !== drop.value) { keep.append(k, v); return; }
+      // else: this is the value we're removing → skip it
+    });
+
+    // Defensive: ensure search context params survive even if not in URL.
+    if (formEl) {
+      ['q', 'type', 'options[prefix]'].forEach(function (n) {
+        if (!keep.has(n)) {
+          var h = formEl.querySelector('input[name="' + n + '"]');
+          if (h && h.value) keep.append(n, h.value);
+        }
+      });
+    }
+
+    var s = keep.toString();
+    return basePath() + (s ? '?' + s : '');
+  }
+
+  function clearAll()              { if (formEl) swapToUrl(buildUrl(null)); }
+  function removeFilter(name, val) { if (formEl) swapToUrl(buildUrl({ name: name, value: val == null ? null : String(val) })); }
+
+  // Delegated handlers for Clear all + chips (survive AJAX swaps).
+  if (!document.__pmFacetChipsBound) {
+    document.__pmFacetChipsBound = true;
+    document.addEventListener('click', function (e) {
+      var clearBtn = e.target.closest('[data-pm-clear-all]');
+      if (clearBtn) { e.preventDefault(); clearAll(); return; }
+      var chip = e.target.closest('[data-pm-filter-remove]');
+      if (chip) {
+        e.preventDefault();
+        removeFilter(chip.getAttribute('data-filter-name'), chip.getAttribute('data-filter-value'));
+      }
+    });
+  }
+
+  // Public API so pm-plp.js can drive Sort deterministically and reuse
+  // the swap engine (avoids depending on synthetic-event bubbling).
+  window.PmFacets = {
+    applyToolbarParam: applyToolbarParam,
+    swapToUrl: swapToUrl,
+    clearAll: clearAll,
+    removeFilter: removeFilter
+  };
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init);

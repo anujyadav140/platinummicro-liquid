@@ -58,15 +58,23 @@
         </div>
       {%- endif -%}
 
+      {%- comment -%}
+        Collections group (TC-011). Reuses the same .pm-psr__group / .pm-psr__row
+        markup as Products so the existing pm-header.css styles it — no CSS edit
+        needed. Product count rides in the already-styled .pm-psr__vendor span.
+      {%- endcomment -%}
       {%- if collections.size > 0 -%}
         <div class="pm-psr__group">
           <div class="pm-psr__group-title">Collections</div>
           <ul role="group" aria-label="Collections">
-            {%- for collection in collections limit: 3 -%}
+            {%- for collection in collections limit: 4 -%}
               <li>
                 <a class="pm-psr__row pm-psr__collection" href="{{ collection.url }}">
                   <svg class="pm-psr__ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
-                  <span class="pm-psr__title">{{ collection.title }}</span>
+                  <span class="pm-psr__meta">
+                    <span class="pm-psr__title">{{ collection.title }}</span>
+                    {%- if collection.products_count > 0 -%}<span class="pm-psr__vendor">{{ collection.products_count }} product{% unless collection.products_count == 1 %}s{% endunless %}</span>{%- endif -%}
+                  </span>
                 </a>
               </li>
             {%- endfor -%}

@@ -49,11 +49,16 @@
     if (controller) controller.abort();
     controller = new AbortController();
 
+    // resources[type] MUST list every group the section renders (product,
+    // collection, query) or Shopify simply omits that resource — that's what
+    // caused collections to never appear (TC-011). limit_scope=each makes the
+    // limit apply PER type, so collections/queries aren't starved by products.
     var url = ROUTE +
       '?q=' + encodeURIComponent(term) +
       '&section_id=pm-predictive-search' +
       '&resources[type]=product,collection,query' +
       '&resources[limit]=6' +
+      '&resources[limit_scope]=each' +
       '&resources[options][unavailable_products]=last';
 
     fetch(url, { signal: controller.signal })

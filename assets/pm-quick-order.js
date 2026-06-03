@@ -148,21 +148,32 @@
    */
   function lookupSku(sku) {
     var lower = sku.toLowerCase();
-    var url = '/search/suggest.json?q=' + encodeURIComponent(sku) + '&resources[type]=product&resources[options][fields]=sku&resources[limit]=5';
+    // NOTE: use the SAME predictive-search params shape as pm-predictive-search.js.
+    // The previous `resources[options][fields]=sku` filter is NOT a documented
+    // Shopify Ajax predictive-search option and made the endpoint return zero
+    // products for otherwise-valid SKUs, so nothing ever resolved → nothing added.
+    var url = '/search/suggest.json?q=' + encodeURIComponent(sku) +
+              '&resources[type]=product&resources[limit]=6&resources[options][unavailable_products]=last';
     return fetch(url, { headers: { Accept: 'application/json' } })
       .then(function (r) { return r.json(); })
       .then(function (data) {
         var products = (((data || {}).resources || {}).results || {}).products || [];
         if (!products.length) return null;
-        // Two-step: fetch each candidate's full product JSON for variant SKUs
+        // Two-step: fetch each candidate's full product JSON for variant SKUs.
+        // suggest.json items expose `handle` (and `url`); fall back to url so a
+        // missing handle doesn't break the second hop.
         var checks = products.map(function (p) {
-          return fetch('/products/' + p.handle + '.js', { headers: { Accept: 'application/json' } })
-            .then(function (r) { return r.json(); })
+          var handle = p.handle || (p.url ? p.url.split('?')[0].replace(/^.*\/products\//, '') : '');
+          if (!handle) return Promise.resolve(null);
+          return fetch('/products/' + handle + '.js', { headers: { Accept: 'application/json' } })
+            .then(function (r) { return r.ok ? r.json() : null; })
             .then(function (full) {
-              var variants = full.variants || [];
+              var variants = (full && full.variants) || [];
               for (var i = 0; i < variants.length; i++) {
-                if ((variants[i].sku || '').toLowerCase() === lower) {
-                  return { id: variants[i].id, product: full };
+                if ((variants[i].sku || '').trim().toLowerCase() === lower) {
+                  // Coerce to a Number — /cart/add.js needs the numeric variant id
+                  // (same as pm-add-to-cart.js: parseInt(variantId, 10)).
+                  return { id: parseInt(variants[i].id, 10), product: full };
                 }
               }
               return null;
@@ -193,8 +204,14 @@
       var items   = [];
       var missing = [];
       results.forEach(function (r) {
-        if (r.match) {
-          items.push({ id: r.match.id, quantity: r.entry.qty });
+        // Treat a match with a non-numeric/zero variant id as a miss — a bad id
+        // would make /cart/add.js 422 and silently add nothing for the whole
+        // batch, which is exactly the failure we're guarding against.
+        var id = r.match ? parseInt(r.match.id, 10) : NaN;
+        var qty = parseInt(r.entry.qty, 10);
+        if (!qty || qty < 1) qty = 1;
+        if (r.match && id) {
+          items.push({ id: id, quantity: qty });
         } else {
           missing.push(r.entry.sku);
         }
@@ -212,7 +229,15 @@
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ items: items })
       })
-        .then(function (r) { return r.json().then(function (json) { return { ok: r.ok, json: json }; }); })
+        .then(function (r) {
+          // Parse defensively: a non-JSON body (rare error pages) must not throw
+          // into the outer catch and silently swallow the result.
+          return r.text().then(function (text) {
+            var json = null;
+            try { json = text ? JSON.parse(text) : null; } catch (e) { json = null; }
+            return { ok: r.ok, json: json };
+          });
+        })
         .then(function (resp) {
           if (!resp.ok) {
             showAlert(missing.concat(items.map(function () { return '(add failed)'; })));

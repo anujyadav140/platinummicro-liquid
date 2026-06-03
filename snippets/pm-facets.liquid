@@ -87,6 +87,80 @@
   {%- assign _active_count = _active_count | plus: filter.active_values.size -%}
 {%- endfor -%}
 
+{%- comment -%}
+  ── Active-filter chips (TC-021) ──────────────────────────────────────
+  Build a flat list of "name~~value~~label" triples for every applied
+  filter so we can render removable chips + a "Clear all" control. Two
+  sources, mutually exclusive per filter to avoid duplicates:
+    1. Shopify storefront filters → use active_values (nice labels).
+       Price ranges are special-cased into one min–max chip.
+    2. Fallback params (filter not enabled in admin) → parse the raw
+       query string. Mirrors the fallback checkboxes rendered below.
+  removeFilter()/clearAll() in pm-facets.js rebuild the URL from
+  name+value, so we don't need Shopify's url_to_remove here.
+{%- endcomment -%}
+{%- assign _chips = '' -%}
+{%- comment -%} Raw query string (after ?) for fallback param sniffing. {%- endcomment -%}
+{%- assign _query = request.url | split: '?' | last -%}
+
+{%- comment -%} (1) Shopify list filters (vendor/availability/tag when admin-enabled) {%- endcomment -%}
+{%- for f in _results.filters -%}
+  {%- if f.type == 'price_range' -%}
+    {%- assign _has_price_active = false -%}
+    {%- if f.min_value.value != blank or f.max_value.value != blank -%}{%- assign _has_price_active = true -%}{%- endif -%}
+    {%- if _has_price_active -%}
+      {%- assign _pmin = 0 -%}
+      {%- assign _pmax = f.range_max | divided_by: 100.0 | ceil -%}
+      {%- if f.min_value.value != blank -%}{%- assign _pmin = f.min_value.value | divided_by: 100.0 | round -%}{%- endif -%}
+      {%- if f.max_value.value != blank -%}{%- assign _pmax = f.max_value.value | divided_by: 100.0 | round -%}{%- endif -%}
+      {%- assign _plabel = 'Price: $' | append: _pmin | append: '–$' | append: _pmax -%}
+      {%- comment -%} __price__ sentinel → removeFilter() in pm-facets.js
+          drops BOTH filter.v.price.gte and .lte in one click. {%- endcomment -%}
+      {%- assign _chips = _chips | append: '|||__price__~~' | append: f.min_value.param_name | append: '~~' | append: _plabel -%}
+    {%- endif -%}
+  {%- else -%}
+    {%- for v in f.active_values -%}
+      {%- assign _chips = _chips | append: '|||' | append: v.param_name | append: '~~' | append: v.value | append: '~~' | append: v.label -%}
+    {%- endfor -%}
+  {%- endif -%}
+{%- endfor -%}
+
+{%- comment -%} (2) Fallback params for filters NOT exposed as Shopify objects {%- endcomment -%}
+{%- if _f_brand == nil and _brand_list != blank and _query contains 'vendor=' -%}
+  {%- assign _fb_brands = _brand_list | split: '|' | uniq -%}
+  {%- for b in _fb_brands -%}
+    {%- if b != blank -%}
+      {%- comment -%} Match the encoded brand against the URL's vendor params.
+          Look for "vendor=<enc>" so e.g. "Intel" doesn't false-match inside
+          another value. (JS still owns authoritative checkbox/grid state.) {%- endcomment -%}
+      {%- assign _b_enc = b | url_encode -%}
+      {%- assign _needle = 'vendor=' | append: _b_enc -%}
+      {%- if _query contains _needle -%}
+        {%- assign _chips = _chips | append: '|||filter.p.vendor~~' | append: b | append: '~~' | append: b -%}
+      {%- endif -%}
+    {%- endif -%}
+  {%- endfor -%}
+{%- endif -%}
+{%- if _f_avail == nil -%}
+  {%- if _query contains 'availability=1' -%}{%- assign _chips = _chips | append: '|||filter.v.availability~~1~~In stock' -%}{%- endif -%}
+  {%- if _query contains 'availability=0' -%}{%- assign _chips = _chips | append: '|||filter.v.availability~~0~~Out of stock' -%}{%- endif -%}
+{%- endif -%}
+{%- if _f_promo == nil -%}
+  {%- if _query contains 'tag=on-sale' -%}{%- assign _chips = _chips | append: '|||filter.p.tag~~on-sale~~On sale' -%}{%- endif -%}
+  {%- if _query contains 'tag=featured' -%}{%- assign _chips = _chips | append: '|||filter.p.tag~~featured~~Featured' -%}{%- endif -%}
+{%- endif -%}
+{%- if _f_price == nil -%}
+  {%- if _query contains 'price.gte' or _query contains 'price.lte' -%}
+    {%- comment -%} Generic label — exact gte/lte values aren't reliably
+        parseable from the raw query string in Liquid; the chip still
+        removes BOTH price params via the __price__ sentinel. {%- endcomment -%}
+    {%- assign _chips = _chips | append: '|||__price__~~filter.v.price.gte~~Price' -%}
+  {%- endif -%}
+{%- endif -%}
+
+{%- assign _chip_list = _chips | remove_first: '|||' | split: '|||' -%}
+{%- if _chips != blank -%}{%- assign _has_active = true -%}{%- else -%}{%- assign _has_active = false -%}{%- endif -%}
+
 <form
   id="pm-facets-form"
   class="pm-facets"
@@ -94,11 +168,49 @@
   action="{{ _results.url | default: request.path }}"
   method="get"
   novalidate
+  {%- comment -%} TC-017/020: when the vendor filter isn't admin-enabled,
+      Shopify won't filter by filter.p.vendor, so flag the form and let
+      pm-plp.js narrow the grid client-side. {%- endcomment -%}
+  {% if _f_brand == nil %}data-pm-vendor-clientside="true"{% endif %}
 >
   {%- if _is_search and _results.terms != blank -%}
     <input type="hidden" name="q" value="{{ _results.terms | escape }}">
     <input type="hidden" name="type" value="product">
     <input type="hidden" name="options[prefix]" value="last">
+  {%- endif -%}
+
+  {%- comment -%} ── ACTIVE FILTER CHIPS + CLEAR ALL (TC-021) ─────────────── {%- endcomment -%}
+  {%- if _has_active -%}
+    <div class="pm-facets__active" data-pm-active-filters>
+      <div class="pm-facets__active-head">
+        <span class="pm-facets__active-title">Filters</span>
+        <button type="button" class="pm-facets__clear" data-pm-clear-all>Clear all</button>
+      </div>
+      <ul class="pm-facets__chips">
+        {%- for _chip in _chip_list -%}
+          {%- assign _parts = _chip | split: '~~' -%}
+          {%- assign _cname  = _parts[0] -%}
+          {%- assign _cval   = _parts[1] -%}
+          {%- assign _clabel = _parts[2] -%}
+          {%- comment -%} Price sentinel: removing it must drop BOTH gte+lte. We pass a special name the JS expands. {%- endcomment -%}
+          {%- if _cname == '__price__' -%}
+            <li>
+              <button type="button" class="pm-facets__chip" data-pm-filter-remove data-filter-name="filter.v.price" data-filter-value="">
+                <span class="pm-facets__chip-label">{{ _clabel }}</span>
+                <svg class="pm-facets__chip-x" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </li>
+          {%- else -%}
+            <li>
+              <button type="button" class="pm-facets__chip" data-pm-filter-remove data-filter-name="{{ _cname }}" data-filter-value="{{ _cval | escape }}">
+                <span class="pm-facets__chip-label">{{ _clabel }}</span>
+                <svg class="pm-facets__chip-x" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </li>
+          {%- endif -%}
+        {%- endfor -%}
+      </ul>
+    </div>
   {%- endif -%}
 
   {%- comment -%} ── BRAND ───────────────────────────────────────────────── {%- endcomment -%}
@@ -140,13 +252,25 @@
                   {%- if p.vendor == brand -%}{%- assign _bcount = _bcount | plus: 1 -%}{%- endif -%}
                 {%- endfor -%}
               {%- endif -%}
+              {%- comment -%}
+                TC-017/020: This is the FALLBACK vendor facet (storefront
+                vendor filter not enabled in admin), so Shopify ignores
+                `filter.p.vendor` server-side. We still emit the standard
+                param so it lands in the URL, mark the input with
+                data-pm-vendor + data-pm-vendor-value, and let
+                pm-plp.js narrow the grid client-side and re-assert the
+                checked state from the URL after every AJAX swap. The
+                server-side `_checked` below is a best-effort initial
+                paint; JS is authoritative.
+              {%- endcomment -%}
               {%- assign _vendor_param = 'filter.p.vendor' -%}
               {%- assign _brand_enc = brand | url_encode -%}
               {%- assign _checked = false -%}
               {%- if request.url contains _brand_enc -%}{%- assign _checked = true -%}{%- endif -%}
               <li>
                 <label class="pm-facet__opt">
-                  <input type="checkbox" name="{{ _vendor_param }}" value="{{ brand }}" {% if _checked %}checked{% endif %}>
+                  <input type="checkbox" name="{{ _vendor_param }}" value="{{ brand | escape }}"
+                         data-pm-vendor data-pm-vendor-value="{{ brand | escape }}" {% if _checked %}checked{% endif %}>
                   <span class="pm-facet__opt-label">{{ brand }}</span>
                   {%- if _bcount > 0 -%}<span class="pm-facet__opt-count">{{ _bcount }}</span>{%- endif -%}
                 </label>

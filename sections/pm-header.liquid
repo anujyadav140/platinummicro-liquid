@@ -174,9 +174,18 @@
         {%- assign _key = link.title | handleize -%}
         {%- assign _static_children = '' -%}
         {%- assign _show_brands     = false -%}
+        {%- comment -%}
+          Every known category gets the partner-brands rail (_show_brands) AND a
+          curated card-grid (_static_children). Servers & Storage previously had
+          no _show_brands flag, so their panels dropped the rail (TC-005). They
+          now match the other six. The card-grid is rendered from these static
+          maps rather than from the Shopify admin nav menu, so every category
+          card links to /collections/<handle> instead of the tag-search URLs the
+          admin menu stores (TC-006 — see _has_static_children gate below).
+        {%- endcomment -%}
         {%- case _key -%}
-          {%- when 'servers' -%}     {%- assign _static_children = _children_servers     -%}
-          {%- when 'storage' -%}     {%- assign _static_children = _children_storage     -%}
+          {%- when 'servers' -%}     {%- assign _static_children = _children_servers     -%}{%- assign _show_brands = true -%}
+          {%- when 'storage' -%}     {%- assign _static_children = _children_storage     -%}{%- assign _show_brands = true -%}
           {%- when 'networking' -%}  {%- assign _static_children = _children_networking  -%}{%- assign _show_brands = true -%}
           {%- when 'components' -%}  {%- assign _static_children = _children_components  -%}{%- assign _show_brands = true -%}
           {%- when 'computers' -%}   {%- assign _static_children = _children_computers   -%}{%- assign _show_brands = true -%}
@@ -191,6 +200,20 @@
         {%- if _static_children != blank -%}{%- assign _has_static_children = true -%}{%- endif -%}
         {%- assign _has_mega = false -%}
         {%- if _has_admin_children or _has_static_children -%}{%- assign _has_mega = true -%}{%- endif -%}
+
+        {%- comment -%}
+          Curated card-grid wins over the Shopify admin nav menu. The admin
+          menu stores tag-search hrefs (e.g. /search?q=tag:"GPU SERVERS"), which
+          would render as broken /collections/search?... cards or, when nested,
+          push the panel into the link-list COLUMN layout that has no brands
+          rail. So for any category we curate (_has_static_children) we ignore
+          the admin children entirely and drive the panel from _static_children,
+          whose handles all resolve to real /collections/<handle> pages via
+          pm-mega-card. Only categories we DON'T curate fall back to the admin
+          menu (_use_admin). (TC-005 + TC-006)
+        {%- endcomment -%}
+        {%- assign _use_admin = false -%}
+        {%- if _has_admin_children and _has_static_children == false -%}{%- assign _use_admin = true -%}{%- endif -%}
 
         <div
           class="pm-nav__item{% if _show_brands %} pm-nav__item--with-brands{% endif %}"
@@ -216,8 +239,13 @@
           </a>
 
           {%- if _has_mega -%}
+            {%- comment -%}
+              Grandchildren (→ COLUMN layout) only matter when we're actually
+              driving the panel from the admin menu. Curated categories always
+              use the card-grid below, never the column layout.
+            {%- endcomment -%}
             {%- assign _has_grandchildren = false -%}
-            {%- if _has_admin_children -%}
+            {%- if _use_admin -%}
               {%- for _child in link.links -%}
                 {%- if _child.links.size > 0 -%}{%- assign _has_grandchildren = true -%}{%- endif -%}
               {%- endfor -%}
@@ -260,7 +288,7 @@
                   the bigger "image stacked under the blurb" layout that
                   matches the Bundles/Software Hydrogen panels.
                 {%- endcomment -%}
-                {%- if _has_admin_children -%}
+                {%- if _use_admin -%}
                   {%- assign _card_count = link.links.size -%}
                 {%- else -%}
                   {%- assign _card_count = _static_children | split: '|' | size -%}
@@ -274,9 +302,25 @@
                   <div class="pm-mega__split">
                     <div class="pm-mega__cards-col">
                       <div class="{{ _grid_class }}">
-                        {%- if _has_admin_children -%}
+                        {%- if _use_admin -%}
                           {%- for child in link.links -%}
-                            {%- assign _col_handle = child.url | split: '/collections/' | last | split: '?' | first -%}
+                            {%- comment -%}
+                              Derive a collection handle from the admin link.
+                              A real collection URL (…/collections/foo) yields
+                              "foo". A tag-search URL (/search?q=tag:"…") has no
+                              /collections/ segment, so the split returns the
+                              whole href — detect that and fall back to the
+                              handleized child title so the card still links to a
+                              /collections/<handle> page instead of a search
+                              query string. (TC-006)
+                            {%- endcomment -%}
+                            {%- assign _col_handle = '' -%}
+                            {%- if child.url contains '/collections/' -%}
+                              {%- assign _col_handle = child.url | split: '/collections/' | last | split: '?' | first | split: '#' | first -%}
+                            {%- endif -%}
+                            {%- if _col_handle == blank -%}
+                              {%- assign _col_handle = child.title | handleize -%}
+                            {%- endif -%}
                             {%- render 'pm-mega-card', col_handle: _col_handle, col_title: child.title -%}
                           {%- endfor -%}
                         {%- else -%}
@@ -319,8 +363,30 @@
                               {%- elsif _bblock.settings.image_url != blank -%}
                                 {%- assign _b_src = _bblock.settings.image_url -%}
                               {%- endif -%}
+                              {%- comment -%}
+                                Brand href must always be a collection page, never a
+                                tag-search. We trust the block's Link ONLY when it's
+                                already a /collections/ URL; for anything else (a
+                                stored /search?q=tag:"…" link, an external URL, or a
+                                blank field) we derive /collections/<handle> from the
+                                brand name. Handleizing the names used on this store
+                                yields the real collection handles (e.g. "AMD" → amd,
+                                "Hewlett Packard Enterprise" → hewlett-packard-enterprise),
+                                so the logo resolves correctly regardless of the stored
+                                value. (TC-007)
+                              {%- endcomment -%}
+                              {%- assign _b_href = '' -%}
+                              {%- if _bblock.settings.link contains '/collections/' -%}
+                                {%- assign _b_href = _bblock.settings.link -%}
+                              {%- else -%}
+                                {%- assign _b_slug = _bblock.settings.name | handleize -%}
+                                {%- if _b_slug != blank -%}
+                                  {%- assign _b_href = routes.collections_url | append: '/' | append: _b_slug -%}
+                                {%- endif -%}
+                              {%- endif -%}
+                              {%- if _b_href == blank -%}{%- assign _b_href = '#' -%}{%- endif -%}
                               {%- if _b_src != blank -%}
-                                <a class="pm-mega__brand" href="{{ _bblock.settings.link | default: '#' }}" aria-label="{{ _bblock.settings.name | escape }}" {{ _bblock.shopify_attributes }}>
+                                <a class="pm-mega__brand" href="{{ _b_href }}" aria-label="{{ _bblock.settings.name | escape }}" {{ _bblock.shopify_attributes }}>
                                   <img src="{{ _b_src }}" alt="{{ _bblock.settings.name | escape }}" width="120" height="48" loading="lazy">
                                 </a>
                               {%- endif -%}

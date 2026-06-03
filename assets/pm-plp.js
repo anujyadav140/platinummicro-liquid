@@ -74,8 +74,14 @@
         o.setAttribute('aria-selected', on ? 'true' : 'false');
       });
       if (current) current.textContent = label;
-      if (hidden) {
-        hidden.value = val;
+      if (hidden) hidden.value = val;
+      // TC-022: reorder via the facets AJAX engine (pushState, no full
+      // reload). Drive it directly through the public API for determinism;
+      // fall back to a bubbling `change` event only if the engine isn't
+      // loaded yet. syncSortControl() re-asserts this label after the swap.
+      if (window.PmFacets && typeof window.PmFacets.applyToolbarParam === 'function') {
+        window.PmFacets.applyToolbarParam('sort_by', val);
+      } else if (hidden) {
         hidden.dispatchEvent(new Event('change', { bubbles: true }));
       }
       var menu2 = sortRoot.querySelector('[data-pm-sort-menu]');
@@ -144,6 +150,112 @@
     grid.appendChild(frag);
   }
 
+  // ── Sync sort-control label + active option from the URL ────────────
+  //
+  // TC-016 / TC-022 fix. After pm-facets.js swaps #pm-plp-header (which
+  // contains the sort menu) the server re-renders the menu from its own
+  // `sort_by` value. Shopify's /search in particular does NOT always echo
+  // the chosen sort back, so the freshly-picked label would silently
+  // revert to "Relevance"/"Featured". The URL is our source of truth (we
+  // pushState'd it), so we re-assert the trigger label, the hidden input,
+  // and the is-active/aria-selected option from `sort_by` on every swap.
+  function syncSortControl() {
+    var sort = '';
+    try { sort = new URL(window.location.href).searchParams.get('sort_by') || ''; } catch (e) {}
+    if (!sort) return; // no explicit sort → leave server default as-is
+
+    document.querySelectorAll('[data-pm-sort]').forEach(function (root) {
+      var match = null;
+      root.querySelectorAll('[data-pm-sort-opt]').forEach(function (o) {
+        var on = o.getAttribute('data-value') === sort;
+        o.classList.toggle('is-active', on);
+        o.setAttribute('aria-selected', on ? 'true' : 'false');
+        if (on) match = o;
+      });
+      if (!match) return; // sort value not in this menu's options
+      var current = root.querySelector('.pm-sort__current');
+      if (current) {
+        var labelEl = match.querySelector('.pm-sort__opt-label');
+        current.textContent = labelEl ? labelEl.textContent : sort;
+      }
+      var hidden = root.querySelector('input[type="hidden"][name="sort_by"]');
+      if (hidden) hidden.value = sort;
+    });
+  }
+
+  // ── Client-side BRAND/VENDOR filter (TC-017 / TC-020) ───────────────
+  //
+  // When the storefront *vendor* filter isn't enabled in Shopify admin,
+  // the server silently ignores `filter.p.vendor`, so an AJAX swap comes
+  // back with EVERY product (price/availability, which usually ARE
+  // enabled, still narrow server-side). The facets form is then flagged
+  // with data-pm-vendor-clientside="true".
+  //
+  // In that mode we:
+  //   1. read the selected vendor(s) from the URL (?filter.p.vendor=…),
+  //   2. re-assert the matching checkbox states (authoritative — fixes
+  //      the "checkbox unchecks itself" symptom from the fragile Liquid
+  //      substring check), and
+  //   3. hide grid cards whose vendor isn't in the selected set, so the
+  //      grid actually narrows. Combines naturally with price/availability
+  //      which the server already applied.
+  function getSelectedVendors() {
+    var out = [];
+    try {
+      new URL(window.location.href).searchParams.getAll('filter.p.vendor')
+        .forEach(function (v) { if (v) out.push(v.toLowerCase()); });
+    } catch (e) {}
+    return out;
+  }
+
+  function applyVendorFilter() {
+    var form = document.getElementById('pm-facets-form');
+    // Only engage in fallback (client-side) mode. If Shopify filtered
+    // server-side, the grid is already correct — don't touch it.
+    if (!form || form.getAttribute('data-pm-vendor-clientside') !== 'true') return;
+
+    var selected = getSelectedVendors();
+
+    // (2) Re-assert checkbox state from the URL (exact value match).
+    form.querySelectorAll('[data-pm-vendor]').forEach(function (cb) {
+      var val = (cb.getAttribute('data-pm-vendor-value') || cb.value || '').toLowerCase();
+      cb.checked = selected.indexOf(val) !== -1;
+    });
+
+    // (3) Show/hide grid cards by vendor.
+    var grid = document.querySelector('.pm-plp__grid');
+    if (!grid) return;
+    var items = Array.prototype.slice.call(grid.children);
+    var shown = 0;
+    items.forEach(function (li) {
+      if (selected.length === 0) { li.hidden = false; shown++; return; }
+      var brandEl = li.querySelector('.pm-pcard__brand');
+      var vendor = brandEl ? (brandEl.textContent || '').trim().toLowerCase() : '';
+      var match = vendor && selected.indexOf(vendor) !== -1;
+      li.hidden = !match;
+      if (match) shown++;
+    });
+
+    // If a vendor is selected but nothing on this page matches, surface a
+    // lightweight empty hint (only when we actually hid everything).
+    var wrap = document.getElementById('pm-plp-grid-wrap');
+    if (wrap) {
+      var hint = wrap.querySelector('[data-pm-vendor-empty]');
+      if (selected.length > 0 && shown === 0) {
+        if (!hint) {
+          hint = document.createElement('p');
+          hint.className = 'pm-facet__empty';
+          hint.setAttribute('data-pm-vendor-empty', '');
+          hint.style.padding = '24px 0';
+          hint.textContent = 'No products from the selected brand on this page.';
+          grid.parentNode.insertBefore(hint, grid.nextSibling);
+        }
+      } else if (hint) {
+        hint.parentNode.removeChild(hint);
+      }
+    }
+  }
+
   // ── Restore last view mode on each navigation/AJAX swap ─────────────
   function restoreViewMode() {
     try {
@@ -161,6 +273,8 @@
   }
   function onUpdate() {
     restoreViewMode();
+    syncSortControl();      // TC-016: keep the sort label after AJAX header swap
+    applyVendorFilter();    // TC-017/020: narrow grid by vendor + fix checkbox state
     applySearchClientSort();
   }
   if (document.readyState === 'loading') {

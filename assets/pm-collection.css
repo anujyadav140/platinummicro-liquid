@@ -548,7 +548,73 @@
   font-size: 12px;
   color: var(--pm-terracotta);
   border-bottom: 1px solid currentColor;
+  background: none;
+  border-top: none;
+  border-left: none;
+  border-right: none;
+  padding: 0;
+  cursor: pointer;
+  font-family: var(--pm-font-body);
+  transition: color var(--pm-dur-fast);
 }
+.pm-facets__clear:hover { color: var(--pm-terracotta-light); }
+
+/* Active-filter chips + Clear all (TC-021) */
+.pm-facets__active {
+  padding: 0 0 12px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid var(--pm-ink-200);
+}
+.pm-facets__active-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.pm-facets__active-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--pm-ink-700);
+}
+.pm-facets__chips {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.pm-facets__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px 4px 10px;
+  border: 1px solid var(--pm-ink-200);
+  border-radius: 999px;
+  background: var(--pm-navy-pale);
+  color: var(--pm-navy-deep);
+  font-family: var(--pm-font-body);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background var(--pm-dur-fast), border-color var(--pm-dur-fast), color var(--pm-dur-fast);
+}
+.pm-facets__chip:hover {
+  background: var(--pm-terracotta);
+  border-color: var(--pm-terracotta);
+  color: #fff;
+}
+.pm-facets__chip-label { white-space: nowrap; }
+.pm-facets__chip-x {
+  flex-shrink: 0;
+  opacity: 0.7;
+  transition: opacity var(--pm-dur-fast);
+}
+.pm-facets__chip:hover .pm-facets__chip-x { opacity: 1; }
+
 .pm-facet {
   border-bottom: 1px solid var(--pm-ink-200);
   padding: 12px 0;
