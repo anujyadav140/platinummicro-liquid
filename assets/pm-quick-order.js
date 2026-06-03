@@ -148,12 +148,18 @@
    */
   function lookupSku(sku) {
     var lower = sku.toLowerCase();
-    // NOTE: use the SAME predictive-search params shape as pm-predictive-search.js.
-    // The previous `resources[options][fields]=sku` filter is NOT a documented
-    // Shopify Ajax predictive-search option and made the endpoint return zero
-    // products for otherwise-valid SKUs, so nothing ever resolved → nothing added.
+    // Predictive search does NOT match SKUs unless told to via the documented
+    // `resources[options][fields]` param. The original code used `fields=sku`
+    // (wrong field name → 0 results); simply removing it also returned 0 for SKU
+    // queries (predictive defaults to title/vendor/type only). The correct field
+    // is `variants.sku` (+ barcode/title as extra candidate sources). Verified
+    // live: with this, q=<exact SKU> resolves the product; the variant-SKU exact
+    // match below still gates the final result, so broader candidates can't cause
+    // a wrong add.
     var url = '/search/suggest.json?q=' + encodeURIComponent(sku) +
-              '&resources[type]=product&resources[limit]=6&resources[options][unavailable_products]=last';
+              '&resources[type]=product&resources[limit]=6' +
+              '&resources[options][unavailable_products]=last' +
+              '&resources[options][fields]=variants.sku,variants.barcode,title';
     return fetch(url, { headers: { Accept: 'application/json' } })
       .then(function (r) { return r.json(); })
       .then(function (data) {
