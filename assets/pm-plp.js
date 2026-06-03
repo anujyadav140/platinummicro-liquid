@@ -256,6 +256,88 @@
     }
   }
 
+  // ── Client-side active-filter chips + Clear all (TC-021 fallback) ───
+  //
+  // Shopify-enabled filters (price/availability) already render chips +
+  // "Clear all" server-side from active_values. But the brand/vendor
+  // fallback can't: `request.url` is nil in Shopify Liquid, so the
+  // server-side chip logic for vendor silently no-ops. We rebuild the
+  // missing chips here from window.location so a "Clear all" control and
+  // a removable pill ALWAYS appear whenever a filter.* param is active —
+  // the remove/clear click handlers in pm-facets.js are delegated, so
+  // these JS-built chips work the same as the server-rendered ones.
+  function prettyFilterLabel(name, value) {
+    if (name === 'filter.v.availability') return value === '0' ? 'Out of stock' : 'In stock';
+    if (name === 'filter.p.tag') {
+      if (value === 'on-sale') return 'On sale';
+      if (value === 'featured') return 'Featured';
+      return value;
+    }
+    return value; // vendor + anything else → raw value (e.g. "ASRock Rack")
+  }
+
+  function renderFallbackChips() {
+    var form = document.getElementById('pm-facets-form');
+    // Only needed in vendor-fallback mode (Shopify isn't filtering vendor
+    // server-side). When the merchant enables the filter, Shopify renders
+    // the chips natively and this is a no-op.
+    if (!form || form.getAttribute('data-pm-vendor-clientside') !== 'true') return;
+
+    var active = [];
+    try {
+      new URL(window.location.href).searchParams.forEach(function (v, k) {
+        if (/^filter\./.test(k) && v !== '' && v != null) active.push({ name: k, value: v });
+      });
+    } catch (e) {}
+    if (!active.length) return;
+
+    // Find the server-rendered block (present when a Shopify filter is also
+    // active) or create one at the top of the form.
+    var block = form.querySelector('[data-pm-active-filters]');
+    if (!block) {
+      block = document.createElement('div');
+      block.className = 'pm-facets__active';
+      block.setAttribute('data-pm-active-filters', '');
+      block.innerHTML =
+        '<div class="pm-facets__active-head">' +
+          '<span class="pm-facets__active-title">Filters</span>' +
+          '<button type="button" class="pm-facets__clear" data-pm-clear-all>Clear all</button>' +
+        '</div>' +
+        '<ul class="pm-facets__chips"></ul>';
+      form.insertBefore(block, form.firstChild);
+    }
+    var ul = block.querySelector('.pm-facets__chips');
+    if (!ul) return;
+
+    // Skip params already shown as a server-rendered chip.
+    var seen = {};
+    ul.querySelectorAll('[data-pm-filter-remove]').forEach(function (c) {
+      seen[c.getAttribute('data-filter-name') + '=' + (c.getAttribute('data-filter-value') || '')] = true;
+    });
+
+    active.forEach(function (p) {
+      // Price gte/lte get a single combined server chip when enabled; don't
+      // double-render noisy raw price pills here.
+      if (/price/.test(p.name) && block.querySelector('[data-filter-name="filter.v.price"]')) return;
+      if (seen[p.name + '=' + p.value]) return;
+      seen[p.name + '=' + p.value] = true;
+
+      var li = document.createElement('li');
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'pm-facets__chip';
+      btn.setAttribute('data-pm-filter-remove', '');
+      btn.setAttribute('data-filter-name', p.name);
+      btn.setAttribute('data-filter-value', p.value);
+      btn.innerHTML =
+        '<span class="pm-facets__chip-label"></span>' +
+        '<svg class="pm-facets__chip-x" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>';
+      btn.querySelector('.pm-facets__chip-label').textContent = prettyFilterLabel(p.name, p.value);
+      li.appendChild(btn);
+      ul.appendChild(li);
+    });
+  }
+
   // ── Restore last view mode on each navigation/AJAX swap ─────────────
   function restoreViewMode() {
     try {
@@ -275,6 +357,7 @@
     restoreViewMode();
     syncSortControl();      // TC-016: keep the sort label after AJAX header swap
     applyVendorFilter();    // TC-017/020: narrow grid by vendor + fix checkbox state
+    renderFallbackChips();  // TC-021: client-side Clear all + chips in fallback mode
     applySearchClientSort();
   }
   if (document.readyState === 'loading') {
