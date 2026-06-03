@@ -127,11 +127,59 @@
   function showAlert(problems) {
     alertSkusEl.innerHTML = '';
     problems.forEach(function (p) {
-      var div = document.createElement('div');
-      div.textContent = (p && p.reason) ? (p.sku + ' — ' + p.reason) : (p && p.sku ? p.sku : p);
-      alertSkusEl.appendChild(div);
+      var row = document.createElement('div');
+      row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;padding:1px 0;';
+      var label = document.createElement('span');
+      label.textContent = (p && p.reason) ? (p.sku + ' — ' + p.reason) : (p && p.sku ? p.sku : p);
+      row.appendChild(label);
+      // Out-of-stock items we DID find → offer to add them to a quote instead.
+      if (p && p.reason === 'out of stock' && p.match && p.match.product) {
+        var qbtn = document.createElement('button');
+        qbtn.type = 'button';
+        qbtn.textContent = 'Add to quote →';
+        qbtn.style.cssText = 'flex:none;background:none;border:none;color:var(--pm-terracotta,#A63D2F);font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;text-decoration:underline;padding:2px 0;';
+        (function (m) { qbtn.addEventListener('click', function () { addToQuote(m); }); })(p.match);
+        row.appendChild(qbtn);
+      }
+      alertSkusEl.appendChild(row);
     });
     alertEl.removeAttribute('hidden');
+  }
+
+  /**
+   * Send an out-of-stock SKU to the Quotify quote flow. Mirrors the PDP's
+   * Quotify trigger exactly: a no-op <form> wrapping a [data-quotify] button
+   * carrying the full product JSON (same shape as {{ product | json }}), which
+   * Quotify's event-delegated app script picks up. If Quotify isn't loaded for
+   * some reason, fall back to the product's page (which leads with the quote CTA
+   * for out-of-stock items).
+   */
+  function addToQuote(match) {
+    if (!match || !match.product) return;
+    var p = match.product, variantId = match.id;
+    if (typeof window.Quotify === 'undefined') {
+      window.location.href = p.url || ('/products/' + p.handle);
+      return;
+    }
+    var form = document.createElement('form');
+    form.className = 'pm-quotify-form';
+    form.setAttribute('onsubmit', 'return false;');
+    form.style.cssText = 'position:absolute;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;';
+    var hidden = document.createElement('input');
+    hidden.type = 'hidden'; hidden.name = 'id'; hidden.value = variantId;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'quotify-request-quote-btn';
+    btn.setAttribute('data-quotify', '');
+    btn.setAttribute('data-product-id', String(p.id));
+    btn.setAttribute('data-variant', String(variantId));
+    btn.setAttribute('data-product', JSON.stringify(p));
+    form.appendChild(hidden);
+    form.appendChild(btn);
+    document.body.appendChild(form);
+    btn.click();
+    // Quotify opens its own flow on the click; drop our scaffold afterward.
+    setTimeout(function () { try { form.remove(); } catch (e) {} }, 4000);
   }
 
   function hideAlert() {
@@ -218,7 +266,8 @@
         } else if (r.match && id && !r.match.available) {
           // Found, but the variant is sold out. Shopify's /cart/add.js is atomic,
           // so leaving it in the batch would fail EVERY line — exclude + report it.
-          problems.push({ sku: r.entry.sku, reason: 'out of stock' });
+          // Keep the match so we can offer "Add to quote" for it.
+          problems.push({ sku: r.entry.sku, reason: 'out of stock', match: r.match });
         } else {
           problems.push({ sku: r.entry.sku, reason: 'not found' });
         }
