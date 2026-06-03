@@ -124,11 +124,11 @@
     submitBtn.disabled = totalSkus === 0;
   }
 
-  function showAlert(missingSkus) {
+  function showAlert(problems) {
     alertSkusEl.innerHTML = '';
-    missingSkus.forEach(function (s) {
+    problems.forEach(function (p) {
       var div = document.createElement('div');
-      div.textContent = s;
+      div.textContent = (p && p.reason) ? (p.sku + ' — ' + p.reason) : (p && p.sku ? p.sku : p);
       alertSkusEl.appendChild(div);
     });
     alertEl.removeAttribute('hidden');
@@ -179,7 +179,7 @@
                 if ((variants[i].sku || '').trim().toLowerCase() === lower) {
                   // Coerce to a Number — /cart/add.js needs the numeric variant id
                   // (same as pm-add-to-cart.js: parseInt(variantId, 10)).
-                  return { id: parseInt(variants[i].id, 10), product: full };
+                  return { id: parseInt(variants[i].id, 10), available: variants[i].available, product: full };
                 }
               }
               return null;
@@ -207,29 +207,30 @@
         return { entry: e, match: match };
       });
     })).then(function (results) {
-      var items   = [];
-      var missing = [];
+      var items    = [];   // in-stock, addable
+      var problems = [];   // { sku, reason } — 'not found' or 'out of stock'
       results.forEach(function (r) {
-        // Treat a match with a non-numeric/zero variant id as a miss — a bad id
-        // would make /cart/add.js 422 and silently add nothing for the whole
-        // batch, which is exactly the failure we're guarding against.
-        var id = r.match ? parseInt(r.match.id, 10) : NaN;
+        var id  = r.match ? parseInt(r.match.id, 10) : NaN;
         var qty = parseInt(r.entry.qty, 10);
         if (!qty || qty < 1) qty = 1;
-        if (r.match && id) {
+        if (r.match && id && r.match.available) {
           items.push({ id: id, quantity: qty });
+        } else if (r.match && id && !r.match.available) {
+          // Found, but the variant is sold out. Shopify's /cart/add.js is atomic,
+          // so leaving it in the batch would fail EVERY line — exclude + report it.
+          problems.push({ sku: r.entry.sku, reason: 'out of stock' });
         } else {
-          missing.push(r.entry.sku);
+          problems.push({ sku: r.entry.sku, reason: 'not found' });
         }
       });
 
       if (items.length === 0) {
-        showAlert(missing);
+        showAlert(problems);
         setLoading(false);
         return;
       }
 
-      // Multi-add — POST /cart/add.js with `items` array
+      // Multi-add the IN-STOCK items only (sold-out ones excluded above).
       return fetch('/cart/add.js', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -246,7 +247,9 @@
         })
         .then(function (resp) {
           if (!resp.ok) {
-            showAlert(missing.concat(items.map(function () { return '(add failed)'; })));
+            // A late inventory change can still 422 — surface Shopify's reason.
+            var msg = (resp.json && resp.json.message) ? resp.json.message : 'could not be added';
+            showAlert(problems.concat([{ sku: items.length + ' item(s)', reason: msg }]));
             setLoading(false);
             return;
           }
@@ -255,10 +258,10 @@
             detail: { source: 'quick-order', addedCount: items.length }
           }));
 
-          if (missing.length > 0) {
-            // Keep the missing rows visible, drop the added ones
+          if (problems.length > 0) {
+            // Keep the not-found / sold-out rows visible, drop the added ones
             removeAddedRows(results);
-            showAlert(missing);
+            showAlert(problems);
             setLoading(false);
           } else {
             // Clean everything and close
@@ -273,10 +276,10 @@
   }
 
   function removeAddedRows(results) {
-    // Drop the rows whose SKU matched
+    // Drop only the rows that were actually ADDED (matched AND in stock).
     var rows = Array.from(rowsEl.querySelectorAll('[data-qo-row]'));
     results.forEach(function (r) {
-      if (!r.match) return;
+      if (!r.match || !r.match.available) return;
       var matchRow = rows.find(function (row) {
         return (row.querySelector('.pm-qo__sku').value || '').trim().toLowerCase() === r.entry.sku.toLowerCase();
       });
