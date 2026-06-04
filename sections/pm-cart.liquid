@@ -18,15 +18,6 @@
 <div class="pm-container pm-cart-page">
   <h1 class="pm-cart-page__h1">Your cart</h1>
 
-  {%- comment -%} Quote-request success toast (from ?contact_posted=true after submit) {%- endcomment -%}
-  <div class="pm-cart-quote-success" data-pm-cart-quote-success hidden>
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
-    <div>
-      <strong>Quote request received.</strong>
-      <span>An account manager will follow up within one business day with availability and pricing.</span>
-    </div>
-  </div>
-
   <div class="pm-cart-layout" data-pm-cart-layout>
 
     {%- comment -%} ── Items column ────────────────────────────────────────── {%- endcomment -%}
@@ -202,75 +193,7 @@
           Request quote
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
         </button>
-
-        {%- comment -%}
-          ── Inline quote form ──
-          {% form 'contact' %} maps to /contact (Shopify's built-in mailer).
-          On submit, Shopify redirects back here with ?contact_posted=true
-          and the JS at the bottom clears the local quote store + flashes
-          the success toast at the top of the page.
-        {%- endcomment -%}
-        <div class="pm-cart-quote-form" data-pm-cart-quote-form hidden>
-          {% form 'contact', id: 'pm-cart-quote-contact' %}
-            <input type="hidden" name="contact[subject]" value="Quote request from website">
-
-            <div class="pm-cart-quote-form__field">
-              <label>Name<span aria-hidden="true">*</span></label>
-              <input
-                type="text"
-                name="contact[name]"
-                required
-                value="{% if customer %}{{ customer.first_name }} {{ customer.last_name }}{% endif %}"
-              >
-            </div>
-
-            <div class="pm-cart-quote-form__field">
-              <label>Email<span aria-hidden="true">*</span></label>
-              <input
-                type="email"
-                name="contact[email]"
-                required
-                value="{% if customer %}{{ customer.email }}{% endif %}"
-              >
-            </div>
-
-            <div class="pm-cart-quote-form__field">
-              <label>Company</label>
-              <input
-                type="text"
-                name="contact[company]"
-                value="{% if customer.default_address %}{{ customer.default_address.company }}{% endif %}"
-              >
-            </div>
-
-            <div class="pm-cart-quote-form__field">
-              <label>Phone</label>
-              <input
-                type="tel"
-                name="contact[phone]"
-                value="{% if customer.phone %}{{ customer.phone }}{% endif %}"
-              >
-            </div>
-
-            <div class="pm-cart-quote-form__field">
-              <label>Notes (optional)</label>
-              <textarea name="contact[notes]" rows="3" placeholder="Delivery timeline, NASPO/contract vehicle, special requirements…"></textarea>
-            </div>
-
-            <textarea
-              name="contact[body]"
-              data-pm-cart-quote-body
-              hidden
-              required
-              aria-hidden="true"
-            ></textarea>
-
-            <div class="pm-cart-quote-form__actions">
-              <button type="button" class="pm-cart-page__btn pm-cart-page__btn--ghost" data-pm-cart-quote-cancel>Cancel</button>
-              <button type="submit" class="pm-cart-page__btn pm-cart-page__btn--primary">Send quote request</button>
-            </div>
-          {% endform %}
-        </div>
+        <p class="pm-cart-card__hint" data-pm-cart-quote-note>Sends your quote items to Quotify — your account manager replies with a written quote.</p>
       </aside>
     </div>
   </div>
@@ -286,20 +209,14 @@
   letter-spacing: -0.02em;
 }
 
-/* Success toast */
-.pm-cart-quote-success {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  background: var(--pm-success-bg);
-  border: 1px solid rgba(47, 125, 91, 0.25);
-  border-radius: 10px;
-  padding: 14px 18px;
-  margin-bottom: 24px;
-  color: var(--pm-success);
+/* Quote-request hint under the Request-quote button */
+.pm-cart-card__hint {
+  margin: 10px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--pm-ink-500);
+  text-align: center;
 }
-.pm-cart-quote-success strong { display: block; font-size: 14px; }
-.pm-cart-quote-success span { display: block; margin-top: 2px; font-size: 13px; color: var(--pm-ink-700); }
 
 /* Layout */
 .pm-cart-layout {
@@ -549,31 +466,6 @@
 }
 .pm-cart-page__btn--ghost:hover { background: var(--pm-ink-100); color: var(--pm-ink-900); }
 
-/* Quote form */
-.pm-cart-quote-form { margin-top: 16px; padding-top: 16px; border-top: 1px solid rgba(166, 61, 47, 0.2); }
-.pm-cart-quote-form__field { margin-bottom: 12px; }
-.pm-cart-quote-form__field label { display: block; font-size: 12px; font-weight: 600; color: var(--pm-ink-700); margin-bottom: 4px; }
-.pm-cart-quote-form__field label span { color: var(--pm-terracotta); margin-left: 2px; }
-.pm-cart-quote-form__field input,
-.pm-cart-quote-form__field textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid var(--pm-ink-200);
-  border-radius: 6px;
-  background: #fff;
-  font-family: var(--pm-font-body);
-  font-size: 13px;
-  color: var(--pm-ink-900);
-  outline: none;
-  transition: border-color var(--pm-dur-fast), box-shadow var(--pm-dur-fast);
-  box-sizing: border-box;
-}
-.pm-cart-quote-form__field input:focus,
-.pm-cart-quote-form__field textarea:focus {
-  border-color: var(--pm-terracotta);
-  box-shadow: 0 0 0 3px rgba(166, 61, 47, 0.15);
-}
-.pm-cart-quote-form__actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
 </style>
 
 <script>
@@ -694,79 +586,67 @@
   }
 
   // ─────────────────────────────────────────────────────────────────
-  // Quote-request form — open / cancel / pre-fill body / clear-on-success
+  // Quote request → Quotify handoff
+  // "Request quote" pushes the bucket's quote items into Quotify's quote
+  // cart using the SAME synthetic [data-quotify] trigger the PDP + quick
+  // order use (Quotify's app script is event-delegated off document.body),
+  // then Quotify opens its own quote flow. Replaces the old contact form.
   // ─────────────────────────────────────────────────────────────────
-  var openBtn   = document.querySelector('[data-pm-cart-quote-open]');
-  var cancelBtn = document.querySelector('[data-pm-cart-quote-cancel]');
-  var formWrap  = document.querySelector('[data-pm-cart-quote-form]');
-  var bodyField = document.querySelector('[data-pm-cart-quote-body]');
-  var formEl    = formWrap ? formWrap.querySelector('form') : null;
+  var quoteOpenBtn = document.querySelector('[data-pm-cart-quote-open]');
 
-  function buildBody() {
-    var items = (window.PmQuote && window.PmQuote.list) ? window.PmQuote.list() : [];
-    var notesEl = formWrap.querySelector('textarea[name="contact[notes]"]');
-    var notes = notesEl ? notesEl.value.trim() : '';
-    var lines = [];
-    lines.push('--- Quote items ---');
-    items.forEach(function (q, i) {
-      var line = (i + 1) + '. ' + q.name + ' (SKU ' + q.sku + ') — qty ' + q.quantity;
-      if (q.unitPrice) line += ' @ ' + q.unitPrice + ' each (est)';
-      lines.push(line);
+  // Build a throwaway product <form> + [data-quotify] button for one variant
+  // and fire a genuine-looking left-click sequence so Quotify picks it up
+  // (desktop Quotify binds on mousedown; a bare .click() never triggers it).
+  function quotifyAdd(variantId, productId, qty) {
+    var form = document.createElement('form');
+    form.className = 'pm-quotify-form';
+    form.setAttribute('onsubmit', 'return false;');
+    form.style.cssText = 'position:absolute;left:-9999px;top:0;width:1px;height:1px;overflow:hidden;';
+    var idEl = document.createElement('input');
+    idEl.type = 'hidden'; idEl.name = 'id'; idEl.value = variantId;
+    form.appendChild(idEl);
+    var qEl = document.createElement('input');
+    qEl.type = 'hidden'; qEl.name = 'quantity'; qEl.value = String(Math.max(1, parseInt(qty, 10) || 1));
+    form.appendChild(qEl);
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'quotify-request-quote-btn';
+    btn.setAttribute('data-quotify', '');
+    btn.setAttribute('data-variant', String(variantId));
+    if (productId) btn.setAttribute('data-product-id', String(productId));
+    form.appendChild(btn);
+    document.body.appendChild(form);
+    ['mousedown', 'mouseup', 'click'].forEach(function (type) {
+      var ev = new MouseEvent(type, {
+        bubbles: true, cancelable: true, view: window,
+        button: 0, buttons: type === 'mousedown' ? 1 : 0
+      });
+      try { Object.defineProperty(ev, 'which', { value: 1 }); } catch (e) {}
+      btn.dispatchEvent(ev);
     });
-    lines.push('');
-    if (notes) {
-      lines.push('--- Notes ---');
-      lines.push(notes);
-      lines.push('');
-    }
-    return lines.join('\n');
+    setTimeout(function () { try { form.remove(); } catch (e) {} }, 6000);
   }
 
-  if (openBtn && formWrap) {
-    openBtn.addEventListener('click', function () {
-      formWrap.removeAttribute('hidden');
-      openBtn.setAttribute('hidden', '');
-      var first = formWrap.querySelector('input[name="contact[name]"]');
-      if (first && !first.value) first.focus();
-      else {
-        var emailEl = formWrap.querySelector('input[name="contact[email]"]');
-        if (emailEl && !emailEl.value) emailEl.focus();
+  if (quoteOpenBtn) {
+    quoteOpenBtn.addEventListener('click', function () {
+      var items = (window.PmQuote && window.PmQuote.list) ? window.PmQuote.list() : [];
+      if (!items.length) return;
+      var withVariant = items.filter(function (q) { return q.variantId; });
+      // No Quotify on the page (or nothing has a resolvable variant) → fall back
+      // to the first item's product page, which leads with its own quote CTA.
+      if (typeof window.Quotify === 'undefined' || !withVariant.length) {
+        var href = (items[0] && items[0].href) || '';
+        if (href) window.location.href = href;
+        return;
       }
+      quoteOpenBtn.disabled = true;
+      // Stagger so Quotify processes each add before the next; the last one
+      // leaves its quote flow open for the customer to finish.
+      withVariant.forEach(function (q, i) {
+        setTimeout(function () { quotifyAdd(q.variantId, q.productId, q.quantity); }, i * 250);
+      });
+      setTimeout(function () { quoteOpenBtn.disabled = false; }, withVariant.length * 250 + 600);
     });
-  }
-  if (cancelBtn && formWrap && openBtn) {
-    cancelBtn.addEventListener('click', function () {
-      formWrap.setAttribute('hidden', '');
-      openBtn.removeAttribute('hidden');
-    });
-  }
-  if (formEl && bodyField) {
-    formEl.addEventListener('submit', function () {
-      bodyField.value = buildBody();
-      // Stash the SKU set so we know what to clear when we land back with ?contact_posted=true.
-      try {
-        var pending = (window.PmQuote && window.PmQuote.list) ? window.PmQuote.list().map(function (q) { return q.sku; }) : [];
-        sessionStorage.setItem('pm:quote:pending', JSON.stringify(pending));
-      } catch (e) {}
-    });
-  }
-
-  // Successful submission redirect detect.
-  function paramOf(name) {
-    var m = (window.location.search || '').match(new RegExp('[?&]' + name + '=([^&]*)'));
-    return m ? decodeURIComponent(m[1]) : '';
-  }
-  if (paramOf('contact_posted') === 'true') {
-    try {
-      var raw = sessionStorage.getItem('pm:quote:pending');
-      var pendingSkus = raw ? JSON.parse(raw) : [];
-      if (Array.isArray(pendingSkus) && pendingSkus.length > 0 && window.PmQuote) {
-        pendingSkus.forEach(function (sku) { window.PmQuote.remove(sku); });
-      }
-      sessionStorage.removeItem('pm:quote:pending');
-    } catch (e) {}
-    var toast = document.querySelector('[data-pm-cart-quote-success]');
-    if (toast) toast.removeAttribute('hidden');
   }
 
   document.addEventListener('pm:cart-changed', renderQuote);
