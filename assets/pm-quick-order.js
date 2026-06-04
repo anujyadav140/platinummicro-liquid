@@ -348,19 +348,48 @@
 
   // Query predictive search (matches SKUs via the variants.sku field), then a
   // second hop per candidate to resolve the actual SKU string.
+  // Platinum Micro prepends a short category code (CC / CD / EP …) to the
+  // manufacturer SKU, so a customer who types the manufacturer SKU (e.g.
+  // AS6706TV2, stored as CCAS6706TV2) should still resolve the product. True
+  // when the stored SKU equals the typed term, or is just a short prefix + it.
+  function skuMatches(stored, typed) {
+    var s = (stored || '').trim().toLowerCase();
+    var t = (typed || '').trim().toLowerCase();
+    if (!s || !t) return false;
+    if (s === t) return true;
+    if (s.length > t.length && (s.length - t.length) <= 3 && s.slice(s.length - t.length) === t) return true;
+    return false;
+  }
+
+  // Predictive search over products (matches SKU via variants.sku, plus barcode
+  // + title). A full manufacturer SKU can return nothing — e.g. "AS6706TV2": the
+  // title is "AS6706T v2" (a space splits the token) and the stored SKU is
+  // prefixed — so on an empty result we retry with a shorter prefix to surface
+  // broader candidates that skuMatches() / bestVariantSku() then narrow.
+  function suggestProducts(term) {
+    function hit(q) {
+      var url = '/search/suggest.json?q=' + encodeURIComponent(q) +
+                '&resources[type]=product&resources[limit]=6' +
+                '&resources[options][unavailable_products]=last' +
+                '&resources[options][fields]=variants.sku,variants.barcode,title';
+      return fetch(url, { headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.json(); })
+        .then(function (d) { return (((d || {}).resources || {}).results || {}).products || []; })
+        .catch(function () { return []; });
+    }
+    return hit(term).then(function (products) {
+      if (products.length || term.length <= 6) return products;
+      return hit(term.slice(0, 6));
+    });
+  }
+
   function acFetch(term, seq, input) {
     function stale() {
       return seq !== acSeq || input !== acInput || (input.value || '').trim() !== term;
     }
-    var url = '/search/suggest.json?q=' + encodeURIComponent(term) +
-              '&resources[type]=product&resources[limit]=6' +
-              '&resources[options][unavailable_products]=last' +
-              '&resources[options][fields]=variants.sku,variants.barcode,title';
-    fetch(url, { headers: { Accept: 'application/json' } })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
+    suggestProducts(term)
+      .then(function (products) {
         if (stale()) return;
-        var products = (((data || {}).resources || {}).results || {}).products || [];
         if (!products.length) { acClose(); return; }
         // suggest.json has no variant SKUs → resolve each candidate's SKU from
         // its product JSON (cached) before building the suggestion list.
@@ -514,51 +543,42 @@
    * Returns { id, product } or null.
    */
   function lookupSku(sku) {
-    var lower = sku.toLowerCase();
-    // Predictive search does NOT match SKUs unless told to via the documented
-    // `resources[options][fields]` param. The original code used `fields=sku`
-    // (wrong field name → 0 results); simply removing it also returned 0 for SKU
-    // queries (predictive defaults to title/vendor/type only). The correct field
-    // is `variants.sku` (+ barcode/title as extra candidate sources). Verified
-    // live: with this, q=<exact SKU> resolves the product; the variant-SKU exact
-    // match below still gates the final result, so broader candidates can't cause
-    // a wrong add.
-    var url = '/search/suggest.json?q=' + encodeURIComponent(sku) +
-              '&resources[type]=product&resources[limit]=6' +
-              '&resources[options][unavailable_products]=last' +
-              '&resources[options][fields]=variants.sku,variants.barcode,title';
-    return fetch(url, { headers: { Accept: 'application/json' } })
-      .then(function (r) { return r.json(); })
-      .then(function (data) {
-        var products = (((data || {}).resources || {}).results || {}).products || [];
-        if (!products.length) return null;
-        // Two-step: fetch each candidate's full product JSON for variant SKUs.
-        // suggest.json items expose `handle` (and `url`); fall back to url so a
-        // missing handle doesn't break the second hop.
-        var checks = products.map(function (p) {
-          var handle = p.handle || (p.url ? p.url.split('?')[0].replace(/^.*\/products\//, '') : '');
-          if (!handle) return Promise.resolve(null);
-          return fetch('/products/' + handle + '.js', { headers: { Accept: 'application/json' } })
-            .then(function (r) { return r.ok ? r.json() : null; })
-            .then(function (full) {
-              var variants = (full && full.variants) || [];
-              for (var i = 0; i < variants.length; i++) {
-                if ((variants[i].sku || '').trim().toLowerCase() === lower) {
-                  // Coerce to a Number — /cart/add.js needs the numeric variant id
-                  // (same as pm-add-to-cart.js: parseInt(variantId, 10)).
-                  return { id: parseInt(variants[i].id, 10), available: variants[i].available, product: full };
-                }
-              }
-              return null;
-            })
-            .catch(function () { return null; });
-        });
-        return Promise.all(checks).then(function (results) {
-          for (var i = 0; i < results.length; i++) if (results[i]) return results[i];
-          return null;
-        });
-      })
-      .catch(function () { return null; });
+    // suggestProducts() handles the manufacturer-SKU retry; each candidate's full
+    // product JSON is then checked for an EXACT variant SKU first (most precise),
+    // falling back to skuMatches() so a manufacturer SKU resolves the PM-prefixed
+    // variant (e.g. AS6706TV2 → CCAS6706TV2). Exact hits win over relaxed ones.
+    return suggestProducts(sku).then(function (products) {
+      if (!products.length) return null;
+      var checks = products.map(function (p) {
+        var handle = p.handle || (p.url ? p.url.split('?')[0].replace(/^.*\/products\//, '') : '');
+        if (!handle) return Promise.resolve(null);
+        return fetch('/products/' + handle + '.js', { headers: { Accept: 'application/json' } })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (full) {
+            var variants = (full && full.variants) || [];
+            var lower = sku.trim().toLowerCase();
+            // Coerce id to a Number — /cart/add.js needs the numeric variant id.
+            for (var i = 0; i < variants.length; i++) {
+              if ((variants[i].sku || '').trim().toLowerCase() === lower)
+                return { id: parseInt(variants[i].id, 10), available: variants[i].available, product: full, exact: true };
+            }
+            for (var j = 0; j < variants.length; j++) {
+              if (skuMatches(variants[j].sku, sku))
+                return { id: parseInt(variants[j].id, 10), available: variants[j].available, product: full, exact: false };
+            }
+            return null;
+          })
+          .catch(function () { return null; });
+      });
+      return Promise.all(checks).then(function (results) {
+        var firstRelaxed = null;
+        for (var i = 0; i < results.length; i++) {
+          if (results[i] && results[i].exact) return results[i];
+          if (results[i] && !firstRelaxed) firstRelaxed = results[i];
+        }
+        return firstRelaxed;
+      });
+    });
   }
 
   function submit() {
