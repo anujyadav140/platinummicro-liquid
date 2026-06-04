@@ -370,6 +370,88 @@
   gap: 8px;
 }
 
+/* --- TC-092 SKU typeahead dropdown ---------------------------------------- */
+/* A single shared panel, absolutely positioned by JS under the active SKU
+   input. Sits inside .pm-qo__panel and above the rows/scroll area. */
+.pm-qo__ac {
+  position: fixed;        /* anchored to <body>, viewport coords (see acPosition) */
+  z-index: 300;           /* above the modal panel (z 250) */
+  max-height: 268px;
+  overflow-y: auto;
+  background: var(--pm-white, #fff);
+  border: 1px solid var(--pm-ink-150, #E7E5DF);
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(7, 21, 37, 0.18);
+  padding: 5px;
+  /* Smooth the entrance to match the modal's animated feel. */
+  animation: pmFade 120ms var(--pm-ease-standard);
+}
+.pm-qo__ac[hidden] { display: none; }
+.pm-qo__ac-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 8px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background var(--pm-dur-fast);
+}
+.pm-qo__ac-item.is-active,
+.pm-qo__ac-item:hover {
+  background: var(--pm-terracotta-pale, #F7EBE9);
+}
+.pm-qo__ac-thumb {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--pm-ink-150, #E7E5DF);
+  border-radius: 7px;
+  overflow: hidden;
+  background: var(--pm-paper, #FBFAF7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pm-qo__ac-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.pm-qo__ac-thumb--empty { background: var(--pm-ink-100, #F2F4F7); }
+.pm-qo__ac-main {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.pm-qo__ac-sku {
+  font-family: var(--pm-font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--pm-ink-900);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pm-qo__ac-mark {
+  background: transparent;
+  color: var(--pm-terracotta, #A63D2F);
+  font-weight: 700;
+  padding: 0;
+}
+.pm-qo__ac-title {
+  font-size: 12px;
+  color: var(--pm-ink-500);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pm-qo__ac-price {
+  flex-shrink: 0;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--pm-ink-700);
+  white-space: nowrap;
+}
+
 @media (max-width: 539px) {
   .pm-qo__cols, .pm-qo__row { grid-template-columns: 1fr 70px 28px; }
   .pm-qo__foot { flex-direction: column; align-items: stretch; }

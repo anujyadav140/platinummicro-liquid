@@ -49,6 +49,13 @@
       </button>
     </div>
 
+    {%- comment -%}
+      TC-092 — SKU typeahead. A single shared dropdown, repositioned under the
+      active .pm-qo__sku input by JS so it works with runtime-cloned rows.
+      Lives inside the panel so it inherits the modal's stacking context.
+    {%- endcomment -%}
+    <div class="pm-qo__ac" id="pm-qo-ac" role="listbox" aria-label="SKU suggestions" hidden></div>
+
     <div class="pm-qo__foot">
       <span class="pm-qo__count" id="pm-qo-count">0 SKUs · 0 units ready to add</span>
       <div class="pm-qo__actions">

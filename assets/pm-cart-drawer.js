@@ -13,6 +13,10 @@
   var maxedCap = {};
   // Per-line qty stepper state — robust against rapid-click races.
   var qPending = {}, qInflight = {}, qTimers = {};
+  // TC-085: dedupe the "max stock reached" toast — rapid +/- spam can fire the
+  // cap branch many times; show at most one toast per STOCK_TOAST_GAP ms.
+  var lastStockToastAt = 0;
+  var STOCK_TOAST_GAP = 3000;
 
   function init() {
     if (inited) return;
@@ -345,7 +349,20 @@
         function settle(cart) {
           var ln = (cart.items || []).filter(function (i) { return i.key === key; })[0];
           var got = ln ? ln.quantity : 0;
-          if (got < sent) maxedCap[key] = got; else delete maxedCap[key];
+          if (got < sent) {
+            maxedCap[key] = got;
+            // Hit the stock ceiling — tell the user, but at most once per
+            // STOCK_TOAST_GAP ms so rapid +/- spam can't flood the screen.
+            var now = Date.now();
+            if (now - lastStockToastAt > STOCK_TOAST_GAP) {
+              lastStockToastAt = now;
+              var rawName = (ln && (ln.product_title || ln.title)) || '';
+              var name = rawName.length > 42 ? rawName.slice(0, 41).trim() + '…' : rawName;
+              var msg = (name ? name + ' — ' : '') +
+                'only ' + got + ' in stock, that\'s the most you can add.';
+              showStockToast(msg);
+            }
+          } else delete maxedCap[key];
           // User kept clicking while this was in flight → send the newest value.
           if (qPending[key] !== sent && qPending[key] != null) { flushLine(key); return; }
           qPending[key] = got;            // settle on the server's (capped) value
@@ -360,6 +377,37 @@
         }
       })
       .catch(function () { qInflight[key] = false; });
+  }
+
+  // TC-085: "max available stock" toast. Reuses the shared .pm-toast component
+  // (see maybeWelcome() in pm-plp.js) so it matches the rest of the site. No
+  // warn modifier exists in CSS, so we use the BASE .pm-toast and tint the left
+  // border + icon with the brand terracotta accent inline. Auto-dismisses after
+  // a few seconds; the close button dismisses early. Calls are deduped upstream.
+  function showStockToast(msg) {
+    var ACCENT = '#A63D2F'; // brand terracotta
+    var toast = document.createElement('div');
+    toast.className = 'pm-toast';
+    toast.setAttribute('role', 'status');
+    toast.style.borderLeftColor = ACCENT;
+    toast.innerHTML =
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color:' + ACCENT + ';flex-shrink:0;margin-top:2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
+      '<div class="pm-toast__body">' +
+        '<div class="pm-toast__title">Maximum stock reached</div>' +
+        '<div class="pm-toast__lead"></div>' +
+      '</div>' +
+      '<button type="button" class="pm-toast__close" aria-label="Dismiss">' +
+        '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>' +
+      '</button>';
+    // Set the message via textContent so a product name can't inject markup.
+    toast.querySelector('.pm-toast__lead').textContent = msg;
+    document.body.appendChild(toast);
+    function dismiss() {
+      toast.classList.add('is-leaving');
+      setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 220);
+    }
+    toast.querySelector('.pm-toast__close').addEventListener('click', dismiss);
+    setTimeout(dismiss, 4200);
   }
 
   function updateLine(key, qty) {

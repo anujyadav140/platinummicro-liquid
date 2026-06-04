@@ -8,6 +8,17 @@
   var modal, rowsEl, addRowBtn, submitBtn, countEl, alertEl, alertSkusEl, template;
   var inited = false;
 
+  // --- TC-092 SKU typeahead state -------------------------------------------
+  var acEl;                 // the shared dropdown element (#pm-qo-ac)
+  var acInput   = null;     // the .pm-qo__sku input the dropdown is anchored to
+  var acItems   = [];       // current suggestion data [{ sku, title, image, price, url, handle }]
+  var acActive  = -1;       // highlighted index, -1 = none
+  var acSeq     = 0;        // request sequence — newest wins, stale responses ignored
+  var acTimer   = null;     // debounce timer
+  var acBlurT   = null;     // blur-close timer (delayed so a click can land first)
+  var AC_MIN    = 2;        // min chars before querying
+  var AC_DEBOUNCE = 250;
+
   function $(sel, root) { return (root || document).querySelector(sel); }
 
   function init() {
@@ -20,7 +31,14 @@
     alertEl     = document.getElementById('pm-qo-alert');
     alertSkusEl = document.getElementById('pm-qo-alert-skus');
     template    = document.getElementById('pm-qo-row-template');
+    acEl        = document.getElementById('pm-qo-ac');
     if (!modal || !template) return;
+
+    // The modal panel is transformed + overflow:hidden, which would clip a
+    // dropdown anchored inside it (common when typing in a lower row). Re-parent
+    // the typeahead to <body> so it's position:fixed against the viewport and
+    // never clipped. (Done once; it's reused across opens.)
+    if (acEl && acEl.parentNode !== document.body) document.body.appendChild(acEl);
 
     // Add seed row
     addRow();
@@ -49,8 +67,57 @@
       hideAlert();
       updateState();
     });
+
+    // --- TC-092 typeahead: DELEGATED on #pm-qo-rows so cloned rows work ------
+    // Input → debounced query, anchored to whichever .pm-qo__sku fired.
+    rowsEl.addEventListener('input', function (e) {
+      var input = e.target.closest('.pm-qo__sku');
+      if (input) acOnInput(input);
+    });
+    // Focus → if there's already a >=2-char value, re-run the query.
+    rowsEl.addEventListener('focusin', function (e) {
+      var input = e.target.closest('.pm-qo__sku');
+      if (input) acOnInput(input);
+    });
+    // Blur → close after a short delay so a click on a suggestion still lands.
+    rowsEl.addEventListener('focusout', function (e) {
+      if (!e.target.closest('.pm-qo__sku')) return;
+      if (acBlurT) clearTimeout(acBlurT);
+      acBlurT = setTimeout(acClose, 150);
+    });
+    // Keyboard nav from within any SKU input.
+    rowsEl.addEventListener('keydown', function (e) {
+      if (e.target.closest('.pm-qo__sku')) acOnKeydown(e);
+    });
+
+    // Suggestion interaction. mousedown (not click) fires before the input's
+    // blur, so the selection registers even though blur is about to close it.
+    acEl.addEventListener('mousedown', function (e) {
+      var opt = e.target.closest('.pm-qo__ac-item');
+      if (!opt) return;
+      e.preventDefault(); // keep focus on the input
+      acSelect(parseInt(opt.getAttribute('data-index'), 10));
+    });
+    acEl.addEventListener('mousemove', function (e) {
+      var opt = e.target.closest('.pm-qo__ac-item');
+      if (opt) acSetActive(parseInt(opt.getAttribute('data-index'), 10));
+    });
+    // Click-outside closes (a click inside an input or the dropdown does not).
+    document.addEventListener('mousedown', function (e) {
+      if (!acInput) return;
+      if (e.target.closest('.pm-qo__ac') || e.target.closest('.pm-qo__sku')) return;
+      acClose();
+    });
+    // Reposition if the modal body scrolls under the open dropdown.
+    var body = $('.pm-qo__body', modal);
+    if (body) body.addEventListener('scroll', function () { if (acInput) acPosition(); }, { passive: true });
+
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && !modal.hasAttribute('aria-hidden')) close();
+      if (e.key === 'Escape' && !modal.hasAttribute('aria-hidden')) {
+        // Escape first closes an open suggestion list, then (next press) the modal.
+        if (acInput) { acClose(); e.stopPropagation(); return; }
+        close();
+      }
     });
 
     // Anyone with data-qo-open or href="#quick-order" triggers it
@@ -77,6 +144,7 @@
 
   function close() {
     if (!modal) return;
+    acClose();
     modal.setAttribute('aria-hidden', 'true');
     modal.classList.remove('is-open');
     document.body.style.overflow = '';
@@ -211,6 +279,209 @@
   function hideAlert() {
     alertEl.setAttribute('hidden', '');
     alertSkusEl.innerHTML = '';
+  }
+
+  // ===========================================================================
+  // TC-092 — SKU typeahead / autocomplete
+  // ---------------------------------------------------------------------------
+  // A single shared dropdown (#pm-qo-ac) is repositioned under whichever
+  // .pm-qo__sku input is active, so it works with rows cloned at runtime.
+  // ===========================================================================
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  // Format a Shopify price. suggest.json gives an already-formatted `price`
+  // string (e.g. "$1,299.00"); fall back to cents → "$x.xx" if it's numeric.
+  function acPrice(p) {
+    if (p == null || p === '') return '';
+    if (typeof p === 'string') return p;
+    var n = Number(p);
+    if (!isFinite(n)) return '';
+    // Heuristic: integers >= 1000 are almost certainly cents.
+    if (Number.isInteger(n) && n >= 1000) n = n / 100;
+    return '$' + n.toFixed(2);
+  }
+
+  // From a product's variants, pick the one whose SKU best matches `term`
+  // (case-insensitive contains). Falls back to the first variant's SKU.
+  function bestVariantSku(product, term) {
+    var variants = (product && product.variants) || [];
+    var t = (term || '').toLowerCase();
+    var firstSku = '';
+    for (var i = 0; i < variants.length; i++) {
+      var sku = (variants[i] && variants[i].sku) ? String(variants[i].sku) : '';
+      if (!sku) continue;
+      if (!firstSku) firstSku = sku;
+      if (sku.toLowerCase().indexOf(t) !== -1) return sku;
+    }
+    return firstSku;
+  }
+
+  // Debounced input handler — anchors the dropdown to `input` and queries.
+  function acOnInput(input) {
+    acInput = input;
+    var term = (input.value || '').trim();
+    if (term.length < AC_MIN) { acClose(); return; }
+    if (acTimer) clearTimeout(acTimer);
+    var seq = ++acSeq;            // claim a sequence number for this keystroke
+    acTimer = setTimeout(function () { acFetch(term, seq, input); }, AC_DEBOUNCE);
+  }
+
+  // Query predictive search. Same endpoint/fields lookupSku uses, so SKUs match.
+  function acFetch(term, seq, input) {
+    var url = '/search/suggest.json?q=' + encodeURIComponent(term) +
+              '&resources[type]=product&resources[limit]=6' +
+              '&resources[options][unavailable_products]=last' +
+              '&resources[options][fields]=variants.sku,variants.barcode,title';
+    fetch(url, { headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        // Stale-request guard: ignore if a newer keystroke superseded this one,
+        // the user switched inputs, or the value changed since we fired.
+        if (seq !== acSeq) return;
+        if (input !== acInput) return;
+        if ((input.value || '').trim() !== term) return;
+
+        var products = (((data || {}).resources || {}).results || {}).products || [];
+        acItems = products.map(function (p) {
+          return {
+            sku:   bestVariantSku(p, term),
+            title: p.title || '',
+            image: p.image || (p.featured_image && p.featured_image.url) || '',
+            price: acPrice(p.price),
+            url:   p.url || '',
+            handle: p.handle || ''
+          };
+        }).filter(function (it) { return it.sku; });
+
+        if (!acItems.length) { acClose(); return; }
+        acRender(term);
+        acOpen();
+      })
+      .catch(function () { /* network error → silently leave dropdown as-is */ });
+  }
+
+  function acRender(term) {
+    var lower = (term || '').toLowerCase();
+    acActive = -1;
+    var html = acItems.map(function (it, i) {
+      // Highlight the matched substring of the SKU.
+      var skuHtml = esc(it.sku);
+      var idx = it.sku.toLowerCase().indexOf(lower);
+      if (idx !== -1 && lower) {
+        skuHtml = esc(it.sku.slice(0, idx)) +
+                  '<mark class="pm-qo__ac-mark">' + esc(it.sku.slice(idx, idx + lower.length)) + '</mark>' +
+                  esc(it.sku.slice(idx + lower.length));
+      }
+      var thumb = it.image
+        ? '<span class="pm-qo__ac-thumb"><img src="' + esc(it.image) + '" alt="" loading="lazy"></span>'
+        : '<span class="pm-qo__ac-thumb pm-qo__ac-thumb--empty"></span>';
+      var price = it.price ? '<span class="pm-qo__ac-price">' + esc(it.price) + '</span>' : '';
+      return '<div class="pm-qo__ac-item" role="option" id="pm-qo-ac-opt-' + i + '" data-index="' + i + '" aria-selected="false">' +
+               thumb +
+               '<span class="pm-qo__ac-main">' +
+                 '<span class="pm-qo__ac-sku">' + skuHtml + '</span>' +
+                 '<span class="pm-qo__ac-title">' + esc(it.title) + '</span>' +
+               '</span>' +
+               price +
+             '</div>';
+    }).join('');
+    acEl.innerHTML = html;
+  }
+
+  function acOpen() {
+    if (!acItems.length) return;
+    acEl.removeAttribute('hidden');
+    acPosition();
+    if (acInput) acInput.setAttribute('aria-expanded', 'true');
+  }
+
+  function acClose() {
+    if (acTimer) { clearTimeout(acTimer); acTimer = null; }
+    acSeq++; // invalidate any in-flight request so its response is ignored
+    acEl.setAttribute('hidden', '');
+    acEl.innerHTML = '';
+    acItems = [];
+    acActive = -1;
+    if (acInput) {
+      acInput.removeAttribute('aria-activedescendant');
+      acInput.removeAttribute('aria-expanded');
+    }
+    acInput = null;
+  }
+
+  // Position the shared dropdown directly under the active input. Both live
+  // inside .pm-qo__panel (the offsetParent), so we use offset coordinates.
+  function acPosition() {
+    if (!acInput) return;
+    // #pm-qo-ac is appended to <body> and position:fixed, so anchor it with
+    // raw viewport coordinates (getBoundingClientRect is already viewport-based).
+    var r = acInput.getBoundingClientRect();
+    acEl.style.top = (r.bottom + 4) + 'px';
+    acEl.style.left = r.left + 'px';
+    acEl.style.width = r.width + 'px';
+  }
+
+  function acSetActive(i) {
+    var opts = acEl.querySelectorAll('.pm-qo__ac-item');
+    if (acActive >= 0 && opts[acActive]) {
+      opts[acActive].classList.remove('is-active');
+      opts[acActive].setAttribute('aria-selected', 'false');
+    }
+    acActive = i;
+    if (i >= 0 && opts[i]) {
+      opts[i].classList.add('is-active');
+      opts[i].setAttribute('aria-selected', 'true');
+      if (acInput) acInput.setAttribute('aria-activedescendant', 'pm-qo-ac-opt-' + i);
+      // Keep the highlighted row visible if the list scrolls.
+      if (opts[i].scrollIntoView) opts[i].scrollIntoView({ block: 'nearest' });
+    } else if (acInput) {
+      acInput.removeAttribute('aria-activedescendant');
+    }
+  }
+
+  function acOnKeydown(e) {
+    var open = acInput && !acEl.hasAttribute('hidden') && acItems.length;
+    if (e.key === 'Escape') {
+      if (open) { acClose(); e.stopPropagation(); e.preventDefault(); }
+      return;
+    }
+    if (!open) return;
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      acSetActive((acActive + 1) % acItems.length);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      acSetActive((acActive - 1 + acItems.length) % acItems.length);
+    } else if (e.key === 'Enter') {
+      if (acActive >= 0) {
+        e.preventDefault();
+        acSelect(acActive);
+      }
+      // No highlight → let Enter fall through (e.g. native form behaviour).
+    } else if (e.key === 'Tab') {
+      acClose(); // tabbing away dismisses the list
+    }
+  }
+
+  // Fill the chosen SKU into the anchored input and close the dropdown.
+  function acSelect(i) {
+    if (i < 0 || i >= acItems.length || !acInput) return;
+    var input = acInput;
+    input.value = acItems[i].sku;
+    acClose();
+    input.focus();
+    // Re-run existing validation/state without re-triggering the typeahead:
+    // a plain input event keeps hideAlert()/updateState() in sync, and since
+    // the value now exactly matches a real SKU the next acFetch (if any) is
+    // harmless. Suppress the immediate re-open by clearing the debounce.
+    if (acTimer) { clearTimeout(acTimer); acTimer = null; }
+    updateState();
+    hideAlert();
   }
 
   /**
