@@ -306,10 +306,25 @@
     return '$' + n.toFixed(2);
   }
 
-  // From a product's variants, pick the one whose SKU best matches `term`
+  // suggest.json does NOT include variant SKUs — its `variants` array comes back
+  // empty — so we resolve them with a second hop to /products/<handle>.js, the
+  // same trick lookupSku uses. Cached by handle so repeated keystrokes that
+  // re-surface the same product don't refetch.
+  var acVariantCache = {};
+  function acLoadVariants(handle) {
+    if (!handle) return Promise.resolve([]);
+    if (acVariantCache[handle]) return acVariantCache[handle];
+    var pr = fetch('/products/' + handle + '.js', { headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (full) { return (full && full.variants) || []; })
+      .catch(function () { return []; });
+    acVariantCache[handle] = pr;
+    return pr;
+  }
+
+  // From a resolved variants array, pick the one whose SKU best matches `term`
   // (case-insensitive contains). Falls back to the first variant's SKU.
-  function bestVariantSku(product, term) {
-    var variants = (product && product.variants) || [];
+  function bestVariantSku(variants, term) {
     var t = (term || '').toLowerCase();
     var firstSku = '';
     for (var i = 0; i < variants.length; i++) {
@@ -331,8 +346,12 @@
     acTimer = setTimeout(function () { acFetch(term, seq, input); }, AC_DEBOUNCE);
   }
 
-  // Query predictive search. Same endpoint/fields lookupSku uses, so SKUs match.
+  // Query predictive search (matches SKUs via the variants.sku field), then a
+  // second hop per candidate to resolve the actual SKU string.
   function acFetch(term, seq, input) {
+    function stale() {
+      return seq !== acSeq || input !== acInput || (input.value || '').trim() !== term;
+    }
     var url = '/search/suggest.json?q=' + encodeURIComponent(term) +
               '&resources[type]=product&resources[limit]=6' +
               '&resources[options][unavailable_products]=last' +
@@ -340,27 +359,30 @@
     fetch(url, { headers: { Accept: 'application/json' } })
       .then(function (r) { return r.json(); })
       .then(function (data) {
-        // Stale-request guard: ignore if a newer keystroke superseded this one,
-        // the user switched inputs, or the value changed since we fired.
-        if (seq !== acSeq) return;
-        if (input !== acInput) return;
-        if ((input.value || '').trim() !== term) return;
-
+        if (stale()) return;
         var products = (((data || {}).resources || {}).results || {}).products || [];
-        acItems = products.map(function (p) {
-          return {
-            sku:   bestVariantSku(p, term),
-            title: p.title || '',
-            image: p.image || (p.featured_image && p.featured_image.url) || '',
-            price: acPrice(p.price),
-            url:   p.url || '',
-            handle: p.handle || ''
-          };
-        }).filter(function (it) { return it.sku; });
-
-        if (!acItems.length) { acClose(); return; }
-        acRender(term);
-        acOpen();
+        if (!products.length) { acClose(); return; }
+        // suggest.json has no variant SKUs → resolve each candidate's SKU from
+        // its product JSON (cached) before building the suggestion list.
+        return Promise.all(products.slice(0, 6).map(function (p) {
+          var handle = p.handle || (p.url ? p.url.split('?')[0].replace(/^.*\/products\//, '') : '');
+          return acLoadVariants(handle).then(function (variants) {
+            return {
+              sku:    bestVariantSku(variants, term),
+              title:  p.title || '',
+              image:  (p.featured_image && p.featured_image.url) || (typeof p.image === 'string' ? p.image : '') || '',
+              price:  acPrice(p.price),
+              url:    p.url || '',
+              handle: handle
+            };
+          });
+        })).then(function (items) {
+          if (stale()) return;
+          acItems = items.filter(function (it) { return it.sku; });
+          if (!acItems.length) { acClose(); return; }
+          acRender(term);
+          acOpen();
+        });
       })
       .catch(function () { /* network error → silently leave dropdown as-is */ });
   }
