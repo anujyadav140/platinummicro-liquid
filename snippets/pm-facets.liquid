@@ -414,18 +414,33 @@
       they behave like the other facets: live count, stay checked when active,
       and auto-disable at 0. Falls back to count 0 / disabled when the tag has
       no matches in the current result set. {%- endcomment -%}
-  {%- assign _os_count = 0 -%}{%- assign _os_active = false -%}{%- assign _os_value = 'on-sale' -%}
-  {%- assign _ft_count = 0 -%}{%- assign _ft_active = false -%}{%- assign _ft_value = 'featured' -%}
+  {%- comment -%}
+      Shopify caps a filter at 100 values, so on a store with 100+ tags the
+      on-sale/featured values can be absent from _f_promo.values even though the
+      filter works. So: pull count + "is a listed value" from .values, but take
+      the ACTIVE (checked) state from .active_values too — that's reliable
+      regardless of the cap. Count + auto-disable only render when the value is
+      actually listed (found); otherwise the checkbox stays clickable.
+      Listing on-sale/featured reliably = set the Tag filter in Search &
+      Discovery to those specific tags (then they're always in .values).
+  {%- endcomment -%}
+  {%- assign _os_found = false -%}{%- assign _os_count = 0 -%}{%- assign _os_active = false -%}
+  {%- assign _ft_found = false -%}{%- assign _ft_count = 0 -%}{%- assign _ft_active = false -%}
   {%- if _f_promo -%}
     {%- for v in _f_promo.values -%}
       {%- assign _vv = v.value | downcase -%}
-      {%- if _vv == 'on-sale'  -%}{%- assign _os_count = v.count -%}{%- assign _os_active = v.active -%}{%- assign _os_value = v.value -%}{%- endif -%}
-      {%- if _vv == 'featured' -%}{%- assign _ft_count = v.count -%}{%- assign _ft_active = v.active -%}{%- assign _ft_value = v.value -%}{%- endif -%}
+      {%- if _vv == 'on-sale'  -%}{%- assign _os_found = true -%}{%- assign _os_count = v.count -%}{%- assign _os_active = v.active -%}{%- endif -%}
+      {%- if _vv == 'featured' -%}{%- assign _ft_found = true -%}{%- assign _ft_count = v.count -%}{%- assign _ft_active = v.active -%}{%- endif -%}
+    {%- endfor -%}
+    {%- for v in _f_promo.active_values -%}
+      {%- assign _av = v.value | downcase -%}
+      {%- if _av == 'on-sale'  -%}{%- assign _os_active = true -%}{%- endif -%}
+      {%- if _av == 'featured' -%}{%- assign _ft_active = true -%}{%- endif -%}
     {%- endfor -%}
   {%- endif -%}
-  {%- assign _os_dis = false -%}{%- if _os_count == 0 and _os_active == false -%}{%- assign _os_dis = true -%}{%- endif -%}
-  {%- assign _ft_dis = false -%}{%- if _ft_count == 0 and _ft_active == false -%}{%- assign _ft_dis = true -%}{%- endif -%}
-  <details class="pm-facet" data-pm-facet>
+  {%- assign _os_dis = false -%}{%- if _os_found and _os_count == 0 and _os_active == false -%}{%- assign _os_dis = true -%}{%- endif -%}
+  {%- assign _ft_dis = false -%}{%- if _ft_found and _ft_count == 0 and _ft_active == false -%}{%- assign _ft_dis = true -%}{%- endif -%}
+  <details class="pm-facet" data-pm-facet {% if _os_active or _ft_active %}open{% endif %}>
     <summary class="pm-facet__summary">
       <span>Promotions</span>
       <svg class="pm-facet__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
@@ -434,16 +449,16 @@
       <ul class="pm-facet__values">
         <li>
           <label class="pm-facet__opt {% if _os_dis %}is-disabled{% endif %}">
-            <input type="checkbox" name="filter.p.tag" value="{{ _os_value }}" {% if _os_active %}checked{% endif %} {% if _os_dis %}disabled{% endif %}>
+            <input type="checkbox" name="filter.p.tag" value="on-sale" {% if _os_active %}checked{% endif %} {% if _os_dis %}disabled{% endif %}>
             <span class="pm-facet__opt-label">On sale</span>
-            <span class="pm-facet__opt-count">{{ _os_count }}</span>
+            {%- if _os_found -%}<span class="pm-facet__opt-count">{{ _os_count }}</span>{%- endif -%}
           </label>
         </li>
         <li>
           <label class="pm-facet__opt {% if _ft_dis %}is-disabled{% endif %}">
-            <input type="checkbox" name="filter.p.tag" value="{{ _ft_value }}" {% if _ft_active %}checked{% endif %} {% if _ft_dis %}disabled{% endif %}>
+            <input type="checkbox" name="filter.p.tag" value="featured" {% if _ft_active %}checked{% endif %} {% if _ft_dis %}disabled{% endif %}>
             <span class="pm-facet__opt-label">Featured</span>
-            <span class="pm-facet__opt-count">{{ _ft_count }}</span>
+            {%- if _ft_found -%}<span class="pm-facet__opt-count">{{ _ft_count }}</span>{%- endif -%}
           </label>
         </li>
       </ul>
