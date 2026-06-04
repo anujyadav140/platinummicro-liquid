@@ -36,6 +36,13 @@
       delete btn.dataset.origLabel;
       if (btn.dataset.busy !== '1') btn.disabled = false;
     }
+    // PDP: when the cart holds every available unit, light up "Request a Quote"
+    // (terracotta) as the signifier that the buyer can order MORE than stock via
+    // a quote. (PLP cards have no inline quote button for in-stock items.)
+    if (btn.hasAttribute('data-pm-pdp-add')) {
+      var q = document.querySelector('[data-pm-pdp-quote]');
+      if (q) q.classList.toggle('is-quote-wanted', maxed);
+    }
   }
 
   // Proactive: disable any capped add button whose variant is already maxed

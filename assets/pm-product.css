@@ -703,6 +703,18 @@
   border-color: var(--pm-ink-500);
   background: var(--pm-ink-100);
 }
+/* TC-084: stock maxed out → recolor "Request a Quote" terracotta (same size, no
+   layout shift) so it reads as the way to order more than what's in stock. */
+.pm-pdp__cta--ghost.is-quote-wanted {
+  background: var(--pm-terracotta);
+  border-color: var(--pm-terracotta);
+  color: #fff;
+}
+.pm-pdp__cta--ghost.is-quote-wanted:hover {
+  background: var(--pm-terracotta-light);
+  border-color: var(--pm-terracotta-light);
+}
+.pm-pdp__cta--ghost.is-quote-wanted svg { stroke: #fff; }
 .pm-pdp__cta--quote {
   background: var(--pm-terracotta);
   color: #fff;
