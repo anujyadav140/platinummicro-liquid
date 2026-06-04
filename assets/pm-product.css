@@ -686,6 +686,10 @@
 }
 .pm-pdp__cta--cart:hover { background: var(--pm-terracotta-light); }
 .pm-pdp__cta--cart[disabled] { opacity: 0.7; cursor: wait; }
+/* TC-084: maxed state (cart holds every available unit) — overrides the loading
+   [disabled] cursor above (placed after it so equal-specificity rules win). */
+.pm-pdp__cta--cart.is-maxed { opacity: 0.6; cursor: not-allowed; }
+.pm-pdp__cta--cart.is-maxed svg { display: none; }
 /* Quotify wrapper form: invisible to layout so the button still flows in the
    buybox CTA stack exactly as before. */
 .pm-quotify-form { display: contents; }

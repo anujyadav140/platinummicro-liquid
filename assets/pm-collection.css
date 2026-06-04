@@ -504,6 +504,9 @@
 }
 .pm-pcard__add:hover:not([disabled]) { background: var(--pm-terracotta-light); }
 .pm-pcard__add[disabled] { opacity: 0.55; cursor: not-allowed; background: var(--pm-ink-300); }
+/* TC-084: "+ Add" locked because the cart already holds all available units. */
+.pm-pcard__add.is-maxed { background: var(--pm-ink-300); opacity: 0.7; cursor: not-allowed; }
+.pm-pcard__add.is-maxed svg { display: none; }
 
 /* OOS variant — same terracotta, longer label.
    Slightly tighter padding + smaller text so "Add to Quote" doesn't

@@ -63,11 +63,17 @@
       </div>
 
       {%- if product.available -%}
+        {%- comment -%} TC-084: expose the inventory cap (only when stock is tracked
+            and oversell is denied) so pm-add-to-cart.js can disable "+ Add" once the
+            cart already holds every available unit. {%- endcomment -%}
+        {%- assign _maxq = '' -%}
+        {%- if _v.inventory_management == 'shopify' and _v.inventory_policy == 'deny' -%}{%- assign _maxq = _v.inventory_quantity -%}{%- endif -%}
         <button
           type="button"
           class="pm-pcard__add"
           data-pm-add
           data-variant-id="{{ _v.id }}"
+          {% if _maxq != '' %}data-max-qty="{{ _maxq }}"{% endif %}
           aria-label="Add {{ product.title | escape }} to cart"
         >
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
