@@ -19,6 +19,25 @@
   var MAXED = 'Already in cart';
   var labelOf = function (btn) { return btn.querySelector('span'); };
 
+  // Inventory caps (variant id → available qty), stashed from data-max-qty
+  // buttons and persisted for the session so the cart drawer — whose /cart.js
+  // data has no inventory — can disable its + UP FRONT on capped lines.
+  var CAP_KEY = 'pm:invcap:v1';
+  var capStore = {};
+  try { capStore = JSON.parse(sessionStorage.getItem(CAP_KEY) || '{}') || {}; } catch (e) {}
+  function setCap(vid, cap) {
+    if (!vid || isNaN(cap) || cap < 1) return;
+    vid = String(vid);
+    if (capStore[vid] !== cap) {
+      capStore[vid] = cap;
+      try { sessionStorage.setItem(CAP_KEY, JSON.stringify(capStore)); } catch (e) {}
+    }
+  }
+  function getCap(vid) {
+    var c = capStore[String(vid)];
+    return typeof c === 'number' ? c : null;
+  }
+
   function setMaxed(btn, maxed) {
     var lbl = labelOf(btn);
     if (maxed) {
@@ -49,6 +68,10 @@
   function syncMaxed() {
     var btns = document.querySelectorAll('[data-pm-add][data-max-qty]');
     if (!btns.length) return;
+    // Stash every known cap so the drawer can disable + proactively.
+    btns.forEach(function (b) {
+      setCap(parseInt(b.getAttribute('data-variant-id'), 10), parseInt(b.getAttribute('data-max-qty'), 10));
+    });
     fetch('/cart.js', { headers: { Accept: 'application/json' } })
       .then(function (r) { return r.json(); })
       .then(function (cart) {
@@ -131,5 +154,5 @@
   document.addEventListener('pm:cart-changed', syncMaxed); // cart drawer +/- , removes, adds
   document.addEventListener('pm:plp-updated', syncMaxed);  // facet/sort grid swaps re-render cards
 
-  window.PmAddToCart = { syncMaxed: syncMaxed };
+  window.PmAddToCart = { syncMaxed: syncMaxed, getCap: getCap };
 })();

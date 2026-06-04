@@ -162,6 +162,7 @@
       var node = buildLineNode({
         key:        item.key,
         kind:       'shopify',
+        variantId:  item.variant_id,
         url:        item.url,
         title:      item.product_title || item.title,
         imageUrl:   item.image,
@@ -233,11 +234,17 @@
     node.querySelector('.pm-cart__item-price').textContent = opts.lineTotal || '';
     node.querySelector('.pm-cart__qty-input').value = opts.quantity || 1;
 
-    // TC-085: disable + once this line is known to be at its available cap.
+    // TC-085: disable + when this line is at its available cap. Prefer the cap
+    // learned reactively from a capped change; fall back to the cap stashed from
+    // PDP/collection data-max-qty so + is disabled UP FRONT (not after a click).
     if (opts.kind === 'shopify') {
       var cap = maxedCap[opts.key];
+      if (typeof cap !== 'number' && window.PmAddToCart && window.PmAddToCart.getCap) {
+        var _g = window.PmAddToCart.getCap(opts.variantId);
+        if (typeof _g === 'number') cap = _g;
+      }
       var incBtn = node.querySelector('[data-cart-inc]');
-      if (incBtn && typeof cap === 'number' && (opts.quantity || 1) >= cap) {
+      if (incBtn && typeof cap === 'number' && cap >= 1 && (opts.quantity || 1) >= cap) {
         incBtn.disabled = true;
         incBtn.setAttribute('aria-disabled', 'true');
         incBtn.setAttribute('title', 'No more available in stock');
