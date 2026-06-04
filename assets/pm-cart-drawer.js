@@ -11,6 +11,8 @@
   // TC-085: cart line key → real available cap, learned when the server caps a
   // requested qty (the drawer's /cart.js data doesn't expose inventory).
   var maxedCap = {};
+  // Per-line qty stepper state — robust against rapid-click races.
+  var qPending = {}, qInflight = {}, qTimers = {};
 
   function init() {
     if (inited) return;
@@ -243,6 +245,7 @@
         var _g = window.PmAddToCart.getCap(opts.variantId);
         if (typeof _g === 'number') cap = _g;
       }
+      if (typeof cap === 'number' && cap >= 1) node.setAttribute('data-cart-cap', cap);
       var incBtn = node.querySelector('[data-cart-inc]');
       if (incBtn && typeof cap === 'number' && cap >= 1 && (opts.quantity || 1) >= cap) {
         incBtn.disabled = true;
@@ -317,43 +320,59 @@
     }
   }
 
-  function updateLine(key, qty) {
-    // Update the qty input + line price + counts immediately, then
-    // sync with the server. Debounce coalesces rapid +/- spam.
-    var li = itemsEl.querySelector('[data-cart-item][data-cart-key="' + key + '"]');
-    if (li) li.querySelector('.pm-cart__qty-input').value = qty;
-    optimisticHeader();
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(function () {
-      fetch('/cart/change.js', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({ id: key, quantity: qty })
+  function applyDrawerCart(cart) {
+    render(cart);
+    if (window.PmAddToCart && window.PmAddToCart.syncMaxed) window.PmAddToCart.syncMaxed();
+  }
+
+  // Send a line's latest pending qty to Shopify. One request per line at a time
+  // (qInflight); when it returns, if the user kept clicking (qPending moved on)
+  // we send the NEWER value instead of rendering this now-stale response — that
+  // is what stops the number bouncing (e.g. 14→18→15) during rapid +/- spam.
+  function flushLine(key) {
+    if (qInflight[key]) return;
+    var sent = qPending[key];
+    if (sent == null) return;
+    qInflight[key] = true;
+    fetch('/cart/change.js', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ id: key, quantity: sent })
+    })
+      .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+      .then(function (res) {
+        qInflight[key] = false;
+        function settle(cart) {
+          var ln = (cart.items || []).filter(function (i) { return i.key === key; })[0];
+          var got = ln ? ln.quantity : 0;
+          if (got < sent) maxedCap[key] = got; else delete maxedCap[key];
+          // User kept clicking while this was in flight → send the newest value.
+          if (qPending[key] !== sent && qPending[key] != null) { flushLine(key); return; }
+          qPending[key] = got;            // settle on the server's (capped) value
+          applyDrawerCart(cart);
+        }
+        if (res.ok && res.body && res.body.items) settle(res.body);
+        else {
+          // 422 over-cap (no body) → re-sync from the authoritative cart so the
+          // other lines don't vanish; learn the real cap.
+          fetch('/cart.js', { headers: { Accept: 'application/json' } })
+            .then(function (r) { return r.json(); }).then(settle).catch(function () {});
+        }
       })
-        .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
-        .then(function (res) {
-          if (res.ok && res.body && res.body.items) {
-            // Normal change (Shopify may have capped qty below what we asked).
-            var ln = res.body.items.filter(function (i) { return i.key === key; })[0];
-            var got = ln ? ln.quantity : 0;
-            if (got < qty) maxedCap[key] = got; else delete maxedCap[key];
-            render(res.body);
-            if (window.PmAddToCart && window.PmAddToCart.syncMaxed) window.PmAddToCart.syncMaxed();
-          } else {
-            // Over available stock: Shopify returns 422 with NO cart body. Rendering
-            // that would wipe every other line, so re-sync from the real cart and
-            // learn the cap from the line's actual (capped) quantity.
-            fetch('/cart.js', { headers: { Accept: 'application/json' } })
-              .then(function (r) { return r.json(); })
-              .then(function (cart) {
-                var ln = (cart.items || []).filter(function (i) { return i.key === key; })[0];
-                maxedCap[key] = ln ? ln.quantity : 0;
-                render(cart);
-                if (window.PmAddToCart && window.PmAddToCart.syncMaxed) window.PmAddToCart.syncMaxed();
-              }).catch(function () {});
-          }
-        });
-    }, 120);
+      .catch(function () { qInflight[key] = false; });
+  }
+
+  function updateLine(key, qty) {
+    // Clamp the optimistic value to a known cap so it can't shoot past stock.
+    var li = itemsEl.querySelector('[data-cart-item][data-cart-key="' + key + '"]');
+    var cap = li ? parseInt(li.getAttribute('data-cart-cap'), 10) : NaN;
+    if (!isNaN(cap) && cap >= 1 && qty > cap) qty = cap;
+    if (typeof maxedCap[key] === 'number' && qty > maxedCap[key]) qty = maxedCap[key];
+    qPending[key] = qty;
+    if (li) li.querySelector('.pm-cart__qty-input').value = qty; // optimistic
+    optimisticHeader();
+    clearTimeout(qTimers[key]);
+    qTimers[key] = setTimeout(function () { flushLine(key); }, 220);
   }
 
   function removeLine(key) {
