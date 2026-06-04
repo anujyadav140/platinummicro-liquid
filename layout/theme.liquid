@@ -87,11 +87,22 @@
           window.location.replace('/customer_authentication/login?return_to=%2F');
           return;
         }
-        // /pages/<known> → pm-404.liquid will swap in the static body via JS.
-        // Hide the body until that swap completes so the 404 placeholder
-        // never flashes.
-        if (/^\/pages\/(about|brands|contact|shipping-returns|site-map|social-responsibility|order-verification|compare|account)(?:[\/?#]|$)/i.test(p)) {
+        // /pages/<known> → pm-404.liquid renders the static body inside a
+        // hidden pool (the 404 page is globally cached, so request.path can't be
+        // trusted server-side; we resolve the handle client-side). Reveal the
+        // matching body via CSS injected RIGHT NOW — in <head>, before the body
+        // paints — so neither the "404" placeholder nor a blank gap flashes
+        // (TC-083). The body-end script then promotes it + fixes the <title>.
+        var spm = p.match(/^\/pages\/(about|brands|contact|shipping-returns|site-map|social-responsibility|order-verification|compare|account)(?:[\/?#]|$)/i);
+        if (spm) {
           document.documentElement.dataset.pmStaticPending = '1';
+          var sh = spm[1].toLowerCase();
+          var st = document.createElement('style');
+          st.textContent = '#pm-404-default{display:none!important}'
+            + '#pm-static-pool{display:block!important}'
+            + '#pm-static-pool>[data-handle]{display:none!important}'
+            + '#pm-static-pool>[data-handle="' + sh + '"]{display:block!important}';
+          (document.head || document.documentElement).appendChild(st);
         }
       })();
     </script>
