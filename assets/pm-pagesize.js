@@ -43,11 +43,16 @@
   }
 
   function init() {
+    // /search runs its own client-side sort over the grid (pm-plp.js), so this
+    // virtual paginator would clobber it — leave search alone.
+    if (/^\/search/.test(window.location.pathname)) return;
     wrap = document.getElementById('pm-plp-grid-wrap');
     var g = gridEl();
     if (!wrap || !g) return;
-    total = parseInt(g.getAttribute('data-pm-total'), 10);
-    if (isNaN(total)) total = g.children.length;
+    // Only opt-in collection PLPs render data-pm-total.
+    var totalAttr = g.getAttribute('data-pm-total');
+    if (totalAttr === null) return;
+    total = parseInt(totalAttr, 10) || 0;
     serverSize = parseInt(g.getAttribute('data-pm-server-size'), 10) || 24;
     pageSize = readSelectedSize();
     var sel = document.getElementById('pm-plp-pagesize');
