@@ -39,9 +39,8 @@
     // PDP: when the cart holds every available unit, light up "Request a Quote"
     // (terracotta) as the signifier that the buyer can order MORE than stock via
     // a quote. (PLP cards have no inline quote button for in-stock items.)
-    if (btn.hasAttribute('data-pm-pdp-add')) {
-      var q = document.querySelector('[data-pm-pdp-quote]');
-      if (q) q.classList.toggle('is-quote-wanted', maxed);
+    if (btn.hasAttribute('data-pm-pdp-add') && typeof window.pmUpdatePdpQuoteSignal === 'function') {
+      window.pmUpdatePdpQuoteSignal();
     }
   }
 

@@ -323,17 +323,28 @@
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ id: key, quantity: qty })
       })
-        .then(function (r) { return r.json(); })
-        .then(function (cart) {
-          // TC-085: if the server gave us fewer than we asked for, that count IS
-          // the real available cap for this line — remember it so + disables. A
-          // change that wasn't capped (e.g. a decrement) clears any prior cap.
-          var ln = (cart.items || []).filter(function (i) { return i.key === key; })[0];
-          var got = ln ? ln.quantity : 0;
-          if (got < qty) maxedCap[key] = got; else delete maxedCap[key];
-          render(cart);
-          // Re-evaluate add buttons (qty up/down may cross the inventory cap).
-          if (window.PmAddToCart && window.PmAddToCart.syncMaxed) window.PmAddToCart.syncMaxed();
+        .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+        .then(function (res) {
+          if (res.ok && res.body && res.body.items) {
+            // Normal change (Shopify may have capped qty below what we asked).
+            var ln = res.body.items.filter(function (i) { return i.key === key; })[0];
+            var got = ln ? ln.quantity : 0;
+            if (got < qty) maxedCap[key] = got; else delete maxedCap[key];
+            render(res.body);
+            if (window.PmAddToCart && window.PmAddToCart.syncMaxed) window.PmAddToCart.syncMaxed();
+          } else {
+            // Over available stock: Shopify returns 422 with NO cart body. Rendering
+            // that would wipe every other line, so re-sync from the real cart and
+            // learn the cap from the line's actual (capped) quantity.
+            fetch('/cart.js', { headers: { Accept: 'application/json' } })
+              .then(function (r) { return r.json(); })
+              .then(function (cart) {
+                var ln = (cart.items || []).filter(function (i) { return i.key === key; })[0];
+                maxedCap[key] = ln ? ln.quantity : 0;
+                render(cart);
+                if (window.PmAddToCart && window.PmAddToCart.syncMaxed) window.PmAddToCart.syncMaxed();
+              }).catch(function () {});
+          }
         });
     }, 120);
   }

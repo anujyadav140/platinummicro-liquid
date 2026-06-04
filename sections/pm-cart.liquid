@@ -850,6 +850,22 @@
       return r.json().then(function (j) { return { ok: r.ok, body: j }; });
     }).then(function (res) {
       inflight[line] = false;
+      if (!res.ok || !res.body.items) {
+        // Over available stock → Shopify rejects with 422 and NO cart body.
+        // Re-sync this line from the authoritative cart so the row isn't wiped,
+        // and pin the real cap so + disables.
+        fetch('/cart.js', { headers: { Accept: 'application/json' } })
+          .then(function (r) { return r.json(); })
+          .then(function (cart) {
+            var it = cart.items && cart.items[parseInt(line, 10) - 1];
+            var realQty = it ? it.quantity : 0;
+            pendingQty[line] = realQty;
+            var cw = getRow(line) && getRow(line).querySelector('.pm-qty');
+            if (cw && realQty > 0) cw.setAttribute('data-cart-max', realQty);
+            refreshRowDisplay(line);
+          }).catch(function () {});
+        return;
+      }
       var serverItem = res.body.items && res.body.items[parseInt(line, 10) - 1];
       var serverQty = serverItem ? serverItem.quantity : 0;
       // TC-085: a capped increment means serverQty IS the real available max —

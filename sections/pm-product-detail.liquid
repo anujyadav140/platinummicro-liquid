@@ -802,15 +802,45 @@
     frame.style.cursor = 'zoom-in';
   }
 
-  // ── Quantity ± buttons (also feeds the Add-to-Cart quantity) ──
+  // ── Quantity ± buttons — capped at available stock; signal Request-a-Quote ──
   var qty = document.getElementById('pm-pdp-qty');
+  var pdpAddBtn   = document.querySelector('[data-pm-pdp-add]');
+  var pdpQuoteBtn = document.querySelector('[data-pm-pdp-quote]');
+  var pdpIncBtn   = document.querySelector('[data-pm-pdp-qty="1"]');
+
+  // Single owner of the "orange Request a Quote" signal: ON when the shopper has
+  // selected every available unit (stepper at the cap) OR the cart already holds
+  // all available units (add button maxed). data-max-qty = available stock.
+  window.pmUpdatePdpQuoteSignal = function () {
+    if (!pdpQuoteBtn) return;
+    var max = pdpAddBtn ? parseInt(pdpAddBtn.getAttribute('data-max-qty'), 10) : NaN;
+    var atStepMax = !isNaN(max) && max >= 1 && (parseInt(qty && qty.value, 10) || 1) >= max;
+    var cartMaxed = !!(pdpAddBtn && pdpAddBtn.classList.contains('is-maxed'));
+    pdpQuoteBtn.classList.toggle('is-quote-wanted', atStepMax || cartMaxed);
+  };
+
+  function clampPdpQty() {
+    if (!qty) return;
+    var max = pdpAddBtn ? parseInt(pdpAddBtn.getAttribute('data-max-qty'), 10) : NaN;
+    var v = Math.max(1, parseInt(qty.value, 10) || 1);
+    if (!isNaN(max) && max >= 1 && v > max) v = max;   // never exceed available stock
+    qty.value = v;
+    if (pdpIncBtn && !isNaN(max) && max >= 1) pdpIncBtn.disabled = v >= max;
+    window.pmUpdatePdpQuoteSignal();
+  }
+
   document.querySelectorAll('[data-pm-pdp-qty]').forEach(function (b) {
     b.addEventListener('click', function () {
       var d = parseInt(b.getAttribute('data-pm-pdp-qty'), 10) || 0;
-      var v = Math.max(1, (parseInt(qty.value, 10) || 1) + d);
-      qty.value = v;
+      qty.value = Math.max(1, (parseInt(qty.value, 10) || 1) + d);
+      clampPdpQty();
     });
   });
+  if (qty) {
+    qty.addEventListener('input', clampPdpQty);
+    qty.addEventListener('change', clampPdpQty);
+    clampPdpQty();
+  }
 
   // ── Variant selection (updates variant id, availability, image, price) ──
   var variantsEl = document.getElementById('pm-pdp-variants');
