@@ -81,10 +81,19 @@
     btn.disabled = true;
     if (lbl) lbl.textContent = 'Adding…';
 
+    // PDP "Add to Cart" honors the quantity stepper (#pm-pdp-qty); the card
+    // "+ Add" buttons always add 1. The stepper is already capped at available
+    // stock, so addQty never exceeds it.
+    var addQty = 1;
+    if (btn.hasAttribute('data-pm-pdp-add')) {
+      var qInput = document.getElementById('pm-pdp-qty');
+      addQty = Math.max(1, parseInt(qInput && qInput.value, 10) || 1);
+    }
+
     fetch('/cart/add.js', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ items: [{ id: parseInt(variantId, 10), quantity: 1 }] })
+      body: JSON.stringify({ items: [{ id: parseInt(variantId, 10), quantity: addQty }] })
     })
       .then(function (r) {
         return r.json().then(function (data) { return { ok: r.ok, data: data }; });
@@ -92,11 +101,13 @@
       .then(function (res) {
         btn.dataset.busy = '0';
         if (!res.ok) {
-          // Over the inventory cap (or otherwise rejected) → lock the button and
-          // tell the user why, instead of silently bouncing back to "Add".
+          // Over the inventory cap → lock the button. NOTE: /cart/add.js still
+          // PARTIAL-adds up to the cap on a 422, so refresh badges + drawer
+          // (silently — a non-opening source) to reflect whatever did get added.
           if (lbl) lbl.textContent = orig || 'Add';
           setMaxed(btn, true);
           syncMaxed();
+          document.dispatchEvent(new CustomEvent('pm:cart-changed', { detail: { source: 'cap' } }));
           return;
         }
         if (lbl) lbl.textContent = 'Added';
