@@ -81,10 +81,13 @@
                 </div>
 
                 <div class="pm-cart-row__controls">
-                  <div class="pm-qty">
+                  {%- comment -%} TC-085: cap the + stepper at available stock (tracked + oversell denied). {%- endcomment -%}
+                  {%- assign _cart_max = '' -%}
+                  {%- if item.variant.inventory_management == 'shopify' and item.variant.inventory_policy == 'deny' -%}{%- assign _cart_max = item.variant.inventory_quantity -%}{%- endif -%}
+                  <div class="pm-qty"{% if _cart_max != '' %} data-cart-max="{{ _cart_max }}"{% endif %}>
                     <button class="pm-qty-btn" data-line="{{ forloop.index }}" data-qty="{{ item.quantity | minus: 1 }}" aria-label="Decrease quantity">−</button>
                     <span data-cart-qty-display>{{ item.quantity }}</span>
-                    <button class="pm-qty-btn" data-line="{{ forloop.index }}" data-qty="{{ item.quantity | plus: 1 }}" aria-label="Increase quantity">+</button>
+                    <button class="pm-qty-btn" data-line="{{ forloop.index }}" data-qty="{{ item.quantity | plus: 1 }}" aria-label="Increase quantity"{% if _cart_max != '' and item.quantity >= _cart_max %} disabled{% endif %}>+</button>
                   </div>
                   <a href="{{ routes.cart_change_url }}?line={{ forloop.index }}&quantity=0" class="pm-cart-row__remove" data-cart-remove="{{ forloop.index }}">Remove</a>
                 </div>
@@ -795,6 +798,10 @@
     var btns = row.querySelectorAll('.pm-qty-btn');
     if (btns[0]) btns[0].setAttribute('data-qty', Math.max(0, qty - 1));
     if (btns[1]) btns[1].setAttribute('data-qty', qty + 1);
+    // TC-085: disable + once the line hits its available-stock cap (data-cart-max).
+    var _qwrap = row.querySelector('.pm-qty');
+    var _max = _qwrap ? parseInt(_qwrap.getAttribute('data-cart-max'), 10) : NaN;
+    if (btns[1] && !isNaN(_max)) btns[1].disabled = qty >= _max;
     refreshTotals();
   }
 
@@ -845,6 +852,13 @@
       inflight[line] = false;
       var serverItem = res.body.items && res.body.items[parseInt(line, 10) - 1];
       var serverQty = serverItem ? serverItem.quantity : 0;
+      // TC-085: a capped increment means serverQty IS the real available max —
+      // pin it so + disables even when Liquid's inventory_quantity was higher
+      // than what's actually sellable online.
+      if (serverQty < sentQty) {
+        var _capWrap = getRow(line) && getRow(line).querySelector('.pm-qty');
+        if (_capWrap) _capWrap.setAttribute('data-cart-max', serverQty);
+      }
       if (pendingQty[line] === sentQty) {
         if (serverQty !== pendingQty[line]) {
           pendingQty[line] = serverQty;
