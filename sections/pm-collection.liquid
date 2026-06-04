@@ -49,7 +49,8 @@
         <div class="pm-plp__control">
           <label for="pm-plp-pagesize" class="pm-plp__control-label">Show</label>
           {%- assign _page_sizes = '12,24,36,48' | split: ',' -%}
-          <select id="pm-plp-pagesize" name="page_size" data-pm-plp-control onchange="window.location.href = updateQueryStringParameter(window.location.href, 'page_size', this.value)">
+          {%- comment -%} TC-091: page size is client-side (Shopify can't change page size via URL); pm-pagesize.js paginates virtually. {%- endcomment -%}
+          <select id="pm-plp-pagesize" aria-label="Products per page">
             {%- for n in _page_sizes -%}
               {%- assign _n_int = n | times: 1 -%}
               <option value="{{ n }}"{% if per_page == _n_int %} selected{% endif %}>{{ n }}</option>
@@ -74,7 +75,7 @@
 
         <div id="pm-plp-grid-wrap" class="pm-plp__grid-wrap" data-pm-cols="{{ columns_d }}">
           {%- if collection.products.size > 0 -%}
-            <ul class="pm-plp__grid" data-pm-view-mode="grid">
+            <ul class="pm-plp__grid" data-pm-view-mode="grid" data-pm-total="{{ paginate.items }}" data-pm-server-size="{{ per_page }}">
               {%- for product in collection.products -%}
                 <li>{%- render 'pm-product-card', product: product -%}</li>
               {%- endfor -%}
