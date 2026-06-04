@@ -51,30 +51,43 @@
   {%- assign _brand_list = _vendors_raw -%}
 {%- endif -%}
 
-{%- comment -%} ── Derive price range from products on this page ───────────── {%- endcomment -%}
+{%- comment -%} ── Price range (TC-089) ─────────────────────────────────────────
+  Server-side INITIAL bounds only. Shopify's price filter exposes a
+  collection-wide `range_max` that never narrows with other filters and has NO
+  minimum, so it can't show the real range. We seed sensible bounds from this
+  page's products (which ARE filter-aware) — pm-facets.js then refines BOTH ends
+  to the full filtered set's true lowest/highest price via price-sorted fetches.
+{%- endcomment -%}
 {%- assign _min_price = 0 -%}
 {%- assign _max_price = 0 -%}
 {%- if _f_price -%}
   {%- assign _max_price = _f_price.range_max | divided_by: 100.0 | ceil -%}
-{%- else -%}
-  {%- if _is_search -%}
-    {%- for item in _results.results -%}
-      {%- if item.object_type == 'product' -%}
-        {%- assign _p = item.price | divided_by: 100.0 | ceil -%}
-        {%- if _p > _max_price -%}{%- assign _max_price = _p -%}{%- endif -%}
-      {%- endif -%}
-    {%- endfor -%}
-  {%- else -%}
-    {%- for p in _results.products -%}
-      {%- assign _pp = p.price_max | divided_by: 100.0 | ceil -%}
-      {%- if _pp > _max_price -%}{%- assign _max_price = _pp -%}{%- endif -%}
-    {%- endfor -%}
-  {%- endif -%}
-  {%- if _max_price < 100 -%}{%- assign _max_price = 100 -%}{%- endif -%}
 {%- endif -%}
+{%- assign _seen = false -%}
+{%- if _is_search -%}
+  {%- for item in _results.results -%}
+    {%- if item.object_type == 'product' -%}
+      {%- assign _plo = item.price | divided_by: 100.0 | floor -%}
+      {%- assign _phi = item.price | divided_by: 100.0 | ceil -%}
+      {%- if _seen == false -%}{%- assign _min_price = _plo -%}{%- assign _seen = true -%}{%- endif -%}
+      {%- if _plo < _min_price -%}{%- assign _min_price = _plo -%}{%- endif -%}
+      {%- if _phi > _max_price -%}{%- assign _max_price = _phi -%}{%- endif -%}
+    {%- endif -%}
+  {%- endfor -%}
+{%- else -%}
+  {%- for p in _results.products -%}
+    {%- assign _plo = p.price_min | divided_by: 100.0 | floor -%}
+    {%- assign _phi = p.price_max | divided_by: 100.0 | ceil -%}
+    {%- if _seen == false -%}{%- assign _min_price = _plo -%}{%- assign _seen = true -%}{%- endif -%}
+    {%- if _plo < _min_price -%}{%- assign _min_price = _plo -%}{%- endif -%}
+    {%- if _phi > _max_price -%}{%- assign _max_price = _phi -%}{%- endif -%}
+  {%- endfor -%}
+{%- endif -%}
+{%- if _max_price < 100 -%}{%- assign _max_price = 100 -%}{%- endif -%}
+{%- if _min_price >= _max_price -%}{%- assign _min_price = 0 -%}{%- endif -%}
 
 {%- comment -%} Current selections (from URL params) {%- endcomment -%}
-{%- assign _curr_min = 0 -%}
+{%- assign _curr_min = _min_price -%}
 {%- assign _curr_max = _max_price -%}
 {%- if _f_price -%}
   {%- if _f_price.min_value.value != blank -%}{%- assign _curr_min = _f_price.min_value.value | divided_by: 100.0 -%}{%- endif -%}
@@ -299,9 +312,9 @@
               type="number"
               name="filter.v.price.gte"
               value="{{ _curr_min | round }}"
-              min="0"
+              min="{{ _min_price }}"
               max="{{ _max_price }}"
-              placeholder="0"
+              placeholder="{{ _min_price }}"
               aria-label="Min price"
               data-pm-price-min
             >
@@ -313,7 +326,7 @@
               type="number"
               name="filter.v.price.lte"
               value="{{ _curr_max | round }}"
-              min="0"
+              min="{{ _min_price }}"
               max="{{ _max_price }}"
               placeholder="{{ _max_price }}"
               aria-label="Max price"
@@ -321,13 +334,13 @@
             >
           </label>
         </div>
-        <div class="pm-range" data-pm-range data-bound-max="{{ _max_price }}">
+        <div class="pm-range" data-pm-range data-bound-min="{{ _min_price }}" data-bound-max="{{ _max_price }}">
           <div class="pm-range__track"></div>
           <div class="pm-range__fill" data-pm-range-fill></div>
           <input
             type="range"
             class="pm-range__thumb pm-range__thumb--min"
-            min="0"
+            min="{{ _min_price }}"
             max="{{ _max_price }}"
             value="{{ _curr_min | round }}"
             step="1"
@@ -337,7 +350,7 @@
           <input
             type="range"
             class="pm-range__thumb pm-range__thumb--max"
-            min="0"
+            min="{{ _min_price }}"
             max="{{ _max_price }}"
             value="{{ _curr_max | round }}"
             step="1"
@@ -346,7 +359,7 @@
           >
         </div>
         <div class="pm-facet__price-bounds">
-          <span>$0</span>
+          <span>${{ _min_price }}</span>
           <span>${{ _max_price }}</span>
         </div>
       </div>

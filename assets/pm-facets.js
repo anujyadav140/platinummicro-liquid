@@ -24,6 +24,7 @@
     formEl.addEventListener('submit', function (e) { e.preventDefault(); onChange(); });
 
     initRange(formEl.querySelector('[data-pm-range]'));
+    refreshPriceBounds(); // TC-089: refine the server-side initial bounds
 
     // Mobile drawer
     var trigger = document.querySelector('[data-pm-facets-toggle]');
@@ -88,52 +89,142 @@
     var minThumb = rangeEl.querySelector('[data-pm-range-min]');
     var maxThumb = rangeEl.querySelector('[data-pm-range-max]');
     var fill     = rangeEl.querySelector('[data-pm-range-fill]');
-    var bound    = parseFloat(rangeEl.getAttribute('data-bound-max')) || 1;
     var numMin   = formEl.querySelector('[data-pm-price-min]');
     var numMax   = formEl.querySelector('[data-pm-price-max]');
+    if (!minThumb || !maxThumb || !fill) return;
+
+    // Read bounds FRESH each call so applyBounds() can update them in place
+    // (TC-089) without needing to rewire listeners.
+    function bMax() { return parseFloat(rangeEl.getAttribute('data-bound-max')) || 1; }
+    function bMin() { return parseFloat(rangeEl.getAttribute('data-bound-min')) || 0; }
 
     function syncFill() {
-      var lo = parseFloat(minThumb.value) || 0;
-      var hi = parseFloat(maxThumb.value);
-      if (isNaN(hi)) hi = bound;
-      if (lo > hi - 1) lo = hi - 1;
-      if (hi < lo + 1) hi = lo + 1;
-      var leftPct  = (lo / bound) * 100;
-      var rightPct = 100 - (hi / bound) * 100;
+      var lo = parseFloat(minThumb.value); if (isNaN(lo)) lo = bMin();
+      var hi = parseFloat(maxThumb.value); if (isNaN(hi)) hi = bMax();
+      var span = bMax() - bMin(); if (span <= 0) span = 1;
+      var leftPct  = ((lo - bMin()) / span) * 100;
+      var rightPct = 100 - ((hi - bMin()) / span) * 100;
       fill.style.left  = Math.max(0, leftPct)  + '%';
       fill.style.right = Math.max(0, rightPct) + '%';
     }
 
     function thumbInput() {
-      var lo = parseFloat(minThumb.value) || 0;
-      var hi = parseFloat(maxThumb.value);
-      if (isNaN(hi)) hi = bound;
+      var lo = parseFloat(minThumb.value); if (isNaN(lo)) lo = bMin();
+      var hi = parseFloat(maxThumb.value); if (isNaN(hi)) hi = bMax();
       if (lo > hi - 1) { lo = hi - 1; minThumb.value = lo; }
       if (hi < lo + 1) { hi = lo + 1; maxThumb.value = hi; }
-      numMin.value = Math.round(lo);
-      numMax.value = Math.round(hi);
+      if (numMin) numMin.value = Math.round(lo);
+      if (numMax) numMax.value = Math.round(hi);
       syncFill();
     }
     function numberInput() {
-      var lo = parseFloat(numMin.value) || 0;
-      var hi = parseFloat(numMax.value);
-      if (isNaN(hi)) hi = bound;
-      if (lo < 0) lo = 0;
-      if (hi > bound) hi = bound;
+      var lo = parseFloat(numMin.value); if (isNaN(lo)) lo = bMin();
+      var hi = parseFloat(numMax.value); if (isNaN(hi)) hi = bMax();
+      if (lo < bMin()) lo = bMin();
+      if (hi > bMax()) hi = bMax();
       if (lo > hi) lo = hi;
       minThumb.value = lo;
       maxThumb.value = hi;
       syncFill();
     }
 
-    minThumb.addEventListener('input', thumbInput);
-    maxThumb.addEventListener('input', thumbInput);
-    minThumb.addEventListener('change', onChange);
-    maxThumb.addEventListener('change', onChange);
-    numMin.addEventListener('input', numberInput);
-    numMax.addEventListener('input', numberInput);
-
+    // Wire once per element. The form innerHTML is replaced on every AJAX swap,
+    // so a swapped-in slider is a fresh element and gets wired again; but
+    // applyBounds() calls initRange() on the SAME element, so guard against
+    // duplicate listeners.
+    if (!rangeEl.__pmWired) {
+      rangeEl.__pmWired = true;
+      minThumb.addEventListener('input', thumbInput);
+      maxThumb.addEventListener('input', thumbInput);
+      minThumb.addEventListener('change', onChange);
+      maxThumb.addEventListener('change', onChange);
+      if (numMin) numMin.addEventListener('input', numberInput);
+      if (numMax) numMax.addEventListener('input', numberInput);
+    }
     syncFill();
+  }
+
+  // ── Accurate price bounds (TC-089) ──────────────────────────────────
+  // Shopify's price filter only exposes a collection-wide range_max (no minimum,
+  // never narrows with other filters), and only the REAL collection page filters
+  // collection.products (the Section API + alternate templates don't). So we
+  // fetch the current NON-price filter set sorted by price ascending + descending
+  // and read the cheapest/priciest product card for the true bounds. Cached per
+  // filter set so price-only changes (and repeat states) don't refetch.
+  var _boundsCache = {};
+  var _boundsSig = null;
+
+  function priceBaseUrl() {
+    var params;
+    try { params = new URL(window.location.href).searchParams; }
+    catch (e) { params = new URLSearchParams(window.location.search); }
+    var keep = new URLSearchParams();
+    params.forEach(function (v, k) {
+      if (k === 'filter.v.price.gte' || k === 'filter.v.price.lte' || k === 'page' || k === 'sort_by') return;
+      keep.append(k, v);
+    });
+    var s = keep.toString();
+    return basePath() + (s ? '?' + s : '');
+  }
+
+  function firstCardPrice(html) {
+    var dom = new DOMParser().parseFromString(html, 'text/html');
+    var el = dom.querySelector('.pm-pcard__price-now');
+    if (!el) return null;
+    var n = parseFloat((el.textContent || '').replace(/[^0-9.]/g, ''));
+    return isNaN(n) ? null : n;
+  }
+
+  function applyBounds(min, max) {
+    var rangeEl = formEl && formEl.querySelector('[data-pm-range]');
+    if (!rangeEl) return;
+    min = Math.floor(min); max = Math.ceil(max);
+    if (max <= min) max = min + 1;
+    var minThumb = rangeEl.querySelector('[data-pm-range-min]');
+    var maxThumb = rangeEl.querySelector('[data-pm-range-max]');
+    var numMin   = formEl.querySelector('[data-pm-price-min]');
+    var numMax   = formEl.querySelector('[data-pm-price-max]');
+    var bounds   = formEl.querySelectorAll('.pm-facet__price-bounds span');
+    var oldMin = parseFloat(rangeEl.getAttribute('data-bound-min'));
+    var oldMax = parseFloat(rangeEl.getAttribute('data-bound-max'));
+    rangeEl.setAttribute('data-bound-min', min);
+    rangeEl.setAttribute('data-bound-max', max);
+    [minThumb, maxThumb, numMin, numMax].forEach(function (el) {
+      if (!el) return; el.min = min; el.max = max;
+    });
+    if (numMin) numMin.setAttribute('placeholder', min);
+    if (numMax) numMax.setAttribute('placeholder', max);
+    // Snap a thumb to the new bound only if it sat at the OLD bound (user
+    // hadn't narrowed that end) — preserves a user-applied selection.
+    if (minThumb && (isNaN(oldMin) || parseFloat(minThumb.value) <= oldMin)) {
+      minThumb.value = min; if (numMin) numMin.value = min;
+    }
+    if (maxThumb && (isNaN(oldMax) || parseFloat(maxThumb.value) >= oldMax)) {
+      maxThumb.value = max; if (numMax) numMax.value = max;
+    }
+    if (bounds[0]) bounds[0].textContent = '$' + min;
+    if (bounds[1]) bounds[1].textContent = '$' + max;
+    initRange(rangeEl); // re-sync fill against the fresh bounds (wiring is guarded)
+  }
+
+  function refreshPriceBounds() {
+    if (!formEl || !formEl.querySelector('[data-pm-range]')) return;
+    var base = priceBaseUrl();
+    if (base === _boundsSig) return;            // same non-price filters → skip
+    _boundsSig = base;
+    if (_boundsCache[base]) { applyBounds(_boundsCache[base].min, _boundsCache[base].max); return; }
+    var sep = base.indexOf('?') > -1 ? '&' : '?';
+    var opt = { headers: { 'X-Requested-With': 'XMLHttpRequest' } };
+    Promise.all([
+      fetch(base + sep + 'sort_by=price-ascending',  opt).then(function (r) { return r.text(); }),
+      fetch(base + sep + 'sort_by=price-descending', opt).then(function (r) { return r.text(); })
+    ]).then(function (h) {
+      var min = firstCardPrice(h[0]);
+      var max = firstCardPrice(h[1]);
+      if (min == null || max == null) return;
+      _boundsCache[base] = { min: min, max: max };
+      if (_boundsSig === base) applyBounds(min, max);  // still the active filter set
+    }).catch(function () {});
   }
 
   // ── AJAX fetch + swap ────────────────────────────────────────────────
@@ -148,11 +239,12 @@
     // results, so min/max appear to "jump" when you tick a brand). Drop them
     // unless the user actually narrowed the range.
     var rangeEl = formEl.querySelector('[data-pm-range]');
-    var priceBound = rangeEl ? parseFloat(rangeEl.getAttribute('data-bound-max')) : NaN;
+    var priceMax = rangeEl ? parseFloat(rangeEl.getAttribute('data-bound-max')) : NaN;
+    var priceMin = rangeEl ? parseFloat(rangeEl.getAttribute('data-bound-min')) : NaN;
     formData.forEach(function (v, k) {
       if (v === '' || v == null) return;
-      if (k === 'filter.v.price.gte' && parseFloat(v) <= 0) return;
-      if (k === 'filter.v.price.lte' && !isNaN(priceBound) && parseFloat(v) >= priceBound) return;
+      if (k === 'filter.v.price.gte' && parseFloat(v) <= (isNaN(priceMin) ? 0 : priceMin)) return;
+      if (k === 'filter.v.price.lte' && !isNaN(priceMax) && parseFloat(v) >= priceMax) return;
       qs.append(k, v);
     });
 
@@ -203,6 +295,7 @@
 
         history.pushState({ url: url }, '', url);
         initRange(formEl.querySelector('[data-pm-range]'));
+        refreshPriceBounds(); // TC-089: re-derive bounds for the new filter set
         // Tell PLP toolbar handlers (view-toggle restore) that DOM swapped
         document.dispatchEvent(new CustomEvent('pm:plp-updated'));
       })

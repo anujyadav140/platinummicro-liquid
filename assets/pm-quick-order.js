@@ -416,17 +416,27 @@
       .catch(function () { /* network error → silently leave dropdown as-is */ });
   }
 
+  // Platinum Micro prepends a 2-letter category code (CC/CA/CS/CD/EP…) to the
+  // manufacturer SKU. Customers know the manufacturer SKU (AS6706TV2, not the
+  // internal CCAS6706TV2), so we show + fill that. lookupSku()/skuMatches()
+  // resolve it back to the prefixed variant on add-to-cart.
+  function mfgSku(sku) {
+    var s = String(sku || '');
+    return (s.length > 4 && /^[A-Za-z]{2}/.test(s)) ? s.slice(2) : s;
+  }
+
   function acRender(term) {
     var lower = (term || '').toLowerCase();
     acActive = -1;
     var html = acItems.map(function (it, i) {
-      // Highlight the matched substring of the SKU.
-      var skuHtml = esc(it.sku);
-      var idx = it.sku.toLowerCase().indexOf(lower);
+      // Show the MANUFACTURER SKU; highlight the matched substring.
+      var display = mfgSku(it.sku);
+      var skuHtml = esc(display);
+      var idx = display.toLowerCase().indexOf(lower);
       if (idx !== -1 && lower) {
-        skuHtml = esc(it.sku.slice(0, idx)) +
-                  '<mark class="pm-qo__ac-mark">' + esc(it.sku.slice(idx, idx + lower.length)) + '</mark>' +
-                  esc(it.sku.slice(idx + lower.length));
+        skuHtml = esc(display.slice(0, idx)) +
+                  '<mark class="pm-qo__ac-mark">' + esc(display.slice(idx, idx + lower.length)) + '</mark>' +
+                  esc(display.slice(idx + lower.length));
       }
       var thumb = it.image
         ? '<span class="pm-qo__ac-thumb"><img src="' + esc(it.image) + '" alt="" loading="lazy"></span>'
@@ -523,7 +533,7 @@
   function acSelect(i) {
     if (i < 0 || i >= acItems.length || !acInput) return;
     var input = acInput;
-    input.value = acItems[i].sku;
+    input.value = mfgSku(acItems[i].sku);
     acClose();
     input.focus();
     // Re-run existing validation/state without re-triggering the typeahead:
