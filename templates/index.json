@@ -194,7 +194,8 @@
         "title_color": "#ffffff",
         "body_color": "#d8dee7",
         "accent_color": "#a63d2f",
-        "cta_text_color": "#ffffff"
+        "cta_text_color": "#ffffff",
+        "layout": "featured"
       }
     },
     "pm-brand-wall": {

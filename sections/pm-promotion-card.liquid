@@ -6,6 +6,10 @@
   properties; per-card content lives on the block. Styles: pm-home-sections.css.
 {%- endcomment -%}
 {%- assign _cols = section.blocks.size | at_most: 4 | at_least: 1 -%}
+{%- comment -%} Featured layout splits the right column into (cards − 1) rows so
+    the first card can span the full height as the large card. {%- endcomment -%}
+{%- assign _rows = section.blocks.size | minus: 1 | at_least: 1 -%}
+{%- assign _layout = section.settings.layout | default: 'row' -%}
 <section
   class="pm-promo-section"
   style="
@@ -20,6 +24,7 @@
     --pc-cta-bg:{{ section.settings.accent_color }};
     --pc-cta-text:{{ section.settings.cta_text_color }};
     --pc-cols:{{ _cols }};
+    --pc-rows:{{ _rows }};
   "
 >
   <div class="pm-container">
@@ -27,7 +32,7 @@
       <h2 class="pm-promo-heading">{{ section.settings.heading }}</h2>
     {%- endif -%}
 
-    <div class="pm-promo-grid">
+    <div class="pm-promo-grid" data-layout="{{ _layout }}">
       {%- for block in section.blocks -%}
         <article class="pm-promo-card" {{ block.shopify_attributes }}>
           {%- assign _pbg = '' -%}
@@ -75,6 +80,17 @@
   "settings": [
     { "type": "header", "content": "Section" },
     { "type": "text",  "id": "heading",        "label": "Section heading (optional)" },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "Layout",
+      "info": "Equal row = all cards same size. Featured = 1 large card on the left with the rest stacked on the right (best with 3 cards).",
+      "options": [
+        { "value": "row",      "label": "Equal row" },
+        { "value": "featured", "label": "Featured — 1 large + 2 stacked" }
+      ],
+      "default": "row"
+    },
     { "type": "color", "id": "section_bg",     "label": "Section background", "default": "#FBFAF7" },
     { "type": "range", "id": "padding_top",    "label": "Padding top",        "min": 0, "max": 160, "step": 4, "unit": "px", "default": 64 },
     { "type": "range", "id": "padding_bottom", "label": "Padding bottom",     "min": 0, "max": 160, "step": 4, "unit": "px", "default": 64 },
