@@ -353,10 +353,29 @@
       });
     } catch (e) {}
   }
+  // ── Keep On sale / Featured boxes ticked (TC-090) ──────────────────
+  // Shopify caps a filter at 100 values, so on a 100+ tag store the
+  // on-sale/featured tag values fall off the list — Liquid then can't tell
+  // they're active (no active_value; request.url is nil), so the box renders
+  // unchecked. Re-assert the checked state from the URL's filter.p.tag params
+  // after every render so they stay ticked through navigations + AJAX swaps.
+  function applyPromoChecked() {
+    var active = [];
+    try {
+      new URL(window.location.href).searchParams.getAll('filter.p.tag')
+        .forEach(function (v) { if (v) active.push(v.toLowerCase()); });
+    } catch (e) {}
+    document.querySelectorAll('#pm-facets-form input[name="filter.p.tag"]').forEach(function (cb) {
+      if (cb.disabled) return;
+      cb.checked = active.indexOf((cb.value || '').toLowerCase()) !== -1;
+    });
+  }
+
   function onUpdate() {
     restoreViewMode();
     syncSortControl();      // TC-016: keep the sort label after AJAX header swap
     applyVendorFilter();    // TC-017/020: narrow grid by vendor + fix checkbox state
+    applyPromoChecked();    // TC-090: keep On sale / Featured ticked (100-value cap)
     renderFallbackChips();  // TC-021: client-side Clear all + chips in fallback mode
     applySearchClientSort();
   }
