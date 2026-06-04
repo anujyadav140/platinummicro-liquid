@@ -310,7 +310,11 @@
         body: JSON.stringify({ id: key, quantity: qty })
       })
         .then(function (r) { return r.json(); })
-        .then(function (cart) { render(cart); });
+        .then(function (cart) {
+          render(cart);
+          // Re-evaluate add buttons (qty up/down may cross the inventory cap).
+          if (window.PmAddToCart && window.PmAddToCart.syncMaxed) window.PmAddToCart.syncMaxed();
+        });
     }, 120);
   }
 
@@ -347,6 +351,9 @@
         // Sync silently in case another tab modified the cart concurrently
         var stillThere = itemsEl.querySelector('[data-cart-item][data-cart-key="' + key + '"]');
         if (cart.items && stillThere) render(cart);
+        // Re-evaluate add buttons (e.g. re-enable a PDP "Already in cart" button
+        // once its product is removed from the cart).
+        if (window.PmAddToCart && window.PmAddToCart.syncMaxed) window.PmAddToCart.syncMaxed();
       })
       .catch(function () {});
   }
