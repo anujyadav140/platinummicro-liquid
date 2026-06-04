@@ -16,7 +16,7 @@
 (function () {
   'use strict';
 
-  var MAXED = 'Max in cart';
+  var MAXED = 'No more available';
   var labelOf = function (btn) { return btn.querySelector('span'); };
 
   function setMaxed(btn, maxed) {
