@@ -32,7 +32,7 @@
   {%- if _pn contains 'vendor'        -%}{%- assign _f_brand = f -%}{%- endif -%}
   {%- if f.type == 'price_range'      -%}{%- assign _f_price = f -%}{%- endif -%}
   {%- if _pn contains 'availability'  -%}{%- assign _f_avail = f -%}{%- endif -%}
-  {%- if _pn contains 'product_tag'   -%}{%- assign _f_promo = f -%}{%- endif -%}
+  {%- if _pn contains 'tag'           -%}{%- assign _f_promo = f -%}{%- endif -%}
 {%- endfor -%}
 
 {%- comment -%} ── Derive brand list if no Shopify filter ──────────────────── {%- endcomment -%}
@@ -409,7 +409,22 @@
     </div>
   </details>
 
-  {%- comment -%} ── PROMOTIONS (collapsed by default) ────────────────────── {%- endcomment -%}
+  {%- comment -%} ── PROMOTIONS (collapsed by default) ──────────────────────
+      Read On-sale + Featured straight from Shopify's tag filter (_f_promo) so
+      they behave like the other facets: live count, stay checked when active,
+      and auto-disable at 0. Falls back to count 0 / disabled when the tag has
+      no matches in the current result set. {%- endcomment -%}
+  {%- assign _os_count = 0 -%}{%- assign _os_active = false -%}{%- assign _os_value = 'on-sale' -%}
+  {%- assign _ft_count = 0 -%}{%- assign _ft_active = false -%}{%- assign _ft_value = 'featured' -%}
+  {%- if _f_promo -%}
+    {%- for v in _f_promo.values -%}
+      {%- assign _vv = v.value | downcase -%}
+      {%- if _vv == 'on-sale'  -%}{%- assign _os_count = v.count -%}{%- assign _os_active = v.active -%}{%- assign _os_value = v.value -%}{%- endif -%}
+      {%- if _vv == 'featured' -%}{%- assign _ft_count = v.count -%}{%- assign _ft_active = v.active -%}{%- assign _ft_value = v.value -%}{%- endif -%}
+    {%- endfor -%}
+  {%- endif -%}
+  {%- assign _os_dis = false -%}{%- if _os_count == 0 and _os_active == false -%}{%- assign _os_dis = true -%}{%- endif -%}
+  {%- assign _ft_dis = false -%}{%- if _ft_count == 0 and _ft_active == false -%}{%- assign _ft_dis = true -%}{%- endif -%}
   <details class="pm-facet" data-pm-facet>
     <summary class="pm-facet__summary">
       <span>Promotions</span>
@@ -418,15 +433,17 @@
     <div class="pm-facet__body">
       <ul class="pm-facet__values">
         <li>
-          <label class="pm-facet__opt">
-            <input type="checkbox" name="filter.p.tag" value="on-sale" {% if request.url contains 'tag=on-sale' %}checked{% endif %}>
+          <label class="pm-facet__opt {% if _os_dis %}is-disabled{% endif %}">
+            <input type="checkbox" name="filter.p.tag" value="{{ _os_value }}" {% if _os_active %}checked{% endif %} {% if _os_dis %}disabled{% endif %}>
             <span class="pm-facet__opt-label">On sale</span>
+            <span class="pm-facet__opt-count">{{ _os_count }}</span>
           </label>
         </li>
         <li>
-          <label class="pm-facet__opt">
-            <input type="checkbox" name="filter.p.tag" value="featured" {% if request.url contains 'tag=featured' %}checked{% endif %}>
+          <label class="pm-facet__opt {% if _ft_dis %}is-disabled{% endif %}">
+            <input type="checkbox" name="filter.p.tag" value="{{ _ft_value }}" {% if _ft_active %}checked{% endif %} {% if _ft_dis %}disabled{% endif %}>
             <span class="pm-facet__opt-label">Featured</span>
+            <span class="pm-facet__opt-count">{{ _ft_count }}</span>
           </label>
         </li>
       </ul>
