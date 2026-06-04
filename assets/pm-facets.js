@@ -187,6 +187,13 @@
     var bounds   = formEl.querySelectorAll('.pm-facet__price-bounds span');
     var oldMin = parseFloat(rangeEl.getAttribute('data-bound-min'));
     var oldMax = parseFloat(rangeEl.getAttribute('data-bound-max'));
+    // Decide snapping BEFORE mutating any min/max attribute. Setting a range
+    // input's `max` immediately CLAMPS its `.value`, so reading the value after
+    // would be corrupted — this was the "min updates but max doesn't" bug.
+    var curMin = parseFloat(minThumb && minThumb.value);
+    var curMax = parseFloat(maxThumb && maxThumb.value);
+    var snapMin = isNaN(oldMin) || isNaN(curMin) || curMin <= oldMin;
+    var snapMax = isNaN(oldMax) || isNaN(curMax) || curMax >= oldMax;
     rangeEl.setAttribute('data-bound-min', min);
     rangeEl.setAttribute('data-bound-max', max);
     [minThumb, maxThumb, numMin, numMax].forEach(function (el) {
@@ -194,17 +201,19 @@
     });
     if (numMin) numMin.setAttribute('placeholder', min);
     if (numMax) numMax.setAttribute('placeholder', max);
-    // Snap a thumb to the new bound only if it sat at the OLD bound (user
-    // hadn't narrowed that end) — preserves a user-applied selection.
-    if (minThumb && (isNaN(oldMin) || parseFloat(minThumb.value) <= oldMin)) {
-      minThumb.value = min; if (numMin) numMin.value = min;
-    }
-    if (maxThumb && (isNaN(oldMax) || parseFloat(maxThumb.value) >= oldMax)) {
-      maxThumb.value = max; if (numMax) numMax.value = max;
-    }
+    // Set values explicitly (after the attributes). Snap an end to the new
+    // bound if the user hadn't narrowed it; otherwise clamp the kept value
+    // into the new range.
+    var newMin = snapMin ? min : Math.max(min, Math.min(max, curMin));
+    var newMax = snapMax ? max : Math.max(min, Math.min(max, curMax));
+    if (newMin > newMax) newMin = newMax;
+    if (minThumb) minThumb.value = newMin;
+    if (maxThumb) maxThumb.value = newMax;
+    if (numMin) numMin.value = Math.round(newMin);
+    if (numMax) numMax.value = Math.round(newMax);
     if (bounds[0]) bounds[0].textContent = '$' + min;
     if (bounds[1]) bounds[1].textContent = '$' + max;
-    initRange(rangeEl); // re-sync fill against the fresh bounds (wiring is guarded)
+    initRange(rangeEl);
   }
 
   function refreshPriceBounds() {
