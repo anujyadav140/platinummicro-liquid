@@ -551,7 +551,9 @@
   line-height: 1;
   transition: background var(--pm-dur-fast);
 }
-.pm-cart__qty-btn:hover { background: var(--pm-ink-100); }
+.pm-cart__qty-btn:hover:not(:disabled) { background: var(--pm-ink-100); }
+/* TC-085: + disabled once the line is at its available-stock cap. */
+.pm-cart__qty-btn:disabled { opacity: 0.4; cursor: not-allowed; }
 .pm-cart__qty-input {
   width: 36px;
   height: 28px;

@@ -8,6 +8,9 @@
   var drawer, itemsEl, emptyEl, footEl, countEl, clearBtn, template;
   var inited = false;
   var debounceTimer = null;
+  // TC-085: cart line key → real available cap, learned when the server caps a
+  // requested qty (the drawer's /cart.js data doesn't expose inventory).
+  var maxedCap = {};
 
   function init() {
     if (inited) return;
@@ -230,6 +233,17 @@
     node.querySelector('.pm-cart__item-price').textContent = opts.lineTotal || '';
     node.querySelector('.pm-cart__qty-input').value = opts.quantity || 1;
 
+    // TC-085: disable + once this line is known to be at its available cap.
+    if (opts.kind === 'shopify') {
+      var cap = maxedCap[opts.key];
+      var incBtn = node.querySelector('[data-cart-inc]');
+      if (incBtn && typeof cap === 'number' && (opts.quantity || 1) >= cap) {
+        incBtn.disabled = true;
+        incBtn.setAttribute('aria-disabled', 'true');
+        incBtn.setAttribute('title', 'No more available in stock');
+      }
+    }
+
     return node;
   }
 
@@ -311,6 +325,12 @@
       })
         .then(function (r) { return r.json(); })
         .then(function (cart) {
+          // TC-085: if the server gave us fewer than we asked for, that count IS
+          // the real available cap for this line — remember it so + disables. A
+          // change that wasn't capped (e.g. a decrement) clears any prior cap.
+          var ln = (cart.items || []).filter(function (i) { return i.key === key; })[0];
+          var got = ln ? ln.quantity : 0;
+          if (got < qty) maxedCap[key] = got; else delete maxedCap[key];
           render(cart);
           // Re-evaluate add buttons (qty up/down may cross the inventory cap).
           if (window.PmAddToCart && window.PmAddToCart.syncMaxed) window.PmAddToCart.syncMaxed();
