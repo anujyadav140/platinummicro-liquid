@@ -175,6 +175,16 @@
     return isNaN(n) ? null : n;
   }
 
+  var _boundsFallback;
+  // Toggle the price-facet skeleton (TC-089). The facet is server-rendered with
+  // approximate bounds; this hides them while the true filtered min/max are
+  // fetched so no wrong number flashes.
+  function setPriceLoading(on) {
+    var r = formEl && formEl.querySelector('[data-pm-range]');
+    var wrap = r && r.closest && r.closest('.pm-facet__price');
+    if (wrap) wrap.classList.toggle('is-bounds-loading', !!on);
+  }
+
   function applyBounds(min, max) {
     var rangeEl = formEl && formEl.querySelector('[data-pm-range]');
     if (!rangeEl) return;
@@ -214,14 +224,22 @@
     if (bounds[0]) bounds[0].textContent = '$' + min;
     if (bounds[1]) bounds[1].textContent = '$' + max;
     initRange(rangeEl);
+    clearTimeout(_boundsFallback);
+    setPriceLoading(false); // reveal — accurate values are in place
   }
 
   function refreshPriceBounds() {
     if (!formEl || !formEl.querySelector('[data-pm-range]')) return;
     var base = priceBaseUrl();
-    if (base === _boundsSig) return;            // same non-price filters → skip
+    if (base === _boundsSig) { setPriceLoading(false); return; } // unchanged → reveal
     _boundsSig = base;
     if (_boundsCache[base]) { applyBounds(_boundsCache[base].min, _boundsCache[base].max); return; }
+    // Keep/show the skeleton until the true bounds arrive (the initial render is
+    // skeletoned by the inline script; an AJAX-swapped facet is not, so set it
+    // here — this runs synchronously after the swap, before paint).
+    setPriceLoading(true);
+    clearTimeout(_boundsFallback);
+    _boundsFallback = setTimeout(function () { setPriceLoading(false); }, 6000);
     var sep = base.indexOf('?') > -1 ? '&' : '?';
     var opt = { headers: { 'X-Requested-With': 'XMLHttpRequest' } };
     Promise.all([
@@ -230,10 +248,11 @@
     ]).then(function (h) {
       var min = firstCardPrice(h[0]);
       var max = firstCardPrice(h[1]);
-      if (min == null || max == null) return;
+      if (min == null || max == null) { clearTimeout(_boundsFallback); setPriceLoading(false); return; }
       _boundsCache[base] = { min: min, max: max };
-      if (_boundsSig === base) applyBounds(min, max);  // still the active filter set
-    }).catch(function () {});
+      if (_boundsSig === base) applyBounds(min, max);  // still the active filter set → reveals
+      else { clearTimeout(_boundsFallback); setPriceLoading(false); }
+    }).catch(function () { clearTimeout(_boundsFallback); setPriceLoading(false); });
   }
 
   // ── AJAX fetch + swap ────────────────────────────────────────────────

@@ -363,6 +363,21 @@
           <span>${{ _max_price }}</span>
         </div>
       </div>
+      {%- comment -%} TC-089: the server bounds are approximate (Shopify's
+          range_max is collection-wide); pm-facets.js fetches the TRUE filtered
+          min/max. Skeleton the price values BEFORE first paint so the wrong
+          number never flashes. This runs synchronously as the parser reaches it
+          (before paint); no-JS skips it and sees the server values; the failsafe
+          reveals if pm-facets.js never resolves. {%- endcomment -%}
+      <script>
+        (function () {
+          var s = document.currentScript, f = s && s.previousElementSibling;
+          if (f && f.classList && f.classList.contains('pm-facet__price')) {
+            f.classList.add('is-bounds-loading');
+            setTimeout(function () { f.classList.remove('is-bounds-loading'); }, 7000);
+          }
+        })();
+      </script>
     </div>
   </details>
 

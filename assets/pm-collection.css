@@ -724,6 +724,19 @@
   color: var(--pm-ink-400);
   padding: 0 2px;
 }
+/* TC-089: while pm-facets.js fetches the true filtered min/max, skeleton the
+   price inputs/bounds so the approximate server values never flash. Removed by
+   applyBounds() once the real bounds land (or by the inline failsafe timer). */
+@keyframes pmFacetPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+.pm-facet__price.is-bounds-loading .pm-facet__price-field {
+  background: var(--pm-ink-100);
+  border-color: var(--pm-ink-150, #E7E5DF);
+  animation: pmFacetPulse 1.1s ease-in-out infinite;
+}
+.pm-facet__price.is-bounds-loading .pm-facet__price-field input,
+.pm-facet__price.is-bounds-loading .pm-facet__price-prefix { color: transparent; }
+.pm-facet__price.is-bounds-loading .pm-facet__price-bounds { visibility: hidden; }
+.pm-facet__price.is-bounds-loading .pm-range { opacity: 0.4; pointer-events: none; }
 .pm-facet__empty {
   font-size: 13px;
   color: var(--pm-ink-500);
