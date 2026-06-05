@@ -231,7 +231,15 @@
   function refreshPriceBounds() {
     if (!formEl || !formEl.querySelector('[data-pm-range]')) return;
     var base = priceBaseUrl();
-    if (base === _boundsSig) { setPriceLoading(false); return; } // unchanged → reveal
+    if (base === _boundsSig) {
+      // Non-price filters unchanged (e.g. a SORT change, or a price-slider drag).
+      // The facet was just re-rendered with APPROXIMATE server bounds, so re-apply
+      // the cached accurate bounds (applyBounds' snap logic preserves any user-set
+      // thumbs) instead of leaving the wrong values; otherwise just reveal.
+      if (_boundsCache[base]) applyBounds(_boundsCache[base].min, _boundsCache[base].max);
+      else setPriceLoading(false);
+      return;
+    }
     _boundsSig = base;
     if (_boundsCache[base]) { applyBounds(_boundsCache[base].min, _boundsCache[base].max); return; }
     // Keep/show the skeleton until the true bounds arrive (the initial render is
