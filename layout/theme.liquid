@@ -112,6 +112,30 @@
     </style>
   {%- endif -%}
 
+  {%- if template.name == 'collection' -%}
+    {%- comment -%}
+      TC-088: default product lists to IN-STOCK. Many collections have far more
+      out-of-stock than in-stock items, so a fresh visit can land on pages of
+      unorderable products. On a FULL page load of a collection with no filters
+      applied, add the in-stock availability filter. Runs in <head> before paint
+      (window.location.replace → no flash of the unfiltered grid). Filter changes
+      are AJAX (pushState, no reload), so unchecking "In stock" / "Clear all"
+      still reveals out-of-stock items — this only fires on a real page load.
+    {%- endcomment -%}
+    <script>
+      (function () {
+        try {
+          var loc = window.location;
+          if (loc.search.indexOf('filter.') === -1) {
+            document.documentElement.dataset.pmRedirecting = '1';
+            loc.replace(loc.pathname + loc.search + (loc.search ? '&' : '?') + 'filter.v.availability=1');
+          }
+        } catch (e) {}
+      })();
+    </script>
+    <style>html[data-pm-redirecting] body { visibility: hidden; }</style>
+  {%- endif -%}
+
   {%- if template.name == 'search' -%}
     {%- comment -%}
       Brand navigation → real brand collection (SEO). An EXACT brand-name search
