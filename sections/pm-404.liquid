@@ -8,8 +8,11 @@
   — JS sees the real URL every time.
 {%- endcomment -%}
 
-{%- comment -%} ── Genuine 404 (visible by default; JS hides it if matched) ── {%- endcomment -%}
-<section class="pm-404" id="pm-404-default">
+{%- comment -%} ── Genuine 404. HIDDEN by default so it can NEVER flash on a static
+    page (TC-083): the <head> script reveals the matching static body before paint,
+    and the script below reveals THIS only for a real 404. <noscript> reveals it
+    too so no-JS still sees something. {%- endcomment -%}
+<section class="pm-404" id="pm-404-default" hidden>
   <div class="pm-404__inner">
     <div class="pm-404__code">404</div>
     <h1 class="pm-404__title">Page not found.</h1>
@@ -22,6 +25,8 @@
     </div>
   </div>
 </section>
+{%- comment -%} no-JS: reveal the 404 (static bodies need JS to surface) {%- endcomment -%}
+<noscript><style>#pm-404-default{display:block!important}</style></noscript>
 
 {%- comment -%}
   ── All seven static bodies, pre-rendered, hidden ────────────────────
@@ -41,16 +46,17 @@
 
 <script>
   (function () {
+    var def = document.getElementById('pm-404-default');
+    function show404() { if (def) def.removeAttribute('hidden'); } // genuine 404 → reveal it
     var path = window.location.pathname || '';
     var m = path.match(/^\/pages\/([^\/?#]+)/i);
-    if (!m) return;
+    if (!m) { show404(); return; }
     var handle = m[1].toLowerCase();
     var pool = document.getElementById('pm-static-pool');
-    if (!pool) return;
+    if (!pool) { show404(); return; }
     var match = pool.querySelector('[data-handle="' + handle + '"]');
-    if (!match) return;
-    // Promote the matching static body, remove the 404 placeholder.
-    var def = document.getElementById('pm-404-default');
+    if (!match) { show404(); return; }
+    // Matched static page → promote it; the 404 placeholder stays hidden + is removed.
     if (def) def.parentNode.removeChild(def);
     pool.removeAttribute('hidden');
     // Move the matched body's children up out of the pool, then drop
