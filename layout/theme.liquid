@@ -214,24 +214,45 @@
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </div>
+
       <div class="pm-mobile-nav__links">
+        {%- comment -%} TC-153: Quick order at the top of the drawer, above the category pages. [data-qo-open] opens the same modal (event-delegated in pm-quick-order.js). {%- endcomment -%}
+        <button type="button" class="pm-mobile-nav__link pm-mobile-nav__qo" data-qo-open aria-haspopup="dialog">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          Quick order
+        </button>
+
         {%- for link in linklists.main-menu.links -%}
           <a class="pm-mobile-nav__link" href="{{ link.url }}">{{ link.title }}</a>
         {%- endfor -%}
 
         {%- comment -%}
-          Account — same <shopify-account> web component as the desktop header,
-          handling both signed-out and signed-in states. Sign out lives inside
-          the account menu (customer-account-main-menu), not as a separate link.
+          TC-153: Account as an inline accordion (replaces <shopify-account>,
+          whose popup floated awkwardly inside the drawer). New-Customer-Accounts
+          sub-routes are built off routes.account_url — same pattern as
+          pm-account-strip / pm-static-body. Native <details> = no JS.
         {%- endcomment -%}
-        <shopify-account class="pm-mobile-nav__link pm-mobile-nav__account"{% if customer %} menu="customer-account-main-menu"{% endif %}>
-          {%- comment -%} Only the matching slot (server-side) — avoids the signed-out flash on nav. {%- endcomment -%}
-          {%- if customer -%}
-            <span slot="signed-in-avatar">{{ customer.first_name | default: 'Account' }}</span>
-          {%- else -%}
-            <span slot="signed-out-avatar">Sign in</span>
-          {%- endif -%}
-        </shopify-account>
+        {%- if customer -%}
+          {%- assign _parts = routes.account_url | split: '?' -%}
+          {%- assign _abase = _parts | first -%}
+          {%- assign _aqs = '' -%}
+          {%- if _parts.size > 1 -%}{%- assign _aqs = '?' | append: _parts.last -%}{%- endif -%}
+          <details class="pm-mobile-acct">
+            <summary class="pm-mobile-nav__link pm-mobile-acct__summary">
+              <span class="pm-mobile-acct__avatar" aria-hidden="true">{{ customer.first_name | default: 'A' | slice: 0 | upcase }}</span>
+              <span class="pm-mobile-acct__name">Hi, {{ customer.first_name | default: 'Account' | escape }}</span>
+              <svg class="pm-mobile-acct__chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+            </summary>
+            <div class="pm-mobile-acct__panel">
+              <a class="pm-mobile-acct__sub" href="{{ _abase }}/profile{{ _aqs }}">Profile</a>
+              <a class="pm-mobile-acct__sub" href="{{ _abase }}/orders{{ _aqs }}">Orders</a>
+              <a class="pm-mobile-acct__sub" href="/pages/lists">Lists</a>
+              <a class="pm-mobile-acct__sub" href="{{ routes.account_logout_url }}" rel="nofollow">Sign out</a>
+            </div>
+          </details>
+        {%- else -%}
+          <a class="pm-mobile-nav__link pm-mobile-nav__account" href="{{ routes.storefront_login_url }}">Sign in</a>
+        {%- endif -%}
 
         {%- comment -%}
           Cart count must match the header badge, which folds local "quote"

@@ -81,6 +81,63 @@
   border-top: 2px solid var(--pm-ink-200);
   margin-top: 8px;
 }
+
+/* TC-153: account accordion in the drawer (replaces the <shopify-account>
+   popup, which floated awkwardly over the drawer). Native <details> = no JS. */
+.pm-mobile-acct {
+  border-top: 2px solid var(--pm-ink-200);
+  margin-top: 8px;
+}
+.pm-mobile-acct__summary {
+  justify-content: flex-start;   /* override .pm-mobile-nav__link's space-between */
+  gap: 10px;
+  cursor: pointer;
+  list-style: none;
+}
+.pm-mobile-acct__summary::-webkit-details-marker { display: none; }
+.pm-mobile-acct__summary:focus-visible { outline: 2px solid var(--pm-navy-deep); outline-offset: -2px; }
+.pm-mobile-acct__avatar {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--pm-navy-deep);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 700;
+}
+.pm-mobile-acct__name { flex: 1; }
+.pm-mobile-acct__chev {
+  flex-shrink: 0;
+  color: var(--pm-ink-500);
+  transition: transform var(--pm-dur-base) var(--pm-ease-standard);
+}
+.pm-mobile-acct[open] .pm-mobile-acct__chev { transform: rotate(180deg); }
+.pm-mobile-acct__panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--pm-paper);
+}
+.pm-mobile-acct__sub {
+  padding: 13px 20px 13px 58px;   /* indent under the avatar */
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--pm-ink-700);
+  text-decoration: none;
+  border-bottom: 1px solid var(--pm-ink-100);
+  transition: background var(--pm-dur-fast), color var(--pm-dur-fast);
+}
+.pm-mobile-acct__sub:hover,
+.pm-mobile-acct__sub:active { background: var(--pm-ink-100); color: var(--pm-terracotta); }
+.pm-mobile-acct__sub:last-child { border-bottom: none; }
+
+/* TC-153: Quick order action in the drawer (moved out of the header). Shares
+   .pm-mobile-nav__link; just override to icon + left-aligned label. */
+.pm-mobile-nav__qo { justify-content: flex-start; gap: 10px; }
+.pm-mobile-nav__qo svg { flex-shrink: 0; color: var(--pm-ink-500); }
 /* Cart total pill — sits at the far right via the row's
    justify-content: space-between. */
 .pm-mobile-nav__cart-count {

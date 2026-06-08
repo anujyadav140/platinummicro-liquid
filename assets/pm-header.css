@@ -422,15 +422,52 @@ shopify-account:not(:defined) { visibility: hidden; }
 .pm-header__hamburger {
   display: none;
 }
-@media (max-width: 767px) {
-  .pm-header__search { display: none; }
+/* TC-153: the mobile header takes over at <=1023px (was 767px). The desktop
+   category bar needs ~930px and overflowed tablets like iPad Mini (768px), so
+   the categories collapse into the hamburger drawer. The SEARCH BAR stays in
+   the header (the logo shrinks to make room) so predictive search is always one
+   tap away. Desktop category nav returns at >=1024px. */
+@media (max-width: 1023px) {
   .pm-header__hamburger { display: flex; }
+  /* Account lives in the hamburger drawer (inline accordion) on mobile/tablet,
+     so hide the header avatar here — tapping it otherwise popped a misplaced
+     <shopify-account> menu over the drawer. */
+  .pm-header__shopify-account { display: none; }
   /* Hide the text label inside header action buttons, but keep icon
      wrappers and the cart badge visible. */
   .pm-header__action-btn > span:not(.pm-header__cart-icon):not(.pm-header__cart-badge) {
     display: none;
   }
   .pm-header__cart-btn { gap: 0; }
+  /* TC-153: Quick order moves into the hamburger drawer on mobile (frees header
+     space for a wider search). See the [data-qo-open] item in theme.liquid. */
+  .pm-header__action-btn[data-qo-open] { display: none; }
+  /* Search gets the row to itself: the logo is hidden on mobile/tablet (it still
+     shows at the top of the hamburger drawer), with a tighter gap and an
+     icon-only search button (the "Search" label is hidden). */
+  .pm-header__top { gap: 12px; }
+  .pm-header__logo { display: none; }
+  .pm-header__search-label { display: none; }
+  /* Icon-only search button: a clean square that fills the full field height
+     (no terracotta slivers) with the magnifier centered and a touch larger. */
+  .pm-header__search button[type="submit"] {
+    width: 46px;
+    padding: 0;
+    gap: 0;
+    align-self: stretch;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .pm-header__search button[type="submit"] svg { width: 18px; height: 18px; }
+  /* Let the search shrink to fit narrow phones. Flex inputs keep min-width:auto
+     by default, which would force the header to overflow below ~490px once the
+     search is visible — min-width:0 lets the field collapse gracefully instead. */
+  .pm-header__search,
+  .pm-header__search form,
+  .pm-header__search input { min-width: 0; }
+}
+@media (max-width: 600px) {
+  .pm-header__top { gap: 8px; }
 }
 
 /* --- Nav Rail ------------------------------------------------------------- */
@@ -483,7 +520,9 @@ shopify-account:not(:defined) { visibility: hidden; }
   transition: transform var(--pm-dur-base) var(--pm-ease-standard);
 }
 .pm-nav__item.is-open .pm-nav__chevron { transform: rotate(180deg); }
-@media (max-width: 767px) {
+/* TC-153: hide the desktop category bar on tablets (<=1023px) — the hamburger
+   drawer (#pm-mobile-nav) carries these same categories. Desktop nav >=1024px. */
+@media (max-width: 1023px) {
   .pm-nav { display: none; }
 }
 

@@ -305,6 +305,13 @@
 .pm-brand-wall {
   background: var(--bw-bg, var(--pm-paper));
   padding: var(--bw-pt, 56px) 0 var(--bw-pb, 64px);
+  /* TC-153: the logo strip scrolls horizontally inside .pm-brand-wall__scroll
+     (which already has overflow-x:auto + min-width:0). Add a section-level guard
+     so the strip can NEVER widen the page at narrow widths (no horizontal page
+     scroll at 768px). Clip on X only — overflow-y stays visible, so hover-scale
+     and focus rings on the logos are unaffected, and the inner drag-scroll keeps
+     working. */
+  overflow-x: clip;
 }
 .pm-brand-wall__head {
   display: flex;
