@@ -133,7 +133,9 @@
     {%- endif -%}
   {%- else -%}
     {%- for v in f.active_values -%}
-      {%- assign _chips = _chips | append: '|||' | append: v.param_name | append: '~~' | append: v.value | append: '~~' | append: v.label -%}
+      {%- assign _vlabel = v.label -%}
+      {%- if v.param_name contains 'availability' and v.value == '0' -%}{%- assign _vlabel = 'Available for Quote' -%}{%- endif -%}
+      {%- assign _chips = _chips | append: '|||' | append: v.param_name | append: '~~' | append: v.value | append: '~~' | append: _vlabel -%}
     {%- endfor -%}
   {%- endif -%}
 {%- endfor -%}
@@ -156,7 +158,7 @@
 {%- endif -%}
 {%- if _f_avail == nil -%}
   {%- if _query contains 'availability=1' -%}{%- assign _chips = _chips | append: '|||filter.v.availability~~1~~In stock' -%}{%- endif -%}
-  {%- if _query contains 'availability=0' -%}{%- assign _chips = _chips | append: '|||filter.v.availability~~0~~Out of stock' -%}{%- endif -%}
+  {%- if _query contains 'availability=0' -%}{%- assign _chips = _chips | append: '|||filter.v.availability~~0~~Available for Quote' -%}{%- endif -%}
 {%- endif -%}
 {%- if _f_promo == nil -%}
   {%- if _query contains 'tag=on-sale' -%}{%- assign _chips = _chips | append: '|||filter.p.tag~~on-sale~~On sale' -%}{%- endif -%}
@@ -397,7 +399,7 @@
               <label class="pm-facet__opt {% if _dis %}is-disabled{% endif %}">
                 <input type="checkbox" name="{{ value.param_name }}" value="{{ value.value }}"
                        {% if value.active %}checked{% endif %} {% if _dis %}disabled{% endif %}>
-                <span class="pm-facet__opt-label">{{ value.label }}</span>
+                <span class="pm-facet__opt-label">{% if value.value == '0' %}Available for Quote{% else %}{{ value.label }}{% endif %}</span>
                 <span class="pm-facet__opt-count">{{ value.count }}</span>
               </label>
             </li>
@@ -428,7 +430,7 @@
           <li>
             <label class="pm-facet__opt">
               <input type="checkbox" name="filter.v.availability" value="0" {% if request.url contains 'availability=0' %}checked{% endif %}>
-              <span class="pm-facet__opt-label">Out of stock</span>
+              <span class="pm-facet__opt-label">Available for Quote</span>
               <span class="pm-facet__opt-count">{{ _out_stock }}</span>
             </label>
           </li>
