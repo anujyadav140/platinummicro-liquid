@@ -74,6 +74,23 @@
       <div class="pm-plp__main">
 
         <div id="pm-plp-grid-wrap" class="pm-plp__grid-wrap" data-pm-cols="{{ columns_d }}">
+          {%- comment -%} TC-088: when showing all products (in-stock-first mode),
+              skeleton the grid BEFORE first paint so the server's default order
+              never flashes before pm-pagesize re-orders it. Runs synchronously
+              here; no-JS skips it and sees the products; failsafe reveals it. {%- endcomment -%}
+          <script>
+            (function () {
+              try {
+                var sp = new URLSearchParams(window.location.search).getAll('filter.v.availability');
+                var split = sp.length === 0 || (sp.indexOf('1') !== -1 && sp.indexOf('0') !== -1);
+                var w = document.currentScript && document.currentScript.parentElement;
+                if (split && w) {
+                  w.classList.add('is-reordering');
+                  setTimeout(function () { w.classList.remove('is-reordering'); }, 6000);
+                }
+              } catch (e) {}
+            })();
+          </script>
           {%- if collection.products.size > 0 -%}
             <ul class="pm-plp__grid" data-pm-view-mode="grid" data-pm-total="{{ paginate.items }}" data-pm-server-size="{{ per_page }}">
               {%- for product in collection.products -%}

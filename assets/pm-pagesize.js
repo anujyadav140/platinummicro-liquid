@@ -94,6 +94,9 @@
     splitMode = detectSplit();
     if (splitMode) {
       cacheIn = {}; cacheOut = {}; inStockTotal = null;
+      // Skeleton the grid while we re-order (covers AJAX swaps; the initial load
+      // is skeletoned before paint by the inline script in pm-collection.liquid).
+      wrap.classList.add('is-reordering');
     } else {
       cache = {};
       cache[urlPage()] = Array.prototype.slice.call(g.children).map(function (li) { return li.cloneNode(true); });
@@ -205,6 +208,7 @@
       renderNav(totalPages);
       renderCount(startIdx, endIdx);
       wrap.classList.remove('is-loading');
+      wrap.classList.remove('is-reordering'); // reveal — now in stock-first order
       // re-evaluate add buttons (maxed/"Already in cart") on the new cards
       if (window.PmAddToCart && window.PmAddToCart.syncMaxed) window.PmAddToCart.syncMaxed();
     });

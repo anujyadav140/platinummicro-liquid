@@ -267,6 +267,17 @@
 @media (min-width: 1280px) { .pm-plp__grid { grid-template-columns: repeat(4, 1fr); gap: 24px; } }
 @media (min-width: 1600px) { .pm-plp__grid { gap: 28px; } }
 .pm-plp__grid > li { list-style: none; }
+/* TC-088: skeleton the grid while pm-pagesize re-orders it in-stock-first, so the
+   server's default order never flashes. Each card becomes a shimmer placeholder
+   (reuses the pmFacetPulse keyframe). */
+.pm-plp__grid-wrap.is-reordering .pm-plp__grid > li {
+  min-height: 360px;
+  border-radius: 12px;
+  background: var(--pm-ink-100);
+  animation: pmFacetPulse 1.1s ease-in-out infinite;
+  overflow: hidden;
+}
+.pm-plp__grid-wrap.is-reordering .pm-plp__grid > li > * { visibility: hidden; }
 
 /* List view — image left, body right */
 .pm-plp__grid[data-pm-view-mode="list"] {
