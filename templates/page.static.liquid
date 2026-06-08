@@ -1,0 +1,29 @@
+{%- comment -%}
+  page.static — alternate page template (TC-083 definitive fix).
+
+  The static content URLs (/pages/about, /pages/brands, /pages/social-responsibility,
+  /pages/order-verification, /pages/shipping-returns, /pages/site-map) don't exist
+  as real Shopify pages, so they 404 and render through pm-404.liquid — which
+  flashed the "404 Page not found" placeholder. Shopify caches the 404 response
+  hard and doesn't reliably invalidate it on theme deploys, so the theme-level
+  fixes can't dependably reach it.
+
+  Fix: create REAL Shopify pages for those handles and assign them THIS template.
+  Then the URL returns a proper 200 and renders the baked static body directly —
+  no 404 template, no placeholder, no flash, ever.
+
+  How to assign (Online Store → Pages → Add page):
+    - Title:    e.g. "About Us"          Handle: about
+    - Title:    e.g. "Authorized Brands" Handle: brands
+    - Title:    "Social Responsibility"  Handle: social-responsibility
+    - Title:    "Order Verification"     Handle: order-verification
+    - (optional) "Shipping & Returns"    Handle: shipping-returns
+    - (optional) "Site Map"              Handle: site-map
+  In the page's "Theme template" dropdown choose "static". The body content can be
+  left blank — this template renders it from the handle.
+{%- endcomment -%}
+{%- render 'pm-static-body', handle: page.handle, fallback: page.content -%}
+{%- comment -%} fire the same hook the 404 path used so any dynamic bits initialise {%- endcomment -%}
+<script>
+  document.dispatchEvent(new CustomEvent('pm:static-mounted', { detail: { handle: {{ page.handle | json }} } }));
+</script>
