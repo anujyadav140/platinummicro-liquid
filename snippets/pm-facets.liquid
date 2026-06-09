@@ -439,7 +439,7 @@
     </div>
   </details>
 
-  {%- comment -%} ── PROMOTIONS (collapsed by default) ──────────────────────
+  {%- comment -%} ── PROMOTIONS ─────────────────────────────────────────────
       Read On-sale + Featured straight from Shopify's tag filter (_f_promo) so
       they behave like the other facets: live count, stay checked when active,
       and auto-disable at 0. Falls back to count 0 / disabled when the tag has
@@ -470,7 +470,8 @@
   {%- endif -%}
   {%- assign _os_dis = false -%}{%- if _os_found and _os_count == 0 and _os_active == false -%}{%- assign _os_dis = true -%}{%- endif -%}
   {%- assign _ft_dis = false -%}{%- if _ft_found and _ft_count == 0 and _ft_active == false -%}{%- assign _ft_dis = true -%}{%- endif -%}
-  <details class="pm-facet" data-pm-facet {% if _os_active or _ft_active %}open{% endif %}>
+  {%- comment -%} TC-090B: expanded by default like Brand/Price/Availability (was collapsed unless a promo was active). {%- endcomment -%}
+  <details class="pm-facet" data-pm-facet open>
     <summary class="pm-facet__summary">
       <span>Promotions</span>
       <svg class="pm-facet__chevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
