@@ -133,8 +133,9 @@
 
   {%- comment -%} ────────────────────────────  BRANDS (logo grid)  ──── {%- endcomment -%}
   {%- when 'brands' -%}
-    {%- comment -%} TC-157: brand logos hosted on Shopify CDN as theme assets (assets/pm-brand-<slug>.webp,
-        sourced from our AAAwave store's brand set). entry = Label~slug; blank slug => clean text. {%- endcomment -%}
+    {%- comment -%} TC-157: 47 brand logos hosted on Shopify CDN as theme assets (assets/pm-brand-<slug>.webp,
+        with adata/hgst as .png; sourced from our AAAwave store's brand set). entry = Label~slug;
+        a slug containing '.' uses that exact filename, blank slug => clean text fallback. {%- endcomment -%}
     {%- assign _resellers = 'Arctic~arctic|ADATA~adata.png|Arduino~arduino|Asustor~asustor|AVerMedia~avermedia|Cooler Master~coolermaster|Corsair~corsair|Darkflash~darkflash|Dynatron~dynatron|Gamdias~gamdias|Gelid~gelid|iStar~istar|Maxtor~maxtor|Pimoroni~pimoroni|PNY~pny|QNAP~qnap|Sapphire~sapphire|TEAMGROUP~teamgroup|Thermal Grizzly~thermalgrizzly|Thermal Hero~thermalhero|XFX~xfx' | split: '|' -%}
     {%- assign _partners = 'Western Digital~wd|SanDisk~sandisk|Seagate~seagate|Micron~micron|HGST~hgst.png|Solidigm~solidigm|HP~hp|HPE~hpe|Lenovo~lenovo|Intel~intel|AMD~amd|ASRock~asrock|ASRock Rack~asrockrack|Gigabyte~gigabyte|SK hynix~skhynix|KIOXIA~kioxia|Logitech~logitech|Microsoft~microsoft|MSI~msi|NZXT~nzxt|Poly~poly|Samsung~samsung|Toshiba~toshiba|TRYX~tryx|Yealink~yealink|UGREEN~ugreen' | split: '|' -%}
     <div class="pm-static__body">
