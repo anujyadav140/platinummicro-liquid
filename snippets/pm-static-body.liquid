@@ -135,8 +135,8 @@
   {%- when 'brands' -%}
     {%- comment -%} TC-157: brand logos hosted on Shopify CDN as theme assets (assets/pm-brand-<slug>.webp,
         sourced from our AAAwave store's brand set). entry = Label~slug; blank slug => clean text. {%- endcomment -%}
-    {%- assign _resellers = 'Arctic~arctic|ADATA~|Arduino~arduino|Asustor~asustor|AVerMedia~avermedia|Cooler Master~coolermaster|Corsair~corsair|Darkflash~darkflash|Dynatron~dynatron|Gamdias~gamdias|Gelid~gelid|iStar~istar|Maxtor~maxtor|Pimoroni~pimoroni|PNY~pny|QNAP~qnap|Sapphire~sapphire|TEAMGROUP~teamgroup|Thermal Grizzly~thermalgrizzly|Thermal Hero~thermalhero|XFX~xfx' | split: '|' -%}
-    {%- assign _partners = 'Western Digital~wd|SanDisk~sandisk|Seagate~seagate|Micron~micron|HGST~|Solidigm~solidigm|HP~hp|HPE~hpe|Lenovo~lenovo|Intel~intel|AMD~amd|ASRock~asrock|ASRock Rack~asrockrack|Gigabyte~gigabyte|SK hynix~skhynix|KIOXIA~kioxia|Logitech~logitech|Microsoft~microsoft|MSI~msi|NZXT~nzxt|Poly~poly|Samsung~samsung|Toshiba~toshiba|TRYX~tryx|Yealink~yealink|UGREEN~ugreen' | split: '|' -%}
+    {%- assign _resellers = 'Arctic~arctic|ADATA~adata.png|Arduino~arduino|Asustor~asustor|AVerMedia~avermedia|Cooler Master~coolermaster|Corsair~corsair|Darkflash~darkflash|Dynatron~dynatron|Gamdias~gamdias|Gelid~gelid|iStar~istar|Maxtor~maxtor|Pimoroni~pimoroni|PNY~pny|QNAP~qnap|Sapphire~sapphire|TEAMGROUP~teamgroup|Thermal Grizzly~thermalgrizzly|Thermal Hero~thermalhero|XFX~xfx' | split: '|' -%}
+    {%- assign _partners = 'Western Digital~wd|SanDisk~sandisk|Seagate~seagate|Micron~micron|HGST~hgst.png|Solidigm~solidigm|HP~hp|HPE~hpe|Lenovo~lenovo|Intel~intel|AMD~amd|ASRock~asrock|ASRock Rack~asrockrack|Gigabyte~gigabyte|SK hynix~skhynix|KIOXIA~kioxia|Logitech~logitech|Microsoft~microsoft|MSI~msi|NZXT~nzxt|Poly~poly|Samsung~samsung|Toshiba~toshiba|TRYX~tryx|Yealink~yealink|UGREEN~ugreen' | split: '|' -%}
     <div class="pm-static__body">
       <div class="pm-static__body__inner pm-static__body__inner--wide">
         <p class="pm-static__intro">Platinum Micro sells through two channels — <strong>direct authorized-reseller agreements</strong> with the manufacturers in the first list, and <strong>partner relationships</strong> with the brands in the second. Either way, every unit carries the original manufacturer warranty and ships from a verified channel — never from grey-market or secondary sources.</p>
@@ -150,7 +150,7 @@
               {%- assign _label = _t[0] -%}{%- assign _slug = _t[1] -%}
               <li class="pm-brand-card">
                 {%- if _slug != blank -%}
-                  {%- assign _af = 'pm-brand-' | append: _slug | append: '.webp' -%}
+                  {%- if _slug contains '.' -%}{%- assign _af = 'pm-brand-' | append: _slug -%}{%- else -%}{%- assign _af = 'pm-brand-' | append: _slug | append: '.webp' -%}{%- endif -%}
                   <img src="{{ _af | asset_url }}" alt="{{ _label }}" width="130" height="60" loading="lazy">
                 {%- else -%}
                   <span class="pm-brand-card__text">{{ _label | upcase }}</span>
@@ -169,7 +169,7 @@
               {%- assign _label = _t[0] -%}{%- assign _slug = _t[1] -%}
               <li class="pm-brand-card">
                 {%- if _slug != blank -%}
-                  {%- assign _af = 'pm-brand-' | append: _slug | append: '.webp' -%}
+                  {%- if _slug contains '.' -%}{%- assign _af = 'pm-brand-' | append: _slug -%}{%- else -%}{%- assign _af = 'pm-brand-' | append: _slug | append: '.webp' -%}{%- endif -%}
                   <img src="{{ _af | asset_url }}" alt="{{ _label }}" width="130" height="60" loading="lazy">
                 {%- else -%}
                   <span class="pm-brand-card__text">{{ _label | upcase }}</span>
