@@ -492,7 +492,8 @@
           {%- if _instock -%}
             {%- comment -%} TC-084: inventory cap so JS disables the button when the cart holds every available unit. {%- endcomment -%}
             {%- assign _pdp_maxq = '' -%}
-            {%- if _v.inventory_management == 'shopify' and _v.inventory_policy == 'deny' -%}{%- assign _pdp_maxq = _stock -%}{%- endif -%}
+            {%- comment -%} Cap the stepper at on-hand stock for ANY tracked variant with a positive count — DENY (hard ceiling) and CONTINUE alike. The CONTINUE case is the AAAwave inventory-desync workaround variant, which must still cap at its real count, matching the "N in stock" line above. Same gate as the availability display so the two never disagree. {%- endcomment -%}
+            {%- if _v.inventory_management == 'shopify' and _stock and _stock > 0 -%}{%- assign _pdp_maxq = _stock -%}{%- endif -%}
             <button
               type="button"
               class="pm-pdp__cta pm-pdp__cta--cart"
@@ -891,8 +892,10 @@
         // Wire the cart button to the new variant
         if (addBtn) {
           addBtn.setAttribute('data-variant-id', match.id);
-          // TC-084: keep the inventory cap in sync with the chosen variant.
-          if (match.inventory_management === 'shopify' && match.inventory_policy === 'deny' && typeof match.inventory_quantity === 'number') {
+          // TC-084: keep the inventory cap in sync with the chosen variant. Cap at the
+          // real count for ANY tracked variant with stock > 0 — DENY and CONTINUE alike —
+          // so it matches the "N in stock" line and the server-rendered data-max-qty.
+          if (match.inventory_management === 'shopify' && typeof match.inventory_quantity === 'number' && match.inventory_quantity > 0) {
             addBtn.setAttribute('data-max-qty', match.inventory_quantity);
           } else {
             addBtn.removeAttribute('data-max-qty');
