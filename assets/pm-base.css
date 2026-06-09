@@ -42,3 +42,12 @@ ul, ol { list-style: none; }
   .pm-container { padding-left: 2rem; padding-right: 2rem; }
 }
 
+/* TC-150: never let a page section cause horizontal scroll on any screen. Clip-x
+   on the content wrapper only — <main> is a sibling BELOW the sticky header, so
+   the header is untouched; `clip` (not `hidden`) keeps overflow-y visible, so it
+   doesn't become a scroll container and vertical position:sticky inside pages
+   (e.g. the PLP facet rail) keeps working. The header itself no longer overflows
+   at 375px (logo hidden, Quick order + account moved into the drawer, search has
+   a min-width:0 shrink-guard). */
+.pm-main { overflow-x: clip; }
+
