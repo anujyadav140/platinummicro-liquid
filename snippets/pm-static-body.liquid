@@ -133,10 +133,10 @@
 
   {%- comment -%} ────────────────────────────  BRANDS (logo grid)  ──── {%- endcomment -%}
   {%- when 'brands' -%}
-    {%- comment -%} TC-157: entry = Label~storekey~domain~siasset. storekey -> hosted Shopify
-        wordmark (_brand_logos); siasset -> SimpleIcons SVG hosted in /assets; else clean text. {%- endcomment -%}
-    {%- assign _resellers = 'Arctic~arctic~arctic.de~|ADATA~~adata.com~|Arduino~~arduino.cc~arduino|Asustor~~asustor.com~|AVerMedia~~avermedia.com~|Cooler Master~~coolermaster.com~coolermaster|Corsair~~corsair.com~corsair|Darkflash~~darkflash.com~|Dynatron~~dynatron-corp.com~|Gamdias~~gamdias.com~|Gelid~~gelidsolutions.com~|iStar~~istarusa.com~|Maxtor~~maxtor.com~|Pimoroni~~pimoroni.com~|PNY~~pny.com~|QNAP~~qnap.com~qnap|Sapphire~~sapphiretech.com~|TEAMGROUP~~teamgroupinc.com~|Thermal Grizzly~~thermal-grizzly.com~|Thermal Hero~~thermalhero.com~|XFX~~xfxforce.com~' | split: '|' -%}
-    {%- assign _partners = 'Western Digital~wd~westerndigital.com~|SanDisk~~sandisk.com~|Seagate~seagate~seagate.com~|Micron~micron~micron.com~|HGST~~hgst.com~|Solidigm~~solidigm.com~|HP~~hp.com~hp|HPE~hpe~hpe.com~|Lenovo~lenovo~lenovo.com~|Intel~intel~intel.com~|AMD~amd~amd.com~|ASRock~~asrock.com~|ASRock Rack~~asrockrack.com~|Gigabyte~~gigabyte.com~|SK hynix~~skhynix.com~|KIOXIA~~kioxia.com~|Logitech~~logitech.com~|Microsoft~microsoft~microsoft.com~|MSI~~msi.com~msi|NZXT~~nzxt.com~nzxt|Poly~~poly.com~poly|Samsung~samsung~samsung.com~|Toshiba~~toshiba.com~toshiba|TRYX~~tryx.com~|Yealink~~yealink.com~|UGREEN~~ugreen.com~' | split: '|' -%}
+    {%- comment -%} TC-157: brand logos hosted on Shopify CDN as theme assets (assets/pm-brand-<slug>.webp,
+        sourced from our AAAwave store's brand set). entry = Label~slug; blank slug => clean text. {%- endcomment -%}
+    {%- assign _resellers = 'Arctic~arctic|ADATA~|Arduino~arduino|Asustor~asustor|AVerMedia~avermedia|Cooler Master~coolermaster|Corsair~corsair|Darkflash~darkflash|Dynatron~dynatron|Gamdias~gamdias|Gelid~gelid|iStar~istar|Maxtor~maxtor|Pimoroni~pimoroni|PNY~pny|QNAP~qnap|Sapphire~sapphire|TEAMGROUP~teamgroup|Thermal Grizzly~thermalgrizzly|Thermal Hero~thermalhero|XFX~xfx' | split: '|' -%}
+    {%- assign _partners = 'Western Digital~wd|SanDisk~sandisk|Seagate~seagate|Micron~micron|HGST~|Solidigm~solidigm|HP~hp|HPE~hpe|Lenovo~lenovo|Intel~intel|AMD~amd|ASRock~asrock|ASRock Rack~asrockrack|Gigabyte~gigabyte|SK hynix~skhynix|KIOXIA~kioxia|Logitech~logitech|Microsoft~microsoft|MSI~msi|NZXT~nzxt|Poly~poly|Samsung~samsung|Toshiba~toshiba|TRYX~tryx|Yealink~yealink|UGREEN~ugreen' | split: '|' -%}
     <div class="pm-static__body">
       <div class="pm-static__body__inner pm-static__body__inner--wide">
         <p class="pm-static__intro">Platinum Micro sells through two channels — <strong>direct authorized-reseller agreements</strong> with the manufacturers in the first list, and <strong>partner relationships</strong> with the brands in the second. Either way, every unit carries the original manufacturer warranty and ships from a verified channel — never from grey-market or secondary sources.</p>
@@ -147,21 +147,11 @@
           <ul class="pm-brand-cards">
             {%- for _b in _resellers -%}
               {%- assign _t = _b | split: '~' -%}
-              {%- assign _label = _t[0] -%}{%- assign _key = _t[1] -%}{%- assign _si = _t[3] -%}
-              {%- assign _logo = '' -%}
-              {%- if _key != blank -%}
-                {%- assign _logopairs = _brand_logos | split: '|' -%}
-                {%- for _p in _logopairs -%}
-                  {%- assign _kv2 = _p | split: ':' -%}
-                  {%- if _kv2[0] == _key -%}{%- assign _logo = _cdn | append: _kv2[1] -%}{%- endif -%}
-                {%- endfor -%}
-              {%- endif -%}
+              {%- assign _label = _t[0] -%}{%- assign _slug = _t[1] -%}
               <li class="pm-brand-card">
-                {%- if _logo != '' -%}
-                  <img src="{{ _logo }}" alt="{{ _label }}" width="150" height="64" loading="lazy">
-                {%- elsif _si != blank -%}
-                  {%- assign _af = 'pm-brand-' | append: _si | append: '.svg' -%}
-                  <img class="pm-brand-card__si" src="{{ _af | asset_url }}" alt="{{ _label }}" width="60" height="60" loading="lazy">
+                {%- if _slug != blank -%}
+                  {%- assign _af = 'pm-brand-' | append: _slug | append: '.webp' -%}
+                  <img src="{{ _af | asset_url }}" alt="{{ _label }}" width="130" height="60" loading="lazy">
                 {%- else -%}
                   <span class="pm-brand-card__text">{{ _label | upcase }}</span>
                 {%- endif -%}
@@ -176,21 +166,11 @@
           <ul class="pm-brand-cards">
             {%- for _b in _partners -%}
               {%- assign _t = _b | split: '~' -%}
-              {%- assign _label = _t[0] -%}{%- assign _key = _t[1] -%}{%- assign _si = _t[3] -%}
-              {%- assign _logo = '' -%}
-              {%- if _key != blank -%}
-                {%- assign _logopairs = _brand_logos | split: '|' -%}
-                {%- for _p in _logopairs -%}
-                  {%- assign _kv2 = _p | split: ':' -%}
-                  {%- if _kv2[0] == _key -%}{%- assign _logo = _cdn | append: _kv2[1] -%}{%- endif -%}
-                {%- endfor -%}
-              {%- endif -%}
+              {%- assign _label = _t[0] -%}{%- assign _slug = _t[1] -%}
               <li class="pm-brand-card">
-                {%- if _logo != '' -%}
-                  <img src="{{ _logo }}" alt="{{ _label }}" width="150" height="64" loading="lazy">
-                {%- elsif _si != blank -%}
-                  {%- assign _af = 'pm-brand-' | append: _si | append: '.svg' -%}
-                  <img class="pm-brand-card__si" src="{{ _af | asset_url }}" alt="{{ _label }}" width="60" height="60" loading="lazy">
+                {%- if _slug != blank -%}
+                  {%- assign _af = 'pm-brand-' | append: _slug | append: '.webp' -%}
+                  <img src="{{ _af | asset_url }}" alt="{{ _label }}" width="130" height="60" loading="lazy">
                 {%- else -%}
                   <span class="pm-brand-card__text">{{ _label | upcase }}</span>
                 {%- endif -%}
