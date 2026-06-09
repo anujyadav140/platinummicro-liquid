@@ -471,7 +471,8 @@
           <div class="pm-pdp__avail-label">Availability</div>
           {%- if _instock -%}
             <div class="pm-pdp__avail pm-pdp__avail--in" data-pm-pdp-avail>
-              {%- if _v.inventory_management == 'shopify' and _v.inventory_policy == 'deny' and _stock and _stock > 0 -%}
+              {%- comment -%} Show the real count whenever there's a tracked qty > 0 — not only DENY — so variants flipped to CONTINUE (Shopify inventory-desync workaround) still show "N in stock". {%- endcomment -%}
+              {%- if _v.inventory_management == 'shopify' and _stock and _stock > 0 -%}
                 {{ _stock }} in stock
               {%- else -%}
                 In stock
@@ -878,7 +879,7 @@
           if (!match.available) {
             availEl.className = 'pm-pdp__avail pm-pdp__avail--out';
             availEl.textContent = 'Out of stock';
-          } else if (match.inventory_management === 'shopify' && match.inventory_policy === 'deny' && typeof match.inventory_quantity === 'number' && match.inventory_quantity > 0) {
+          } else if (match.inventory_management === 'shopify' && typeof match.inventory_quantity === 'number' && match.inventory_quantity > 0) {
             availEl.className = 'pm-pdp__avail pm-pdp__avail--in';
             availEl.textContent = match.inventory_quantity.toLocaleString() + ' in stock';
           } else {
