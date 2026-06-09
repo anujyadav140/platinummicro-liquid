@@ -1166,7 +1166,7 @@
   background: #fff;
   border: 1px solid var(--pm-ink-200);
   border-radius: 10px;
-  padding: 16px;
+  padding: 10px;
   transition: border-color var(--pm-dur-fast), transform var(--pm-dur-fast), box-shadow var(--pm-dur-fast);
 }
 .pm-brand-card:hover {
@@ -1175,17 +1175,12 @@
   box-shadow: 0 4px 12px rgba(7, 21, 37, 0.06);
 }
 .pm-brand-card img {
-  max-width: 78%;
-  max-height: 48%;
-  width: auto;
-  height: auto;
+  /* TC-157: fill the card. An explicit box + object-fit:contain scales small source
+     logos UP to a uniform size (max-width/height alone only caps, which left low-res
+     marks tiny) while preserving each logo's aspect ratio — no stretching. */
+  width: 92%;
+  height: 78%;
   object-fit: contain;
-}
-/* TC-157: SimpleIcons brand marks are square — size them a touch larger than the
-   wordmark default so they read clearly without dwarfing the wordmark logos. */
-.pm-brand-card img.pm-brand-card__si {
-  max-width: 54%;
-  max-height: 60%;
 }
 .pm-brand-card__text {
   font-size: 13px;
