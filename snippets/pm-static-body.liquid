@@ -30,7 +30,7 @@
           <p class="pm-static__lead">Forty-plus manufacturer partnerships, real lead times, named account managers — sourced direct, with trade credit available on approved application.</p>
         {%- when 'brands' -%}
           <h1 class="pm-static__title">Authorized partner brands.</h1>
-          <p class="pm-static__lead">21 manufacturer relationships across direct authorization and authorized-distributor channels</p>
+          <p class="pm-static__lead">Direct authorization across 21 brands, plus partner relationships with 26 more.</p>
         {%- when 'contact' -%}
           <div class="pm-static__eyebrow">Talk to a Specialist</div>
           <h1 class="pm-static__title">Talk to Platinum Micro.</h1>
@@ -133,11 +133,10 @@
 
   {%- comment -%} ────────────────────────────  BRANDS (logo grid)  ──── {%- endcomment -%}
   {%- when 'brands' -%}
-    {%- comment -%} TC-157: two authoritative lists. Each entry = Label~mapkey~domain.
-        mapkey matches _brand_logos (hosted Shopify wordmark) when we have one; otherwise
-        the logo falls back to the brand favicon (Google s2, ~universal), then to text. {%- endcomment -%}
-    {%- assign _resellers = 'Arctic~arctic~arctic.de|ADATA~~adata.com|Arduino~~arduino.cc|Asustor~~asustor.com|AVerMedia~~avermedia.com|Cooler Master~~coolermaster.com|Corsair~~corsair.com|Darkflash~~darkflash.com|Dynatron~~dynatron-corp.com|Gamdias~~gamdias.com|Gelid~~gelidsolutions.com|iStar~~istarusa.com|Maxtor~~maxtor.com|Pimoroni~~pimoroni.com|PNY~~pny.com|QNAP~~qnap.com|Sapphire~~sapphiretech.com|TEAMGROUP~~teamgroupinc.com|Thermal Grizzly~~thermal-grizzly.com|Thermal Hero~~thermalhero.com|XFX~~xfxforce.com' | split: '|' -%}
-    {%- assign _partners = 'Western Digital~wd~westerndigital.com|SanDisk~~sandisk.com|Seagate~seagate~seagate.com|Micron~micron~micron.com|HGST~~hgst.com|Solidigm~~solidigm.com|HP~~hp.com|HPE~hpe~hpe.com|Lenovo~lenovo~lenovo.com|Intel~intel~intel.com|AMD~amd~amd.com|ASRock~~asrock.com|ASRock Rack~~asrockrack.com|Gigabyte~~gigabyte.com|SK hynix~~skhynix.com|KIOXIA~~kioxia.com|Logitech~~logitech.com|Microsoft~microsoft~microsoft.com|MSI~~msi.com|NZXT~~nzxt.com|Poly~~poly.com|Samsung~samsung~samsung.com|Toshiba~~toshiba.com|TRYX~~tryx.com|Yealink~~yealink.com|UGREEN~~ugreen.com' | split: '|' -%}
+    {%- comment -%} TC-157: entry = Label~storekey~domain~siasset. storekey -> hosted Shopify
+        wordmark (_brand_logos); siasset -> SimpleIcons SVG hosted in /assets; else clean text. {%- endcomment -%}
+    {%- assign _resellers = 'Arctic~arctic~arctic.de~|ADATA~~adata.com~|Arduino~~arduino.cc~arduino|Asustor~~asustor.com~|AVerMedia~~avermedia.com~|Cooler Master~~coolermaster.com~coolermaster|Corsair~~corsair.com~corsair|Darkflash~~darkflash.com~|Dynatron~~dynatron-corp.com~|Gamdias~~gamdias.com~|Gelid~~gelidsolutions.com~|iStar~~istarusa.com~|Maxtor~~maxtor.com~|Pimoroni~~pimoroni.com~|PNY~~pny.com~|QNAP~~qnap.com~qnap|Sapphire~~sapphiretech.com~|TEAMGROUP~~teamgroupinc.com~|Thermal Grizzly~~thermal-grizzly.com~|Thermal Hero~~thermalhero.com~|XFX~~xfxforce.com~' | split: '|' -%}
+    {%- assign _partners = 'Western Digital~wd~westerndigital.com~|SanDisk~~sandisk.com~|Seagate~seagate~seagate.com~|Micron~micron~micron.com~|HGST~~hgst.com~|Solidigm~~solidigm.com~|HP~~hp.com~hp|HPE~hpe~hpe.com~|Lenovo~lenovo~lenovo.com~|Intel~intel~intel.com~|AMD~amd~amd.com~|ASRock~~asrock.com~|ASRock Rack~~asrockrack.com~|Gigabyte~~gigabyte.com~|SK hynix~~skhynix.com~|KIOXIA~~kioxia.com~|Logitech~~logitech.com~|Microsoft~microsoft~microsoft.com~|MSI~~msi.com~msi|NZXT~~nzxt.com~nzxt|Poly~~poly.com~poly|Samsung~samsung~samsung.com~|Toshiba~~toshiba.com~toshiba|TRYX~~tryx.com~|Yealink~~yealink.com~|UGREEN~~ugreen.com~' | split: '|' -%}
     <div class="pm-static__body">
       <div class="pm-static__body__inner pm-static__body__inner--wide">
         <p class="pm-static__intro">Platinum Micro sells through two channels — <strong>direct authorized-reseller agreements</strong> with the manufacturers in the first list, and <strong>partner relationships</strong> with the brands in the second. Either way, every unit carries the original manufacturer warranty and ships from a verified channel — never from grey-market or secondary sources.</p>
@@ -148,9 +147,7 @@
           <ul class="pm-brand-cards">
             {%- for _b in _resellers -%}
               {%- assign _t = _b | split: '~' -%}
-              {%- assign _label = _t[0] -%}
-              {%- assign _key = _t[1] -%}
-              {%- assign _domain = _t[2] -%}
+              {%- assign _label = _t[0] -%}{%- assign _key = _t[1] -%}{%- assign _si = _t[3] -%}
               {%- assign _logo = '' -%}
               {%- if _key != blank -%}
                 {%- assign _logopairs = _brand_logos | split: '|' -%}
@@ -162,9 +159,11 @@
               <li class="pm-brand-card">
                 {%- if _logo != '' -%}
                   <img src="{{ _logo }}" alt="{{ _label }}" width="150" height="64" loading="lazy">
+                {%- elsif _si != blank -%}
+                  {%- assign _af = 'pm-brand-' | append: _si | append: '.svg' -%}
+                  <img class="pm-brand-card__si" src="{{ _af | asset_url }}" alt="{{ _label }}" width="60" height="60" loading="lazy">
                 {%- else -%}
-                  <img src="https://www.google.com/s2/favicons?domain={{ _domain }}&sz=128" alt="{{ _label }}" width="48" height="48" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                  <span class="pm-brand-card__text" style="display:none;">{{ _label | upcase }}</span>
+                  <span class="pm-brand-card__text">{{ _label | upcase }}</span>
                 {%- endif -%}
               </li>
             {%- endfor -%}
@@ -177,9 +176,7 @@
           <ul class="pm-brand-cards">
             {%- for _b in _partners -%}
               {%- assign _t = _b | split: '~' -%}
-              {%- assign _label = _t[0] -%}
-              {%- assign _key = _t[1] -%}
-              {%- assign _domain = _t[2] -%}
+              {%- assign _label = _t[0] -%}{%- assign _key = _t[1] -%}{%- assign _si = _t[3] -%}
               {%- assign _logo = '' -%}
               {%- if _key != blank -%}
                 {%- assign _logopairs = _brand_logos | split: '|' -%}
@@ -191,9 +188,11 @@
               <li class="pm-brand-card">
                 {%- if _logo != '' -%}
                   <img src="{{ _logo }}" alt="{{ _label }}" width="150" height="64" loading="lazy">
+                {%- elsif _si != blank -%}
+                  {%- assign _af = 'pm-brand-' | append: _si | append: '.svg' -%}
+                  <img class="pm-brand-card__si" src="{{ _af | asset_url }}" alt="{{ _label }}" width="60" height="60" loading="lazy">
                 {%- else -%}
-                  <img src="https://www.google.com/s2/favicons?domain={{ _domain }}&sz=128" alt="{{ _label }}" width="48" height="48" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-                  <span class="pm-brand-card__text" style="display:none;">{{ _label | upcase }}</span>
+                  <span class="pm-brand-card__text">{{ _label | upcase }}</span>
                 {%- endif -%}
               </li>
             {%- endfor -%}

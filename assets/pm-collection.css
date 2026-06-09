@@ -1181,6 +1181,12 @@
   height: auto;
   object-fit: contain;
 }
+/* TC-157: SimpleIcons brand marks are square — size them a touch larger than the
+   wordmark default so they read clearly without dwarfing the wordmark logos. */
+.pm-brand-card img.pm-brand-card__si {
+  max-width: 54%;
+  max-height: 60%;
+}
 .pm-brand-card__text {
   font-size: 13px;
   font-weight: 700;
