@@ -24,6 +24,12 @@
 
   // ───────────────────────────── Store ──────────────────────────────
   var STORAGE_KEY = 'pm:lists:v1';
+  // Caps so a runaway loop / paste can't bloat localStorage. Same
+  // defensive pattern as recently-viewed (CAP) and compare (MAX).
+  // Adding to an item that already exists (qty bump) is always allowed —
+  // only *new* lists and *new* SKUs in a list are gated.
+  var MAX_LISTS = 50;
+  var MAX_ITEMS_PER_LIST = 200;
 
   // ──────────────────────── Auth gate + resume ──────────────────────────
   // Lists require a signed-in customer. When a guest clicks "Add to List"
@@ -108,22 +114,33 @@
     }
   }
 
+  // Returns true if the write persisted, false if it was rejected (quota
+  // exceeded / private-mode Safari). The in-memory `lists` array still
+  // reflects the change either way; callers surface the false so an add
+  // never *appears* to succeed without persisting.
   function writeStore(lists) {
+    var ok = true;
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lists));
     } catch (e) {
       // Quota / private-mode Safari — let the session see the change in
       // memory; we just can't persist.
+      ok = false;
     }
     document.dispatchEvent(new CustomEvent('pm:lists-changed', { detail: { lists: lists } }));
+    return ok;
   }
 
   function makeId() {
     return 'list_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
   }
 
+  // Returns the new list (with a `saved` flag reflecting whether the write
+  // persisted), or null when the list cap is reached so the caller can tell
+  // the user nothing was created.
   function createList(name) {
     var lists = readStore();
+    if (lists.length >= MAX_LISTS) return null;
     var now = Date.now();
     var list = {
       id: makeId(),
@@ -133,10 +150,14 @@
       updatedAt: now,
     };
     lists.push(list);
-    writeStore(lists);
+    list.saved = writeStore(lists);
     return list;
   }
 
+  // Returns true if the write persisted, false on quota failure or when the
+  // per-list item cap is hit for a *new* SKU. Bumping the qty of a SKU
+  // already in the list is always allowed and still subject to the write
+  // result.
   function addItemToList(listId, item) {
     var lists = readStore();
     var now = Date.now();
@@ -152,6 +173,9 @@
       if (found) {
         found.quantity = (found.quantity || 1) + qty;
       } else {
+        // New SKU — refuse once the list is full so it can't grow without
+        // bound.
+        if (l.items.length >= MAX_ITEMS_PER_LIST) return false;
         l.items.push({
           sku: item.sku,
           name: item.name,
@@ -166,7 +190,7 @@
       l.updatedAt = now;
       break;
     }
-    writeStore(lists);
+    return writeStore(lists);
   }
 
   function isSkuInAnyList(sku) {
@@ -194,9 +218,10 @@
     return false;
   }
 
-  // Drop a single SKU from a specific list.
+  // Drop a single SKU from a specific list. Returns the write result so
+  // callers can surface a failed persist.
   function removeItemFromList(listId, sku) {
-    if (!listId || !sku) return;
+    if (!listId || !sku) return false;
     var lists = readStore();
     for (var i = 0; i < lists.length; i++) {
       if (lists[i].id !== listId) continue;
@@ -204,7 +229,7 @@
       lists[i].updatedAt = Date.now();
       break;
     }
-    writeStore(lists);
+    return writeStore(lists);
   }
 
   // ─────────────────────────── Helpers ─────────────────────────────
@@ -379,9 +404,18 @@
         var trimmed = input.value.trim();
         if (!trimmed) return;
         var newList = createList(trimmed);
-        if (currentTrigger) {
+        if (!newList) {
+          flashError('You can keep up to ' + MAX_LISTS + ' lists. Remove one to add another.');
+          return;
+        }
+        var ok = newList.saved;
+        if (ok && currentTrigger) {
           var item = readItemFromTrigger(currentTrigger);
-          if (item.sku) addItemToList(newList.id, item);
+          if (item.sku) ok = addItemToList(newList.id, item);
+        }
+        if (!ok) {
+          flashError("Couldn't save — your browser storage may be full.");
+          return;
         }
         flashChange(newList.id, 'added');
       });
@@ -398,6 +432,18 @@
         renderPopoverFooter(true);
       });
     }
+  }
+
+  // Surface a save failure (quota exceeded / cap reached) in the popover
+  // instead of silently dropping the change. Keeps the popover open so the
+  // user actually sees the message.
+  function flashError(message) {
+    if (!popover) return;
+    var body = popover.querySelector('[data-popover-body]');
+    if (!body) return;
+    body.className = 'pm-list-popover__body pm-list-popover__body--empty';
+    body.textContent = message;
+    renderPopoverFooter(false);
   }
 
   // Flash the row + auto-close. action: 'added' | 'removed'.
@@ -468,11 +514,17 @@
         var item = readItemFromTrigger(currentTrigger);
         if (!item.sku) return;
         if (inList) {
-          removeItemFromList(listId, item.sku);
-          flashChange(listId, 'removed');
+          if (removeItemFromList(listId, item.sku)) {
+            flashChange(listId, 'removed');
+          } else {
+            flashError("Couldn't save — your browser storage may be full.");
+          }
         } else {
-          addItemToList(listId, item);
-          flashChange(listId, 'added');
+          if (addItemToList(listId, item)) {
+            flashChange(listId, 'added');
+          } else {
+            flashError('This list is full (up to ' + MAX_ITEMS_PER_LIST + ' items), or your browser storage is full.');
+          }
         }
       }
     }

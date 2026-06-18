@@ -204,7 +204,7 @@
             <li><a href="{{ collections.peripherals.url }}">Peripherals</a></li>
             <li><a href="{{ collections.servers.url }}">Servers</a></li>
             <li><a href="{{ collections.software.url }}">Software</a></li>
-            <li><a href="{{ collections.bundles.url }}">Bulk Options</a></li>
+            <li><a href="{{ collections.storage.url }}">Storage</a></li>
             <li><a href="{{ collections.bundles.url }}">Bundles</a></li>
           </ul>
         </section>
@@ -384,8 +384,8 @@
         {%- if customer -%}
           <header class="pm-acct__head">
             <div class="pm-static__kicker">My Account</div>
-            <h1 class="pm-acct__title">Welcome back, {{ customer.first_name | default: 'friend' }}.</h1>
-            <p class="pm-acct__lead">Signed in as <strong>{{ customer.email }}</strong>.</p>
+            <h1 class="pm-acct__title">Welcome back, {{ customer.first_name | default: 'friend' | escape }}.</h1>
+            <p class="pm-acct__lead">Signed in as <strong>{{ customer.email | escape }}</strong>.</p>
           </header>
 
           <div class="pm-acct__grid">
@@ -742,7 +742,7 @@
               >
             </div>
 
-            <a href="{{ routes.account_url }}" class="pm-signin__forgot">Forgot password?</a>
+            <a href="{{ routes.account_login_url }}#recover" class="pm-signin__forgot">Forgot password?</a>
 
             <button type="submit" class="pm-btn pm-btn--primary pm-btn--block">
               Sign in

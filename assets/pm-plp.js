@@ -421,12 +421,15 @@
     toast.innerHTML =
       '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>' +
       '<div class="pm-toast__body">' +
-        '<div class="pm-toast__title">Signed in' + (name ? ', ' + name : '') + '.</div>' +
+        '<div class="pm-toast__title"></div>' +
         '<div class="pm-toast__lead">Welcome back to Platinum Micro.</div>' +
       '</div>' +
       '<button type="button" class="pm-toast__close" aria-label="Dismiss">' +
         '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>' +
       '</button>';
+    // Set the title via textContent so a customer name can't inject markup.
+    toast.querySelector('.pm-toast__title').textContent =
+      'Signed in' + (name ? ', ' + name : '') + '.';
     document.body.appendChild(toast);
     function dismiss() {
       toast.classList.add('is-leaving');

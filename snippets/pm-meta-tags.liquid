@@ -53,8 +53,96 @@
 }
 </script>
 
+{%- comment -%} WebSite + SearchAction (sitewide) {%- endcomment -%}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  "name": {{ shop.name | json }},
+  "url": {{ shop.url | json }},
+  "potentialAction": {
+    "@type": "SearchAction",
+    "target": "{{ shop.url }}{{ routes.search_url }}?q={search_term_string}",
+    "query-input": "required name=search_term_string"
+  }
+}
+</script>
+
+{%- comment -%} BreadcrumbList — mirrors the visible breadcrumbs {%- endcomment -%}
+{%- if request.page_type == 'product' -%}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": {{ shop.url | json }}
+    }
+    {%- if collection -%}
+    ,{
+      "@type": "ListItem",
+      "position": 2,
+      "name": {{ collection.title | json }},
+      "item": {{ shop.url | append: collection.url | json }}
+    },
+    {
+      "@type": "ListItem",
+      "position": 3,
+      "name": {{ product.title | json }},
+      "item": {{ shop.url | append: product.url | json }}
+    }
+    {%- else -%}
+    ,{
+      "@type": "ListItem",
+      "position": 2,
+      "name": {{ product.title | json }},
+      "item": {{ shop.url | append: product.url | json }}
+    }
+    {%- endif -%}
+  ]
+}
+</script>
+{%- elsif request.page_type == 'collection' -%}
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  "itemListElement": [
+    {
+      "@type": "ListItem",
+      "position": 1,
+      "name": "Home",
+      "item": {{ shop.url | json }}
+    },
+    {
+      "@type": "ListItem",
+      "position": 2,
+      "name": {{ collection.title | json }},
+      "item": {{ shop.url | append: collection.url | json }}
+    }
+  ]
+}
+</script>
+{%- endif -%}
+
 {%- if request.page_type == 'product' -%}
   {%- assign _v = product.selected_or_first_available_variant -%}
+  {%- assign _mpn = product.metafields.custom.mpn | default: product.metafields.specs.mpn -%}
+  {%- comment -%} gtin: only emit a valid 12/13-digit barcode {%- endcomment -%}
+  {%- assign _gtin = '' -%}
+  {%- assign _barcode = _v.barcode | strip -%}
+  {%- if _barcode != blank -%}
+    {%- assign _barcode_digits = _barcode | remove: '0' | remove: '1' | remove: '2' | remove: '3' | remove: '4' | remove: '5' | remove: '6' | remove: '7' | remove: '8' | remove: '9' -%}
+    {%- if _barcode_digits == blank -%}
+      {%- assign _barcode_len = _barcode | size -%}
+      {%- if _barcode_len == 12 or _barcode_len == 13 -%}
+        {%- assign _gtin = _barcode -%}
+      {%- endif -%}
+    {%- endif -%}
+  {%- endif -%}
   <script type="application/ld+json">
   {
     "@context": "https://schema.org/",
@@ -71,10 +159,19 @@
     {%- if _v.sku != blank -%}
     "sku": {{ _v.sku | json }},
     {%- endif -%}
+    {%- if _mpn != blank -%}
+    "mpn": {{ _mpn | json }},
+    {%- endif -%}
+    {%- if _gtin != blank -%}
+    "gtin": {{ _gtin | json }},
+    {%- endif -%}
+    "itemCondition": "https://schema.org/NewCondition",
     "offers": {
       "@type": "Offer",
       "priceCurrency": {{ cart.currency.iso_code | json }},
+      {%- if _v.price and _v.price > 0 -%}
       "price": {{ _v.price | divided_by: 100.0 | json }},
+      {%- endif -%}
       "availability": "https://schema.org/{% if product.available %}InStock{% else %}OutOfStock{% endif %}",
       "url": {{ shop.url | append: product.url | json }}
     }

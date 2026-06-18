@@ -92,6 +92,15 @@
   font-weight: 700;
   color: var(--pm-ink-900);
 }
+/* Collection / search page heading (the <h1> added for SEO + a11y). */
+.pm-plp__title {
+  margin: 2px 0 6px;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.018em;
+  color: var(--pm-ink-900);
+}
 .pm-plp__count, .pm-plp__lead {
   margin: 0;
   font-size: 13px;
@@ -518,6 +527,10 @@
 /* TC-084: "+ Add" locked because the cart already holds all available units. */
 .pm-pcard__add.is-maxed { background: var(--pm-ink-300); opacity: 0.7; cursor: not-allowed; }
 .pm-pcard__add.is-maxed svg { display: none; }
+/* A11y: raise the card "+ Add" button to a >=44px tap target on touch devices. */
+@media (pointer: coarse) {
+  .pm-pcard__add { min-height: 44px; }
+}
 
 /* OOS variant — same terracotta, longer label.
    Slightly tighter padding + smaller text so "Add to Quote" doesn't

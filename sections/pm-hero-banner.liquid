@@ -20,6 +20,15 @@
 {%- assign _overlay_pct = section.settings.overlay_opacity | default: 100 -%}
 {%- assign _overlay_alpha = _overlay_pct | divided_by: 100.0 -%}
 
+{%- comment -%}
+  Preload the LCP background image so the browser discovers it early.
+  The CSS background below uses this exact URL, which is always set
+  (admin upload or default), so it's safe to emit unconditionally here.
+{%- endcomment -%}
+{%- if _hero_bg_url != blank -%}
+  <link rel="preload" as="image" fetchpriority="high" href="{{ _hero_bg_url }}">
+{%- endif -%}
+
 <section
   class="pm-hero pm-hero--cover pm-hero--align-{{ section.settings.content_align | default: 'left' }}"
   style="

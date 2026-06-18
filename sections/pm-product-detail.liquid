@@ -30,7 +30,7 @@
 {%- assign _features_raw = product.metafields.custom.key_features | default: product.metafields.specs.key_features -%}
 {%- assign _features = '' | split: '' -%}
 {%- if _features_raw != blank -%}
-  {%- assign _features = _features_raw | newline_to_br | strip_html | split: '<br />' -%}
+  {%- assign _features = _features_raw | newline_to_br | split: '<br />' -%}
 {%- endif -%}
 
 {%- comment -%}
@@ -252,19 +252,18 @@
             In-stock products show price + buy controls as normal.
           {%- endcomment -%}
           {%- if _instock -%}
+            {%- comment -%} Price reflects the SELECTED/first-available variant (_v), not product.price (the catalog minimum), so the displayed price matches what checkout charges for that variant. The price-meta is always rendered (hidden when not on sale) so the variant-change handler can keep the "was" price + Sale flag in sync instead of leaving the initial-render value stale. {%- endcomment -%}
+            {%- assign _on_sale = false -%}
+            {%- if _v.compare_at_price > _v.price -%}{%- assign _on_sale = true -%}{%- endif -%}
             <div class="pm-pdp__price-block">
-              {%- if product.compare_at_price > product.price -%}
-                <div class="pm-pdp__price pm-pdp__price--sale" id="pm-pdp-price">{{ product.price | money }}</div>
-                <div class="pm-pdp__price-meta">
-                  <span class="pm-pdp__price-was">{{ product.compare_at_price | money }}</span>
-                  <span class="pm-pdp__price-flag">Sale</span>
-                </div>
-              {%- else -%}
-                <div class="pm-pdp__price" id="pm-pdp-price">{{ product.price | money }}</div>
-              {%- endif -%}
+              <div class="pm-pdp__price{% if _on_sale %} pm-pdp__price--sale{% endif %}" id="pm-pdp-price">{{ _v.price | money }}</div>
+              <div class="pm-pdp__price-meta" data-pm-pdp-price-meta{% unless _on_sale %} hidden{% endunless %}>
+                <span class="pm-pdp__price-was">{% if _v.compare_at_price > 0 %}{{ _v.compare_at_price | money }}{% endif %}</span>
+                <span class="pm-pdp__price-flag">Sale</span>
+              </div>
               {%- if _has_bundle -%}
                 <div class="pm-pdp__price-bundle-note" data-pm-pdp-bundle-note hidden>
-                  Includes {{ product.price | money }} base + bundle add-ons
+                  Includes {{ _v.price | money }} base + bundle add-ons
                 </div>
               {%- endif -%}
             </div>
@@ -309,7 +308,7 @@
                   {%- if _ft != blank -%}
                     <li>
                       <span class="pm-pdp__glance-dot" aria-hidden="true"></span>
-                      <span>{{ _ft }}</span>
+                      <span>{{ _ft | escape }}</span>
                     </li>
                   {%- endif -%}
                 {%- endfor -%}
@@ -500,6 +499,7 @@
               data-pm-add
               data-pm-pdp-add
               data-variant-id="{{ _v.id }}"
+              data-variant-sku="{{ _sku | escape }}"
               {% if _pdp_maxq != '' %}data-max-qty="{{ _pdp_maxq }}"{% endif %}
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
@@ -649,7 +649,7 @@
                   {%- if _ft != blank -%}
                     <li>
                       <span class="pm-pdp__glance-dot" aria-hidden="true"></span>
-                      <span>{{ _ft }}</span>
+                      <span>{{ _ft | escape }}</span>
                     </li>
                   {%- endif -%}
                 {%- endfor -%}
@@ -868,6 +868,20 @@
         if (skuEl && match.sku) skuEl.textContent = match.sku;
         var priceEl = document.getElementById('pm-pdp-price');
         if (priceEl && typeof match.price === 'number') priceEl.textContent = moneyFmt(match.price);
+        // Keep the compare-at "was" price + Sale flag in sync with the chosen variant
+        // (otherwise the initial-render sale state stays stale across variant switches).
+        var priceMeta = document.querySelector('[data-pm-pdp-price-meta]');
+        var onSale = typeof match.compare_at_price === 'number' && match.compare_at_price > match.price;
+        if (priceEl) priceEl.classList.toggle('pm-pdp__price--sale', onSale);
+        if (priceMeta) {
+          if (onSale) {
+            priceMeta.removeAttribute('hidden');
+            var wasEl = priceMeta.querySelector('.pm-pdp__price-was');
+            if (wasEl) wasEl.textContent = moneyFmt(match.compare_at_price);
+          } else {
+            priceMeta.setAttribute('hidden', '');
+          }
+        }
 
         // Update hero image
         if (match.featured_image && main) {
@@ -892,6 +906,7 @@
         // Wire the cart button to the new variant
         if (addBtn) {
           addBtn.setAttribute('data-variant-id', match.id);
+          addBtn.setAttribute('data-variant-sku', match.sku || '');
           // TC-084: keep the inventory cap in sync with the chosen variant. Cap at the
           // real count for ANY tracked variant with stock > 0 — DENY and CONTINUE alike —
           // so it matches the "N in stock" line and the server-rendered data-max-qty.
@@ -911,6 +926,13 @@
           }
           // Re-evaluate against the current cart (may already be maxed).
           if (window.PmAddToCart && window.PmAddToCart.syncMaxed) window.PmAddToCart.syncMaxed();
+        }
+
+        // Keep the bundle base price in sync with the chosen variant so the
+        // displayed bundle total reflects the newly selected variant's price.
+        if (bundleRoot && typeof match.price === 'number') {
+          bundleRoot.setAttribute('data-base-price-cents', match.price);
+          recomputeBundlePrice();
         }
       });
     });

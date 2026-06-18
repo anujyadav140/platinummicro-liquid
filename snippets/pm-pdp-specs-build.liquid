@@ -58,8 +58,10 @@
       {%- assign cur_v = '' -%}
       {%- for p in sub_pairs -%}
         {%- assign pstr = p | strip -%}
-        {%- if pstr contains ':' -%}
-          {%- assign before = pstr | split: ':' | first | strip -%}
+        {%- if pstr contains ': ' -%}
+          {%- comment -%} split on the FIRST ': ' only: key = before, value = entire remainder {%- endcomment -%}
+          {%- assign before = pstr | split: ': ' | first | strip -%}
+          {%- assign after = pstr | remove_first: before | remove_first: ': ' | strip -%}
           {%- assign blen = before | size -%}
           {%- if blen > 0 and blen < 60 -%}
             {%- comment -%} flush previous {%- endcomment -%}
@@ -71,7 +73,7 @@
               {%- endunless -%}
             {%- endif -%}
             {%- assign cur_n = before -%}
-            {%- assign cur_v = pstr | remove_first: before | remove_first: ':' | strip -%}
+            {%- assign cur_v = after -%}
           {%- else -%}
             {%- if cur_n != '' -%}
               {%- assign cur_v = cur_v | append: ', ' | append: pstr -%}

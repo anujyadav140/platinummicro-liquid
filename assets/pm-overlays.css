@@ -516,6 +516,13 @@
   .pm-qo__actions .pm-btn { flex: 1; }
 }
 
+/* A11y: on touch devices, raise the quick-order remove (×) button to a >=44px
+   hit area and widen its grid column so the larger button fits the row. */
+@media (pointer: coarse) {
+  .pm-qo__cols, .pm-qo__row { grid-template-columns: 1fr 90px 44px; }
+  .pm-qo__row-remove { width: 44px; height: 44px; }
+}
+
 /* --- Cart Drawer ---------------------------------------------------------- */
 .pm-cart {
   position: fixed;
@@ -721,6 +728,14 @@
   transition: color var(--pm-dur-fast), background var(--pm-dur-fast);
 }
 .pm-cart__remove:hover { color: var(--pm-danger); background: var(--pm-danger-bg); }
+
+/* A11y: on touch devices, raise the cart qty +/- buttons, qty input and remove
+   button to a >=44px hit area (they're 28px on pointer:fine for density). */
+@media (pointer: coarse) {
+  .pm-cart__qty-btn { width: 44px; height: 44px; }
+  .pm-cart__qty-input { height: 44px; }
+  .pm-cart__remove { width: 44px; height: 44px; }
+}
 .pm-cart__foot {
   flex-shrink: 0;
   background: var(--pm-tan-pale);

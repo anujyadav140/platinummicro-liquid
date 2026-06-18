@@ -101,7 +101,9 @@
   }
 
   function escAttr(s) {
-    return String(s || '').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+    return String(s || '').replace(/[&<>"']/g, function (c) {
+      return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+    });
   }
   function truncate(s, n) {
     s = String(s || '');
@@ -222,14 +224,14 @@
       var v = (p.variants || [])[0] || {};
       var url = p.url || ('/products/' + p.handle);
       return (
-        '<button class="pm-cmp__remove" type="button" data-pm-cmp-remove="' + p.handle + '" aria-label="Remove">' +
+        '<button class="pm-cmp__remove" type="button" data-pm-cmp-remove="' + esc(p.handle) + '" aria-label="Remove">' +
           '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>' +
         '</button>' +
         (p.vendor ? '<div class="pm-cmp__brand">' + esc(p.vendor.toUpperCase()) + '</div>' : '') +
-        '<a class="pm-cmp__img" href="' + url + '">' +
+        '<a class="pm-cmp__img" href="' + esc(url) + '">' +
           '<img src="' + esc(p.featured_image || '') + '" alt="' + esc(p.title) + '" loading="lazy">' +
         '</a>' +
-        '<a class="pm-cmp__title" href="' + url + '">' + esc(p.title) + '</a>' +
+        '<a class="pm-cmp__title" href="' + esc(url) + '">' + esc(p.title) + '</a>' +
         (v.sku ? '<div class="pm-cmp__sku">SKU <span>' + esc(v.sku) + '</span></div>' : '') +
         '<div class="pm-cmp__price">' + moneyFmt(p.price || v.price) + '</div>' +
         '<div class="pm-cmp__stock pm-cmp__stock--' + (p.available ? 'in' : 'out') + '">' +
@@ -238,7 +240,7 @@
           (p.available ? '<small>Ships next business day</small>' : '') +
         '</div>' +
         (p.available
-          ? '<button class="pm-pcard__add pm-pcard__add--block" data-pm-add data-variant-id="' + v.id + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg> <span>Add to Cart</span></button>'
+          ? '<button class="pm-pcard__add pm-pcard__add--block" data-pm-add data-variant-id="' + esc(v.id) + '"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg> <span>Add to Cart</span></button>'
           : '<button class="pm-pcard__add pm-pcard__add--block" disabled>Sold out</button>')
       );
     }
@@ -325,6 +327,9 @@
         }
         // Set grid columns: [label col][N product cols]
         grid.style.gridTemplateColumns = 'minmax(140px, 200px) repeat(' + products.length + ', minmax(0, 1fr))';
+        // Expose the product-column count so the mobile CSS (pm-compare.css)
+        // can rebuild the track list at a scrollable min-width per column.
+        grid.style.setProperty('--pm-cmp-cols', products.length);
         var html = '';
         // Row 0: card row (empty label cell + N product cards)
         html += '<div class="pm-cmp__row pm-cmp__row--cards">';

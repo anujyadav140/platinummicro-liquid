@@ -7,6 +7,17 @@
 /* --- Global Reset & Base --------------------------------------------------- */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* Accessibility: honor the OS "reduce motion" setting (WCAG 2.3.3) — neutralize
+   slide/scale/zoom/fade animations and transitions for users who opt out. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 html {
   font-family: var(--pm-font-body);
   font-size: 15px;

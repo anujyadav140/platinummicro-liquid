@@ -52,6 +52,28 @@
 {%- endif -%}
 
 {%- if _render -%}
+{%- comment -%}
+  Preload the first hero band's background image so the browser
+  discovers the LCP image early. Uses the exact same URL the CSS
+  background below resolves to. Only the first hero with an image is
+  preloaded to avoid over-prioritizing later bands.
+{%- endcomment -%}
+{%- assign _preloaded_hero = false -%}
+{%- for block in section.blocks -%}
+  {%- if block.type == 'hero' and _preloaded_hero == false -%}
+    {%- assign hb = block.settings -%}
+    {%- assign _preload_img = '' -%}
+    {%- if hb.background_image -%}
+      {%- assign _preload_img = hb.background_image | image_url: width: 2400 -%}
+    {%- elsif hb.background_image_url != blank -%}
+      {%- assign _preload_img = hb.background_image_url -%}
+    {%- endif -%}
+    {%- if _preload_img != '' -%}
+      <link rel="preload" as="image" fetchpriority="high" href="{{ _preload_img }}">
+      {%- assign _preloaded_hero = true -%}
+    {%- endif -%}
+  {%- endif -%}
+{%- endfor -%}
 <section class="pm-pbnr" style="{% if section.settings.section_bg != blank %}background:{{ section.settings.section_bg }};{% endif %}">
 
   {%- for block in section.blocks -%}

@@ -22,7 +22,7 @@
         srcset="{{ _img | image_url: width: 240 }} 240w, {{ _img | image_url: width: 480 }} 480w, {{ _img | image_url: width: 720 }} 720w"
         sizes="(min-width: 1024px) 300px, (min-width: 640px) 33vw, 50vw"
         alt="{{ _img.alt | default: product.title | escape }}"
-        loading="lazy"
+        {% if eager %}loading="eager" fetchpriority="high"{% else %}loading="lazy"{% endif %}
         width="480"
         height="480"
       >

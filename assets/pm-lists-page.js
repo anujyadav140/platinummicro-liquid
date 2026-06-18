@@ -25,6 +25,8 @@
   // Mirror of the helpers in pm-add-to-list.js. Kept duplicated so each
   // page can be used independently if the other script isn't loaded.
   var STORAGE_KEY = 'pm:lists:v1';
+  // Cap runaway storage — mirror pm-add-to-list.js so the dashboard can't bypass the guard.
+  var MAX_LISTS = 50;
 
   function readStore() {
     try {
@@ -38,14 +40,17 @@
     } catch (e) { return []; }
   }
   function writeStore(lists) {
-    try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lists)); } catch (e) {}
+    var ok = true;
+    try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(lists)); } catch (e) { ok = false; }
     document.dispatchEvent(new CustomEvent('pm:lists-changed', { detail: { lists: lists } }));
+    return ok;
   }
   function makeId() {
     return 'list_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
   }
   function createList(name) {
     var lists = readStore();
+    if (lists.length >= MAX_LISTS) return null;   // cap — keep the runaway-storage guard the PDP popover enforces
     var now = Date.now();
     var list = {
       id: makeId(),
@@ -55,7 +60,7 @@
       updatedAt: now,
     };
     lists.push(list);
-    writeStore(lists);
+    list.saved = writeStore(lists);
     return list;
   }
   function renameList(id, nextName) {
@@ -313,7 +318,8 @@
       e.preventDefault();
       var v = input ? input.value.trim() : '';
       if (!v) return;
-      createList(v);
+      var created = createList(v);
+      if (!created) { window.alert('You can keep up to ' + MAX_LISTS + ' lists. Remove one to add another.'); return; }
       state.creating = false;
       render();
     });

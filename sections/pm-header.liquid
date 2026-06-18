@@ -102,7 +102,7 @@
         {%- if customer -%}
           <span slot="signed-in-avatar" class="pm-header__action-btn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <span>{{ customer.first_name | default: 'Account' }}</span>
+            <span>{{ customer.first_name | default: 'Account' | escape }}</span>
           </span>
         {%- else -%}
           <span slot="signed-out-avatar" class="pm-header__action-btn">

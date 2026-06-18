@@ -10,15 +10,47 @@
   {%- endif -%}
 
   <title>
-    {{ page_title }}
-    {%- if current_tags %} &ndash; tagged "{{ current_tags | join: ', ' }}"{% endif -%}
-    {%- if current_page != 1 %} &ndash; Page {{ current_page }}{% endif -%}
-    {%- unless page_title contains shop.name %} &ndash; {{ shop.name }}{% endunless -%}
+    {%- comment -%}
+      On the homepage Shopify defaults page_title to the bare shop name when no
+      admin SEO title is set. Swap that default for a descriptive title; an
+      admin-set page_title (anything other than the bare shop name) is honored.
+    {%- endcomment -%}
+    {%- if request.page_type == 'index' and page_title == shop.name -%}
+      {{ shop.name }} &mdash; Enterprise IT Distributor | Servers, Storage &amp; Networking
+    {%- else -%}
+      {{ page_title }}
+      {%- if current_tags %} &ndash; tagged "{{ current_tags | join: ', ' }}"{% endif -%}
+      {%- if current_page != 1 %} &ndash; Page {{ current_page }}{% endif -%}
+      {%- unless page_title contains shop.name %} &ndash; {{ shop.name }}{% endunless -%}
+    {%- endif -%}
   </title>
 
-  {% if page_description %}
-    <meta name="description" content="{{ page_description | escape }}">
-  {% endif %}
+  {%- comment -%}
+    Meta description. page_description is only filled from a saved SEO field, so
+    home / collection / search / content pages emit nothing. Fall back to the
+    collection description on collections and a shop-level default on
+    index/content; search pages get none. Only output when non-blank.
+  {%- endcomment -%}
+  {%- assign pm_meta_description = page_description -%}
+  {%- if pm_meta_description == blank -%}
+    {%- if request.page_type == 'collection' -%}
+      {%- if collection.description != blank -%}
+        {%- assign pm_meta_description = collection.description | strip_html | truncate: 160 -%}
+      {%- else -%}
+        {%- assign pm_meta_description = 'Shop ' | append: collection.title | append: ' at ' | append: shop.name | append: ' — volume pricing and fast quotes for business and public-sector buyers.' -%}
+      {%- endif -%}
+    {%- elsif request.page_type == 'index' or request.page_type == 'page' -%}
+      {%- assign pm_meta_description = shop.name | append: ' is your enterprise IT distributor for servers, storage, networking, and components from leading brands. Volume pricing and quotes for business and public-sector buyers.' -%}
+    {%- endif -%}
+  {%- endif -%}
+  {%- if pm_meta_description != blank %}
+    <meta name="description" content="{{ pm_meta_description | escape }}">
+  {%- endif -%}
+
+  {%- comment -%} Internal search result pages are thin/duplicate — keep them out of the index. {%- endcomment -%}
+  {%- if request.page_type == 'search' -%}
+    <meta name="robots" content="noindex,follow">
+  {%- endif -%}
 
   {%- comment -%} Identify signed-in customers to Tidio (skip the pre-chat form). Must precede the app embed. {%- endcomment -%}
   {%- render 'pm-tidio-identify' -%}

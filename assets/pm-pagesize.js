@@ -110,7 +110,7 @@
     var b = baseUrl();
     var url = b + (b.indexOf('?') > -1 ? '&' : '?') + 'page=' + k;
     return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-      .then(function (r) { return r.text(); })
+      .then(function (r) { if (!r.ok) throw r.status; return r.text(); })
       .then(function (html) {
         cache[k] = cloneGrid(new DOMParser().parseFromString(html, 'text/html'));
         return cache[k];
@@ -125,7 +125,7 @@
     var b = availUrl(src === 'in' ? '1' : '0');
     var url = b + (b.indexOf('?') > -1 ? '&' : '?') + 'page=' + page;
     return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-      .then(function (r) { return r.text(); })
+      .then(function (r) { if (!r.ok) throw r.status; return r.text(); })
       .then(function (html) {
         var dom = new DOMParser().parseFromString(html, 'text/html');
         store[page] = cloneGrid(dom);

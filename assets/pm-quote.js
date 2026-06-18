@@ -25,6 +25,10 @@
   'use strict';
 
   var STORAGE_KEY = 'pm:quote:v1';
+  // Cap distinct quote lines so a runaway loop can't bloat localStorage.
+  // (Same defensive pattern as recently-viewed/compare.) Bumping the qty
+  // of a line that already exists is always allowed.
+  var MAX_ITEMS = 50;
 
   function read() {
     try {
@@ -39,15 +43,25 @@
     } catch (e) { return []; }
   }
 
+  // Returns true if the write persisted, false if it was rejected (quota
+  // exceeded / private-mode Safari). The in-memory `items` array still
+  // reflects the change either way; callers surface the false to the user
+  // so an add never *appears* to succeed without persisting.
   function write(items) {
-    try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch (e) {}
+    var ok = true;
+    try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); }
+    catch (e) { ok = false; }
     document.dispatchEvent(new CustomEvent('pm:cart-changed', { detail: { source: 'quote' } }));
+    return ok;
   }
 
   function list() { return read(); }
 
+  // Returns true on a persisted write, false on quota failure or when the
+  // line cap is hit. Callers (the click handler / window.PmQuote.add) use
+  // the result to tell the user the item did not save.
   function add(item) {
-    if (!item || !item.sku) return;
+    if (!item || !item.sku) return false;
     var items = read();
     var qty = Math.max(1, Math.floor(item.quantity) || 1);
     var now = Date.now();
@@ -59,6 +73,9 @@
       existing.quantity = (existing.quantity || 1) + qty;
       existing.updatedAt = now;
     } else {
+      // New distinct line — refuse once the cap is reached so the store
+      // can't grow without bound.
+      if (items.length >= MAX_ITEMS) return false;
       items.push({
         sku:          item.sku,
         name:         item.name || '',
@@ -74,12 +91,12 @@
         updatedAt:    now,
       });
     }
-    write(items);
+    return write(items);
   }
 
   function remove(sku) {
     var items = read().filter(function (i) { return i.sku !== sku; });
-    write(items);
+    return write(items);
   }
 
   function setQuantity(sku, n) {
@@ -93,10 +110,10 @@
         break;
       }
     }
-    write(items);
+    return write(items);
   }
 
-  function clear() { write([]); }
+  function clear() { return write([]); }
 
   // ── Click handler for any [data-pm-quote-add] button ──
   // Item data comes from data-quote-* attributes on the trigger (product
@@ -116,7 +133,7 @@
     var qtyEl = document.getElementById('pm-pdp-qty');
     var qty = qtyEl ? Math.max(1, parseInt(qtyEl.value, 10) || 1) : 1;
 
-    add({
+    var ok = add({
       sku:        btn.getAttribute('data-quote-sku') || '',
       name:       btn.getAttribute('data-quote-name') || '',
       brand:      btn.getAttribute('data-quote-brand') || '',
@@ -129,7 +146,9 @@
       quantity:   qty,
     });
 
-    if (label) label.textContent = 'Added';
+    // Quota failure / cap reached: tell the user it didn't save rather
+    // than flashing a misleading "Added".
+    if (label) label.textContent = ok ? 'Added' : "Couldn't save";
     setTimeout(function () {
       if (label) label.textContent = orig || 'Add to Quote';
       btn.dataset.busy = '0';

@@ -472,6 +472,22 @@
   .pm-cmp__cell--card .pm-cmp__title { font-size: 13px; }
 }
 
+/* On narrow viewports the inline grid-template (set by pm-compare.js as
+   `minmax(140px,200px) repeat(N, minmax(0,1fr))`) crushes up to 4 product
+   columns down to ~50px, and the page's overflow-x:clip then clips them.
+   Make the grid itself the horizontal scroll container and give each
+   product column a real minimum width so the table scrolls instead of
+   crushing. `!important` is required to beat the inline track sizing. */
+@media (max-width: 768px) {
+  .pm-cmp__table {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    grid-template-columns:
+      minmax(120px, 160px)
+      repeat(var(--pm-cmp-cols, 4), minmax(150px, 1fr)) !important;
+  }
+}
+
 /* --- Dawn compatibility overrides ---------------------------------------- */
 .shopify-section { display: block; }
 

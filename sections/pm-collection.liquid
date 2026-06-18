@@ -23,14 +23,15 @@
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
             Home
           </a>
-          <span class="pm-breadcrumb__sep">›</span>
+          <span class="pm-breadcrumb__sep" aria-hidden="true">›</span>
           <span aria-current="page" class="pm-breadcrumb__current">{{ collection.title }}</span>
         </nav>
+        <h1 class="pm-plp__title">{{ collection.title }}</h1>
         {%- if collection.products_count > 0 -%}
           {%- assign _page_size_real = collection.products | size -%}
           {%- assign _start = paginate.current_offset | plus: 1 -%}
           {%- assign _end   = paginate.current_offset | plus: _page_size_real -%}
-          <p class="pm-plp__count">Showing <strong>{{ _start }}–{{ _end }}</strong> of <strong>{{ collection.products_count }}</strong> products</p>
+          <p class="pm-plp__count">Showing <strong>{{ _start }}–{{ _end }}</strong> of <strong>{{ paginate.items }}</strong> products</p>
         {%- elsif collection.description != blank -%}
           <p class="pm-plp__lead">{{ collection.description | strip_html | truncatewords: 30 }}</p>
         {%- endif -%}
@@ -94,7 +95,11 @@
           {%- if collection.products.size > 0 -%}
             <ul class="pm-plp__grid" data-pm-view-mode="grid" data-pm-total="{{ paginate.items }}" data-pm-server-size="{{ per_page }}">
               {%- for product in collection.products -%}
-                <li>{%- render 'pm-product-card', product: product -%}</li>
+                {%- if forloop.index <= columns_d -%}
+                  <li>{%- render 'pm-product-card', product: product, eager: true -%}</li>
+                {%- else -%}
+                  <li>{%- render 'pm-product-card', product: product -%}</li>
+                {%- endif -%}
               {%- endfor -%}
             </ul>
 

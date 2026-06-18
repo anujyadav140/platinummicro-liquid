@@ -45,6 +45,9 @@
   min-width: 0;
   font-weight: 600;
   color: var(--pm-ink-900);
+  /* Long unbroken product names (no spaces) shouldn't blow out the row. */
+  overflow-wrap: break-word;
+  word-break: break-word;
 }
 
 /* ── Main grid: Gallery + Info pane (Details + Buy-box) ── */
@@ -209,7 +212,13 @@
   letter-spacing: 0.04em;
   color: var(--pm-ink-600);
 }
-.pm-pdp__id-value { color: var(--pm-ink-900); }
+.pm-pdp__id-value {
+  min-width: 0;
+  color: var(--pm-ink-900);
+  /* SKU/MPN strings can be long and unbroken — wrap instead of overflowing. */
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
 
 .pm-pdp__price-block {
   margin-top: 20px;
@@ -879,6 +888,10 @@
 }
 .pm-pdp__specs-toggle:hover { color: var(--pm-navy-deep); }
 .pm-pdp__specs-toggle svg { transition: transform 0.16s var(--pm-ease-standard); }
+/* A11y: raise the specs toggle to a >=44px tap target on touch devices. */
+@media (pointer: coarse) {
+  .pm-pdp__specs-toggle { min-height: 44px; }
+}
 
 .pm-pdp__empty {
   margin-top: 20px;

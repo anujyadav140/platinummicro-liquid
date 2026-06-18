@@ -251,8 +251,8 @@
     var sep = base.indexOf('?') > -1 ? '&' : '?';
     var opt = { headers: { 'X-Requested-With': 'XMLHttpRequest' } };
     Promise.all([
-      fetch(base + sep + 'sort_by=price-ascending',  opt).then(function (r) { return r.text(); }),
-      fetch(base + sep + 'sort_by=price-descending', opt).then(function (r) { return r.text(); })
+      fetch(base + sep + 'sort_by=price-ascending',  opt).then(function (r) { if (!r.ok) throw r.status; return r.text(); }),
+      fetch(base + sep + 'sort_by=price-descending', opt).then(function (r) { if (!r.ok) throw r.status; return r.text(); })
     ]).then(function (h) {
       var min = firstCardPrice(h[0]);
       var max = firstCardPrice(h[1]);
@@ -296,7 +296,7 @@
     if (gridEl) gridEl.classList.add('is-loading');
 
     fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-      .then(function (r) { return r.text(); })
+      .then(function (r) { if (!r.ok) throw r.status; return r.text(); })
       .then(function (html) {
         var dom = new DOMParser().parseFromString(html, 'text/html');
         // Preserve <details open> state AND the inner scroll position of the

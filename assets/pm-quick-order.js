@@ -555,8 +555,11 @@
   function lookupSku(sku) {
     // suggestProducts() handles the manufacturer-SKU retry; each candidate's full
     // product JSON is then checked for an EXACT variant SKU first (most precise),
-    // falling back to skuMatches() so a manufacturer SKU resolves the PM-prefixed
-    // variant (e.g. AS6706TV2 → CCAS6706TV2). Exact hits win over relaxed ones.
+    // then an EXACT match against the de-prefixed manufacturer SKU so a customer
+    // who types AS6706TV2 still resolves the PM-prefixed CCAS6706TV2 variant.
+    // A relaxed skuMatches() candidate is ONLY accepted when it is unambiguous
+    // (exactly one loose match across all products): the committed cart add must
+    // never silently substitute a differently-priced variant.
     return suggestProducts(sku).then(function (products) {
       if (!products.length) return null;
       var checks = products.map(function (p) {
@@ -568,10 +571,19 @@
             var variants = (full && full.variants) || [];
             var lower = sku.trim().toLowerCase();
             // Coerce id to a Number — /cart/add.js needs the numeric variant id.
+            // 1. EXACT variant SKU match (full string, case-insensitive).
             for (var i = 0; i < variants.length; i++) {
               if ((variants[i].sku || '').trim().toLowerCase() === lower)
                 return { id: parseInt(variants[i].id, 10), available: variants[i].available, product: full, exact: true };
             }
+            // 2. EXACT match against the de-prefixed manufacturer SKU
+            //    (e.g. typed AS6706TV2 === mfgSku('CCAS6706TV2')).
+            for (var k = 0; k < variants.length; k++) {
+              if (mfgSku((variants[k].sku || '').trim()).toLowerCase() === lower)
+                return { id: parseInt(variants[k].id, 10), available: variants[k].available, product: full, exact: true };
+            }
+            // 3. Relaxed prefix match — flagged exact:false so it is only used
+            //    when it is the single unambiguous candidate (resolved below).
             for (var j = 0; j < variants.length; j++) {
               if (skuMatches(variants[j].sku, sku))
                 return { id: parseInt(variants[j].id, 10), available: variants[j].available, product: full, exact: false };
@@ -581,12 +593,16 @@
           .catch(function () { return null; });
       });
       return Promise.all(checks).then(function (results) {
-        var firstRelaxed = null;
+        var relaxed = [];
         for (var i = 0; i < results.length; i++) {
           if (results[i] && results[i].exact) return results[i];
-          if (results[i] && !firstRelaxed) firstRelaxed = results[i];
+          if (results[i]) relaxed.push(results[i]);
         }
-        return firstRelaxed;
+        // Only accept a relaxed match when it is unambiguous — exactly one loose
+        // candidate. Two or more → we can't tell which (differently-priced)
+        // variant the customer meant, so report it as unresolved rather than
+        // silently adding the wrong one.
+        return relaxed.length === 1 ? relaxed[0] : null;
       });
     });
   }
