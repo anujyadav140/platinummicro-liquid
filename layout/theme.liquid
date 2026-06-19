@@ -81,7 +81,7 @@
   {{ 'pm-overlays.css'      | asset_url | stylesheet_tag }}
   {{ 'pm-collection.css'    | asset_url | stylesheet_tag }}
   {{ 'pm-account.css'       | asset_url | stylesheet_tag }}
-  {{ 'pm-product.css'       | asset_url | stylesheet_tag }}
+  {%- if template.name == 'product' -%}{{ 'pm-product.css' | asset_url | stylesheet_tag }}{%- endif -%}
   {{ 'pm-compare.css'       | asset_url | stylesheet_tag }}
   {{ 'pm-lists.css'         | asset_url | stylesheet_tag }}
   {{ 'pm-auth-misc.css'     | asset_url | stylesheet_tag }}
@@ -312,14 +312,15 @@
   <script src="{{ 'pm-predictive-search.js' | asset_url }}" defer></script>
   <script src="{{ 'pm-quick-order.js'     | asset_url }}" defer></script>
   <script src="{{ 'pm-cart-drawer.js'     | asset_url }}" defer></script>
-  <script src="{{ 'pm-facets.js'          | asset_url }}" defer></script>
+  {%- comment -%} PLP-only JS — gated to the templates that render a faceted toolbar. pm-plp.js stays global (it also hosts the post-auth welcome toast). {%- endcomment -%}
+  {%- if template.name == 'collection' or template.name == 'search' -%}<script src="{{ 'pm-facets.js' | asset_url }}" defer></script>{%- endif -%}
   <script src="{{ 'pm-plp.js'             | asset_url }}" defer></script>
-  <script src="{{ 'pm-pagesize.js'        | asset_url }}" defer></script>
+  {%- if template.name == 'collection' -%}<script src="{{ 'pm-pagesize.js' | asset_url }}" defer></script>{%- endif -%}
   <script src="{{ 'pm-add-to-cart.js'     | asset_url }}" defer></script>
   <script src="{{ 'pm-add-to-list.js'     | asset_url }}" defer></script>
   <script src="{{ 'pm-quote.js'           | asset_url }}" defer></script>
   <script src="{{ 'pm-recently-viewed.js' | asset_url }}" defer></script>
-  <script src="{{ 'pm-pdp-pdf.js'         | asset_url }}" defer></script>
+  {%- if template.name == 'product' -%}<script src="{{ 'pm-pdp-pdf.js' | asset_url }}" defer></script>{%- endif -%}
   {%- comment -%}
     Lists dashboard JS loads on /pages/lists whether admin picked the
     custom `lists` template OR the default `page` template — gating on
