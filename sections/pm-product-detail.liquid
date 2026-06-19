@@ -132,7 +132,7 @@
     "sku": {{ _sku | default: '' | json | replace: '</', '<\/' }},
     "mpn": {{ _mpn | default: '' | json | replace: '</', '<\/' }},
     "upc": {{ _upc | default: '' | json | replace: '</', '<\/' }},
-    "price": {{ product.price | money | json | replace: '</', '<\/' }},
+    "price": {{ _v.price | money | json | replace: '</', '<\/' }},
     "url": {{ shop.url | append: product.url | json | replace: '</', '<\/' }},
     "shop": {{ shop.name | json | replace: '</', '<\/' }},
     "available": {% if _instock %}true{% else %}false{% endif %},
@@ -598,7 +598,7 @@
           {%- endcomment -%}
           {%- capture _share_subject -%}{{ shop.name }}: {{ product.title }}{%- endcapture -%}
           {%- capture _share_body -%}I thought you might be interested in this product from {{ shop.name }}:
-{{ product.title }} — {{ product.price | money }}
+{{ product.title }} — {{ _v.price | money }}
 {% if _sku != blank %}SKU: {{ _sku }}
 {% endif %}{{ shop.url }}{{ product.url }}{%- endcapture -%}
           <a
@@ -750,7 +750,7 @@
     data-rv-title="{{ product.title | escape }}"
     data-rv-vendor="{{ product.vendor | escape }}"
     data-rv-image="{% if product.featured_image %}{{ product.featured_image | image_url: width: 320 }}{% endif %}"
-    data-rv-price="{{ product.price | money }}"
+    data-rv-price="{{ _v.price | money }}"
     data-rv-href="{{ product.url }}"
     hidden
   ></div>

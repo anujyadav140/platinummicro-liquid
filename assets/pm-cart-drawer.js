@@ -203,9 +203,10 @@
   // Shared line-node builder used by both Shopify cart lines and local
   // quote items. The QUOTE pill + class are applied when kind==='quote'.
   function buildLineNode(opts) {
+    opts = opts || {};
     var node = template.content.firstElementChild.cloneNode(true);
-    node.setAttribute('data-cart-key', opts.key);
-    node.setAttribute('data-cart-kind', opts.kind);
+    node.setAttribute('data-cart-key', opts.key || '');
+    node.setAttribute('data-cart-kind', opts.kind || '');
     if (opts.kind === 'quote') {
       node.classList.add('pm-cart__item--quote');
       var main = node.querySelector('.pm-cart__item-main');

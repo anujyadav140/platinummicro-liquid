@@ -330,6 +330,10 @@
   white-space: nowrap;
   font-family: var(--pm-font-body);
 }
+/* A11y (audit): 44px touch target for header buttons (hamburger/account/cart) on touch. */
+@media (pointer: coarse) {
+  .pm-header__action-btn { min-height: 44px; }
+}
 .pm-header__action-btn:hover {
   background: var(--pm-ink-100);
   color: var(--pm-ink-900);

@@ -35,7 +35,7 @@
       Sold-out corner ribbon removed — OOS is now communicated via the
       Add-to-Quote button (terracotta, active) on the footer of the card.
     {%- endcomment -%}
-    {%- if product.compare_at_price > product.price and product.available -%}
+    {%- if _v.compare_at_price > _v.price and product.available -%}
       <span class="pm-pcard__flag pm-pcard__flag--sale">Sale</span>
     {%- endif -%}
   </a>
@@ -53,18 +53,18 @@
 
     <div class="pm-pcard__foot">
       <div class="pm-pcard__price">
-        {%- if product.price == 0 -%}
+        {%- if _v.price == 0 -%}
           {%- comment -%} Quote-only / price-on-request: show "Pricing by quote" instead
               of a misleading $0.00. Mirrors the PDP treatment; the card footer already
               renders "Add to Quote" for these. {%- endcomment -%}
           <span class="pm-pcard__price-now pm-pcard__price-quote">Pricing by quote</span>
         {%- else -%}
-          {%- if product.compare_at_price > product.price -%}
-            <span class="pm-pcard__price-strike">{{ product.compare_at_price | money }}</span>
+          {%- if _v.compare_at_price > _v.price -%}
+            <span class="pm-pcard__price-strike">{{ _v.compare_at_price | money }}</span>
           {%- endif -%}
           <span class="pm-pcard__price-now">
             {%- if product.price_varies -%}From {% endif -%}
-            {{ product.price | money }}
+            {{ _v.price | money }}
           </span>
         {%- endif -%}
       </div>

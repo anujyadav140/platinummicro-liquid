@@ -89,7 +89,7 @@
     var p = readPending();
     if (!p) return;
     var sel = '[data-pm-add-to-list-trigger][data-item-sku="' +
-      ((window.CSS && CSS.escape) ? CSS.escape(p.sku) : p.sku.replace(/"/g, '\\"')) + '"]';
+      ((window.CSS && CSS.escape) ? CSS.escape(p.sku) : String(p.sku).replace(/[^a-zA-Z0-9_-]/g, function (c) { return '\\' + c; })) + '"]';
     var trigger = document.querySelector(sel);
     if (!trigger) return; // not on the matching product page yet — keep intent
     clearPending();
@@ -290,6 +290,7 @@
     popover = document.createElement('div');
     popover.className = 'pm-list-popover';
     popover.setAttribute('role', 'menu');
+    popover.setAttribute('aria-label', 'Add to a list');
     popover.innerHTML =
       '<div class="pm-list-popover__head">' +
         '<div class="pm-list-popover__eyebrow">Add to a list</div>' +
