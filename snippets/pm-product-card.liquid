@@ -53,13 +53,20 @@
 
     <div class="pm-pcard__foot">
       <div class="pm-pcard__price">
-        {%- if product.compare_at_price > product.price -%}
-          <span class="pm-pcard__price-strike">{{ product.compare_at_price | money }}</span>
+        {%- if product.price == 0 -%}
+          {%- comment -%} Quote-only / price-on-request: show "Pricing by quote" instead
+              of a misleading $0.00. Mirrors the PDP treatment; the card footer already
+              renders "Add to Quote" for these. {%- endcomment -%}
+          <span class="pm-pcard__price-now pm-pcard__price-quote">Pricing by quote</span>
+        {%- else -%}
+          {%- if product.compare_at_price > product.price -%}
+            <span class="pm-pcard__price-strike">{{ product.compare_at_price | money }}</span>
+          {%- endif -%}
+          <span class="pm-pcard__price-now">
+            {%- if product.price_varies -%}From {% endif -%}
+            {{ product.price | money }}
+          </span>
         {%- endif -%}
-        <span class="pm-pcard__price-now">
-          {%- if product.price_varies -%}From {% endif -%}
-          {{ product.price | money }}
-        </span>
       </div>
 
       {%- if product.available -%}

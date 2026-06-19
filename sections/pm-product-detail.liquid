@@ -107,7 +107,7 @@
       {%- if _kvn != '' and _kvv != '' -%}
         {%- unless _first_s %},{% endunless -%}
         {%- assign _first_s = false -%}
-        {"name":{{ _kvn | json }},"value":{{ _kvv | json }}}
+        {"name":{{ _kvn | json | replace: '</', '<\/' }},"value":{{ _kvv | json | replace: '</', '<\/' }}}
       {%- endif -%}
     {%- endif -%}
   {%- endfor -%}
@@ -120,15 +120,15 @@
     {%- if _ft != '' -%}
       {%- unless _first_f %},{% endunless -%}
       {%- assign _first_f = false -%}
-      {{ _ft | json }}
+      {{ _ft | json | replace: '</', '<\/' }}
     {%- endif -%}
   {%- endfor -%}
   ]{%- endcapture -%}
 
   <script id="pm-pdp-pdf-data" type="application/json">
   {
-    "title": {{ product.title | json }},
-    "vendor": {{ product.vendor | default: '' | json }},
+    "title": {{ product.title | json | replace: '</', '<\/' }},
+    "vendor": {{ product.vendor | default: '' | json | replace: '</', '<\/' }},
     "sku": {{ _sku | default: '' | json }},
     "mpn": {{ _mpn | default: '' | json }},
     "upc": {{ _upc | default: '' | json }},
@@ -138,7 +138,7 @@
     "available": {% if _instock %}true{% else %}false{% endif %},
     "stock": {{ _stock | default: 0 }},
     "image": {% if product.featured_image %}{{ product.featured_image | image_url: width: 1200 | json }}{% else %}""{% endif %},
-    "description_html": {{ product.description | default: '' | json }},
+    "description_html": {{ product.description | default: '' | json | replace: '</', '<\/' }},
     "features": {{ _features_json }},
     "specs": {{ _specs_json }}
   }

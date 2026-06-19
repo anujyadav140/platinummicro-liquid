@@ -6,17 +6,17 @@
 <section
   class="pm-about-banner pm-about-banner--align-{{ section.settings.text_align | default: 'center' }}"
   style="
-    --ab-bg:{{ section.settings.bg_color }};
-    --ab-pt:{{ section.settings.padding_top }}px;
-    --ab-pb:{{ section.settings.padding_bottom }}px;
-    --ab-pt-m:{{ section.settings.padding_top_mobile }}px;
-    --ab-pb-m:{{ section.settings.padding_bottom_mobile }}px;
-    --ab-eyebrow:{{ section.settings.eyebrow_color }};
-    --ab-body:{{ section.settings.body_color }};
-    --ab-eyebrow-size:{{ section.settings.eyebrow_size }}px;
-    --ab-body-size:{{ section.settings.body_size }}px;
-    --ab-body-size-m:{{ section.settings.body_size_mobile }}px;
-    --ab-max-w:{{ section.settings.max_width }}px;
+    {%- if section.settings.bg_color != blank %}--ab-bg:{{ section.settings.bg_color }};{% endif -%}
+    {%- if section.settings.padding_top != blank %}--ab-pt:{{ section.settings.padding_top }}px;{% endif -%}
+    {%- if section.settings.padding_bottom != blank %}--ab-pb:{{ section.settings.padding_bottom }}px;{% endif -%}
+    {%- if section.settings.padding_top_mobile != blank %}--ab-pt-m:{{ section.settings.padding_top_mobile }}px;{% endif -%}
+    {%- if section.settings.padding_bottom_mobile != blank %}--ab-pb-m:{{ section.settings.padding_bottom_mobile }}px;{% endif -%}
+    {%- if section.settings.eyebrow_color != blank %}--ab-eyebrow:{{ section.settings.eyebrow_color }};{% endif -%}
+    {%- if section.settings.body_color != blank %}--ab-body:{{ section.settings.body_color }};{% endif -%}
+    {%- if section.settings.eyebrow_size != blank %}--ab-eyebrow-size:{{ section.settings.eyebrow_size }}px;{% endif -%}
+    {%- if section.settings.body_size != blank %}--ab-body-size:{{ section.settings.body_size }}px;{% endif -%}
+    {%- if section.settings.body_size_mobile != blank %}--ab-body-size-m:{{ section.settings.body_size_mobile }}px;{% endif -%}
+    {%- if section.settings.max_width != blank %}--ab-max-w:{{ section.settings.max_width }}px;{% endif -%}
   "
 >
   <div class="pm-about-banner__inner">

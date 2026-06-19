@@ -8,12 +8,12 @@
   <div
     class="pm-banner-strip pm-banner-strip--align-{{ section.settings.text_align | default: 'center' }}"
     style="
-      --bs-bg:{{ section.settings.bg_color }};
-      --bs-text:{{ section.settings.text_color }};
-      --bs-link:{{ section.settings.link_color }};
-      --bs-pt:{{ section.settings.padding_top }}px;
-      --bs-pb:{{ section.settings.padding_bottom }}px;
-      --bs-size:{{ section.settings.font_size }}px;
+      {%- if section.settings.bg_color != blank %}--bs-bg:{{ section.settings.bg_color }};{% endif -%}
+      {%- if section.settings.text_color != blank %}--bs-text:{{ section.settings.text_color }};{% endif -%}
+      {%- if section.settings.link_color != blank %}--bs-link:{{ section.settings.link_color }};{% endif -%}
+      {%- if section.settings.padding_top != blank %}--bs-pt:{{ section.settings.padding_top }}px;{% endif -%}
+      {%- if section.settings.padding_bottom != blank %}--bs-pb:{{ section.settings.padding_bottom }}px;{% endif -%}
+      {%- if section.settings.font_size != blank %}--bs-size:{{ section.settings.font_size }}px;{% endif -%}
     "
   >
     <div class="pm-banner-strip__inner">

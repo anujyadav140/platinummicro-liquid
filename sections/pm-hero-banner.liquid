@@ -32,23 +32,23 @@
 <section
   class="pm-hero pm-hero--cover pm-hero--align-{{ section.settings.content_align | default: 'left' }}"
   style="
-    --hb-bg:{{ section.settings.bg_color }};
-    --hb-pt:{{ section.settings.padding_top }}px;
-    --hb-pb:{{ section.settings.padding_bottom }}px;
-    --hb-min-h:{{ section.settings.height_px }}px;
-    --hb-min-h-m:{{ section.settings.height_px_mobile }}px;
-    --hb-eyebrow:{{ section.settings.eyebrow_color }};
-    --hb-headline:{{ section.settings.headline_color }};
-    --hb-body:{{ section.settings.body_color }};
-    --hb-eyebrow-size:{{ section.settings.eyebrow_size }}px;
-    --hb-headline-size:{{ section.settings.headline_size_desktop }}px;
-    --hb-headline-size-t:{{ section.settings.headline_size_tablet }}px;
-    --hb-headline-size-m:{{ section.settings.headline_size_mobile }}px;
-    --hb-body-size:{{ section.settings.body_size }}px;
-    --hb-content-max:{{ section.settings.content_max_width }}px;
-    --hb-cta-bg:{{ section.settings.accent_color }};
-    --hb-cta-text:{{ section.settings.cta_text_color }};
-    --hb-overlay-color:{{ section.settings.overlay_color }};
+    {%- if section.settings.bg_color != blank %}--hb-bg:{{ section.settings.bg_color }};{% endif -%}
+    {%- if section.settings.padding_top != blank %}--hb-pt:{{ section.settings.padding_top }}px;{% endif -%}
+    {%- if section.settings.padding_bottom != blank %}--hb-pb:{{ section.settings.padding_bottom }}px;{% endif -%}
+    {%- if section.settings.height_px != blank %}--hb-min-h:{{ section.settings.height_px }}px;{% endif -%}
+    {%- if section.settings.height_px_mobile != blank %}--hb-min-h-m:{{ section.settings.height_px_mobile }}px;{% endif -%}
+    {%- if section.settings.eyebrow_color != blank %}--hb-eyebrow:{{ section.settings.eyebrow_color }};{% endif -%}
+    {%- if section.settings.headline_color != blank %}--hb-headline:{{ section.settings.headline_color }};{% endif -%}
+    {%- if section.settings.body_color != blank %}--hb-body:{{ section.settings.body_color }};{% endif -%}
+    {%- if section.settings.eyebrow_size != blank %}--hb-eyebrow-size:{{ section.settings.eyebrow_size }}px;{% endif -%}
+    {%- if section.settings.headline_size_desktop != blank %}--hb-headline-size:{{ section.settings.headline_size_desktop }}px;{% endif -%}
+    {%- if section.settings.headline_size_tablet != blank %}--hb-headline-size-t:{{ section.settings.headline_size_tablet }}px;{% endif -%}
+    {%- if section.settings.headline_size_mobile != blank %}--hb-headline-size-m:{{ section.settings.headline_size_mobile }}px;{% endif -%}
+    {%- if section.settings.body_size != blank %}--hb-body-size:{{ section.settings.body_size }}px;{% endif -%}
+    {%- if section.settings.content_max_width != blank %}--hb-content-max:{{ section.settings.content_max_width }}px;{% endif -%}
+    {%- if section.settings.accent_color != blank %}--hb-cta-bg:{{ section.settings.accent_color }};{% endif -%}
+    {%- if section.settings.cta_text_color != blank %}--hb-cta-text:{{ section.settings.cta_text_color }};{% endif -%}
+    {%- if section.settings.overlay_color != blank %}--hb-overlay-color:{{ section.settings.overlay_color }};{% endif -%}
     --hb-overlay-alpha:{{ _overlay_alpha }};
   "
 >

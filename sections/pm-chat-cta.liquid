@@ -11,12 +11,12 @@
 <section
   class="pm-chat-cta"
   style="
-    --cc-pt:{{ section.settings.padding_top }}px;
-    --cc-pb:{{ section.settings.padding_bottom }}px;
-    --cc-bg:{{ section.settings.bg_color }};
-    --cc-eyebrow:{{ section.settings.eyebrow_color }};
-    --cc-heading:{{ section.settings.heading_color }};
-    --cc-body:{{ section.settings.body_color }};
+    {%- if section.settings.padding_top != blank %}--cc-pt:{{ section.settings.padding_top }}px;{% endif -%}
+    {%- if section.settings.padding_bottom != blank %}--cc-pb:{{ section.settings.padding_bottom }}px;{% endif -%}
+    {%- if section.settings.bg_color != blank %}--cc-bg:{{ section.settings.bg_color }};{% endif -%}
+    {%- if section.settings.eyebrow_color != blank %}--cc-eyebrow:{{ section.settings.eyebrow_color }};{% endif -%}
+    {%- if section.settings.heading_color != blank %}--cc-heading:{{ section.settings.heading_color }};{% endif -%}
+    {%- if section.settings.body_color != blank %}--cc-body:{{ section.settings.body_color }};{% endif -%}
   "
 >
   <div class="pm-container pm-chat-cta__inner">

@@ -13,16 +13,16 @@
 <section
   class="pm-promo-section"
   style="
-    --pc-pt:{{ section.settings.padding_top }}px;
-    --pc-pb:{{ section.settings.padding_bottom }}px;
-    --pc-section-bg:{{ section.settings.section_bg }};
-    --pc-bg:{{ section.settings.bg_color }};
-    --pc-radius:{{ section.settings.border_radius }}px;
-    --pc-eyebrow:{{ section.settings.eyebrow_color }};
-    --pc-title:{{ section.settings.title_color }};
-    --pc-body:{{ section.settings.body_color }};
-    --pc-cta-bg:{{ section.settings.accent_color }};
-    --pc-cta-text:{{ section.settings.cta_text_color }};
+    {%- if section.settings.padding_top != blank %}--pc-pt:{{ section.settings.padding_top }}px;{% endif -%}
+    {%- if section.settings.padding_bottom != blank %}--pc-pb:{{ section.settings.padding_bottom }}px;{% endif -%}
+    {%- if section.settings.section_bg != blank %}--pc-section-bg:{{ section.settings.section_bg }};{% endif -%}
+    {%- if section.settings.bg_color != blank %}--pc-bg:{{ section.settings.bg_color }};{% endif -%}
+    {%- if section.settings.border_radius != blank %}--pc-radius:{{ section.settings.border_radius }}px;{% endif -%}
+    {%- if section.settings.eyebrow_color != blank %}--pc-eyebrow:{{ section.settings.eyebrow_color }};{% endif -%}
+    {%- if section.settings.title_color != blank %}--pc-title:{{ section.settings.title_color }};{% endif -%}
+    {%- if section.settings.body_color != blank %}--pc-body:{{ section.settings.body_color }};{% endif -%}
+    {%- if section.settings.accent_color != blank %}--pc-cta-bg:{{ section.settings.accent_color }};{% endif -%}
+    {%- if section.settings.cta_text_color != blank %}--pc-cta-text:{{ section.settings.cta_text_color }};{% endif -%}
     --pc-cols:{{ _cols }};
     --pc-rows:{{ _rows }};
   "

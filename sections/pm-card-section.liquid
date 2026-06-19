@@ -22,19 +22,19 @@
 <section
   class="pm-card-section"
   style="
-    --cs-bg:{{ section.settings.bg_color }};
-    --cs-pt:{{ section.settings.padding_top }}px;
-    --cs-pb:{{ section.settings.padding_bottom }}px;
-    --cs-eyebrow:{{ section.settings.eyebrow_color }};
-    --cs-title:{{ section.settings.title_color }};
-    --cs-subtitle:{{ section.settings.subtitle_color }};
-    --cs-title-size:{{ section.settings.title_size_desktop }}px;
-    --cs-title-size-m:{{ section.settings.title_size_mobile }}px;
-    --cs-subtitle-size:{{ section.settings.subtitle_size }}px;
-    --cs-card-radius:{{ section.settings.card_radius }}px;
-    --cs-card-aspect:{{ section.settings.card_aspect }};
-    --cs-gap:{{ section.settings.gap_desktop }}px;
-    --cs-gap-m:{{ section.settings.gap_mobile }}px;
+    {%- if section.settings.bg_color != blank %}--cs-bg:{{ section.settings.bg_color }};{% endif -%}
+    {%- if section.settings.padding_top != blank %}--cs-pt:{{ section.settings.padding_top }}px;{% endif -%}
+    {%- if section.settings.padding_bottom != blank %}--cs-pb:{{ section.settings.padding_bottom }}px;{% endif -%}
+    {%- if section.settings.eyebrow_color != blank %}--cs-eyebrow:{{ section.settings.eyebrow_color }};{% endif -%}
+    {%- if section.settings.title_color != blank %}--cs-title:{{ section.settings.title_color }};{% endif -%}
+    {%- if section.settings.subtitle_color != blank %}--cs-subtitle:{{ section.settings.subtitle_color }};{% endif -%}
+    {%- if section.settings.title_size_desktop != blank %}--cs-title-size:{{ section.settings.title_size_desktop }}px;{% endif -%}
+    {%- if section.settings.title_size_mobile != blank %}--cs-title-size-m:{{ section.settings.title_size_mobile }}px;{% endif -%}
+    {%- if section.settings.subtitle_size != blank %}--cs-subtitle-size:{{ section.settings.subtitle_size }}px;{% endif -%}
+    {%- if section.settings.card_radius != blank %}--cs-card-radius:{{ section.settings.card_radius }}px;{% endif -%}
+    {%- if section.settings.card_aspect != blank %}--cs-card-aspect:{{ section.settings.card_aspect }};{% endif -%}
+    {%- if section.settings.gap_desktop != blank %}--cs-gap:{{ section.settings.gap_desktop }}px;{% endif -%}
+    {%- if section.settings.gap_mobile != blank %}--cs-gap-m:{{ section.settings.gap_mobile }}px;{% endif -%}
   "
 >
   <div class="pm-container">
