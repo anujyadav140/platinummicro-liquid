@@ -162,7 +162,9 @@
     "@type": "Product",
     "name": {{ product.title | json | replace: '</', '<\/' }},
     "url": {{ shop.url | append: product.url | json }},
-    {%- if product.featured_media -%}
+    {%- if product.images.size > 0 -%}
+    "image": [{%- for _img in product.images limit: 5 -%}{{ _img | image_url: width: 1200 | prepend: 'https:' | json }}{%- unless forloop.last %},{% endunless -%}{%- endfor -%}],
+    {%- elsif product.featured_media -%}
     "image": [{{ product.featured_media | image_url: width: 1200 | prepend: 'https:' | json }}],
     {%- endif -%}
     "description": {{ product.description | strip_html | truncate: 320 | json | replace: '</', '<\/' }},
@@ -179,6 +181,17 @@
     "gtin": {{ _gtin | json }},
     {%- endif -%}
     "itemCondition": "https://schema.org/NewCondition",
+    {%- if product.price_varies -%}
+    "offers": {
+      "@type": "AggregateOffer",
+      "priceCurrency": {{ cart.currency.iso_code | json }},
+      "lowPrice": {{ product.price_min | divided_by: 100.0 | json }},
+      "highPrice": {{ product.price_max | divided_by: 100.0 | json }},
+      "offerCount": {{ product.variants.size }},
+      "availability": "https://schema.org/{% if product.available %}InStock{% else %}OutOfStock{% endif %}",
+      "url": {{ shop.url | append: product.url | json }}
+    }
+    {%- else -%}
     "offers": {
       "@type": "Offer",
       "priceCurrency": {{ cart.currency.iso_code | json }},
@@ -188,6 +201,7 @@
       "availability": "https://schema.org/{% if product.available %}InStock{% else %}OutOfStock{% endif %}",
       "url": {{ shop.url | append: product.url | json }}
     }
+    {%- endif -%}
   }
   </script>
 {%- endif -%}

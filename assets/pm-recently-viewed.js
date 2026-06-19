@@ -40,9 +40,14 @@
     } catch (e) { return []; }
   }
 
+  // Returns true if the write persisted, false on quota / private-mode failure.
+  // The MRU is auto-tracked on PDP view (a convenience feature), so callers may
+  // ignore the result; it's surfaced for any caller that wants to react.
   function writeStore(items) {
-    try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch (e) {}
+    var ok = true;
+    try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); } catch (e) { ok = false; }
     document.dispatchEvent(new CustomEvent('pm:recently-viewed-changed', { detail: { items: items } }));
+    return ok;
   }
 
   // Push a product onto the MRU. Existing SKU is removed first, then

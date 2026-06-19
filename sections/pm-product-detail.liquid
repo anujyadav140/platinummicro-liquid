@@ -129,15 +129,15 @@
   {
     "title": {{ product.title | json | replace: '</', '<\/' }},
     "vendor": {{ product.vendor | default: '' | json | replace: '</', '<\/' }},
-    "sku": {{ _sku | default: '' | json }},
-    "mpn": {{ _mpn | default: '' | json }},
-    "upc": {{ _upc | default: '' | json }},
-    "price": {{ product.price | money | json }},
-    "url": {{ shop.url | append: product.url | json }},
-    "shop": {{ shop.name | json }},
+    "sku": {{ _sku | default: '' | json | replace: '</', '<\/' }},
+    "mpn": {{ _mpn | default: '' | json | replace: '</', '<\/' }},
+    "upc": {{ _upc | default: '' | json | replace: '</', '<\/' }},
+    "price": {{ product.price | money | json | replace: '</', '<\/' }},
+    "url": {{ shop.url | append: product.url | json | replace: '</', '<\/' }},
+    "shop": {{ shop.name | json | replace: '</', '<\/' }},
     "available": {% if _instock %}true{% else %}false{% endif %},
     "stock": {{ _stock | default: 0 }},
-    "image": {% if product.featured_image %}{{ product.featured_image | image_url: width: 1200 | json }}{% else %}""{% endif %},
+    "image": {% if product.featured_image %}{{ product.featured_image | image_url: width: 1200 | json | replace: '</', '<\/' }}{% else %}""{% endif %},
     "description_html": {{ product.description | default: '' | json | replace: '</', '<\/' }},
     "features": {{ _features_json }},
     "specs": {{ _specs_json }}
@@ -355,7 +355,7 @@
               class="pm-pdp__bundle"
               data-pm-pdp-bundle
               data-base-variant-id="{{ _v.id }}"
-              data-base-price-cents="{{ product.price }}"
+              data-base-price-cents="{{ _v.price }}"
               data-discount-pct="{{ _bundle_discount }}"
               {%- if _bundle_max_qty %} data-max-qty="{{ _bundle_max_qty }}"{%- endif %}
             >
@@ -516,7 +516,7 @@
             data-item-name="{{ product.title | escape }}"
             data-item-brand="{{ product.vendor | escape }}"
             data-item-image="{% if product.featured_image %}{{ product.featured_image | image_url: width: 200 }}{% endif %}"
-            data-item-price="{{ product.price | money }}"
+            data-item-price="{{ _v.price | money }}"
             data-item-href="{{ product.url }}"
             aria-haspopup="menu"
             aria-expanded="false"

@@ -266,11 +266,28 @@
   }
 
   // ── Quote line mutations — go through PmQuote, not Shopify ──
+  // Brief toast when a quote write is rejected (quota / private mode). The store
+  // re-dispatches pm:cart-changed regardless, so the optimistic row self-reverts
+  // on the next refresh — this just tells the buyer why it bounced back.
+  function showSaveError() {
+    var toast = document.createElement('div');
+    toast.className = 'pm-toast';
+    toast.setAttribute('role', 'status');
+    toast.innerHTML =
+      '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="flex-shrink:0;margin-top:2px;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="13"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>' +
+      '<div class="pm-toast__body"><div class="pm-toast__title">Couldn’t save</div><div class="pm-toast__lead">Your browser storage may be full.</div></div>' +
+      '<button type="button" class="pm-toast__close" aria-label="Dismiss"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg></button>';
+    document.body.appendChild(toast);
+    function dismiss() { toast.classList.add('is-leaving'); setTimeout(function () { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 220); }
+    toast.querySelector('.pm-toast__close').addEventListener('click', dismiss);
+    setTimeout(dismiss, 4200);
+  }
+
   function updateQuote(sku, qty) {
     var li = itemsEl.querySelector('[data-cart-item][data-cart-key="' + cssEscape(sku) + '"]');
     if (li) li.querySelector('.pm-cart__qty-input').value = qty;
     optimisticHeader();
-    if (window.PmQuote) window.PmQuote.setQuantity(sku, qty);
+    if (window.PmQuote && window.PmQuote.setQuantity(sku, qty) === false) showSaveError();
     // refresh()/render is triggered by pm:cart-changed event the store fires.
   }
 
@@ -292,7 +309,7 @@
     }
     if (li) li.querySelector('.pm-cart__qty-input').value = 0;
     optimisticHeader();
-    if (window.PmQuote) window.PmQuote.remove(sku);
+    if (window.PmQuote && window.PmQuote.remove(sku) === false) showSaveError();
   }
 
   // Minimal CSS.escape polyfill so a SKU containing `.` / `:` in a

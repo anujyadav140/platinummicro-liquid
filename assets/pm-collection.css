@@ -361,6 +361,11 @@
   border-radius: 8px;
   color: var(--pm-ink-700);
 }
+/* A11y (audit): 44px touch targets for pagination on touch devices. */
+@media (pointer: coarse) {
+  .pm-pagination__pages a,
+  .pm-pagination__pages span { min-width: 44px; height: 44px; }
+}
 .pm-pagination__pages a:hover { background: var(--pm-ink-100); }
 .pm-pagination__pages .is-current {
   background: var(--pm-navy-deep);
@@ -852,6 +857,7 @@
   display: none;
   align-items: center;
   gap: 8px;
+  min-height: 44px; /* a11y (audit): touch target — this control is mobile-only */
   padding: 10px 16px;
   border: 1.5px solid var(--pm-ink-300);
   border-radius: 8px;
