@@ -54,6 +54,9 @@
         menu.removeAttribute('hidden');
         trigger.setAttribute('aria-expanded', 'true');
         root.classList.add('is-open');
+        // a11y: move focus into the listbox (selected option, else the first).
+        var actOpt = menu.querySelector('[data-pm-sort-opt].is-active') || menu.querySelector('[data-pm-sort-opt]');
+        if (actOpt) actOpt.focus();
       }
       return;
     }
@@ -87,7 +90,7 @@
       var menu2 = sortRoot.querySelector('[data-pm-sort-menu]');
       var trig2 = sortRoot.querySelector('[data-pm-sort-trigger]');
       if (menu2) menu2.setAttribute('hidden', '');
-      if (trig2) trig2.setAttribute('aria-expanded', 'false');
+      if (trig2) { trig2.setAttribute('aria-expanded', 'false'); trig2.focus(); } // a11y: return focus to trigger
       sortRoot.classList.remove('is-open');
       return;
     }
@@ -96,9 +99,64 @@
     if (!e.target.closest('[data-pm-sort]')) closeAllSorts(null);
   });
 
-  // ── Escape closes sort menus ────────────────────────────────────────
+  // ── Keyboard navigation for the sort listbox (WAI-ARIA listbox/menu-button) ──
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') closeAllSorts(null);
+    var key = e.key;
+
+    // Escape: close the open menu; if focus was inside it, return it to the trigger.
+    if (key === 'Escape') {
+      var openRoot = document.querySelector('[data-pm-sort].is-open');
+      if (!openRoot) return;
+      var et = openRoot.querySelector('[data-pm-sort-trigger]');
+      var hadFocus = openRoot.contains(document.activeElement);
+      closeAllSorts(null);
+      if (et && hadFocus) et.focus();
+      return;
+    }
+
+    // Trigger focused: Down/Up opens (if needed) and moves focus into the list.
+    var trig = e.target.closest('[data-pm-sort-trigger]');
+    if (trig) {
+      if (key === 'ArrowDown' || key === 'ArrowUp') {
+        var troot = trig.closest('[data-pm-sort]');
+        var tmenu = troot && troot.querySelector('[data-pm-sort-menu]');
+        if (!tmenu) return;
+        e.preventDefault();
+        if (tmenu.hasAttribute('hidden')) {
+          closeAllSorts(troot);
+          tmenu.removeAttribute('hidden');
+          trig.setAttribute('aria-expanded', 'true');
+          troot.classList.add('is-open');
+        }
+        var topts = troot.querySelectorAll('[data-pm-sort-opt]');
+        if (topts.length) {
+          (troot.querySelector('[data-pm-sort-opt].is-active') ||
+           topts[key === 'ArrowUp' ? topts.length - 1 : 0]).focus();
+        }
+      }
+      return;
+    }
+
+    // Option focused: arrow / Home / End / Enter / Space / Tab / type-ahead.
+    var opt = e.target.closest('[data-pm-sort-opt]');
+    if (!opt) return;
+    var root = opt.closest('[data-pm-sort]');
+    var opts = Array.prototype.slice.call(root.querySelectorAll('[data-pm-sort-opt]'));
+    var i = opts.indexOf(opt);
+    if (key === 'ArrowDown')    { e.preventDefault(); opts[(i + 1) % opts.length].focus(); }
+    else if (key === 'ArrowUp') { e.preventDefault(); opts[(i - 1 + opts.length) % opts.length].focus(); }
+    else if (key === 'Home')    { e.preventDefault(); opts[0].focus(); }
+    else if (key === 'End')     { e.preventDefault(); opts[opts.length - 1].focus(); }
+    else if (key === 'Enter' || key === ' ' || key === 'Spacebar') { e.preventDefault(); opt.click(); }
+    else if (key === 'Tab')     { closeAllSorts(null); }
+    else if (key.length === 1 && /\S/.test(key)) {
+      var ch = key.toLowerCase(), start = (i + 1) % opts.length;
+      for (var n = 0; n < opts.length; n++) {
+        var cand = opts[(start + n) % opts.length];
+        var lbl = (cand.querySelector('.pm-sort__opt-label') || cand).textContent.trim().toLowerCase();
+        if (lbl.charAt(0) === ch) { cand.focus(); break; }
+      }
+    }
   });
 
   // ── Client-side sort for /search ────────────────────────────────────

@@ -104,12 +104,16 @@
     drawer.removeAttribute('aria-hidden');
     drawer.classList.add('is-open');
     document.body.style.overflow = 'hidden';
+    // a11y: move focus into the drawer + trap Tab within it (recomputes the
+    // focusable set each Tab, so client-rendered cart lines are included).
+    if (window.PmFocusTrap) PmFocusTrap.trap(drawer);
   }
 
   function close() {
     drawer.setAttribute('aria-hidden', 'true');
     drawer.classList.remove('is-open');
     document.body.style.overflow = '';
+    if (window.PmFocusTrap) PmFocusTrap.release(); // restore focus to the opener
   }
 
   function refresh() {

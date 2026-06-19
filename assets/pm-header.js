@@ -61,9 +61,14 @@
     }
   };
 
-  // Escape key closes mega
+  // Escape key closes mega (and returns focus to the trigger if focus was inside)
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closePanel();
+    if (e.key !== 'Escape' || !openKey) return;
+    var item = getNavItem(openKey);
+    var trigger = item && item.querySelector('.pm-nav__link');
+    var wasInside = item && item.contains(document.activeElement);
+    closePanel();
+    if (trigger && wasInside) trigger.focus();
   });
 
   // Click outside closes mega
@@ -81,12 +86,15 @@
     var mobileNav  = document.getElementById('pm-mobile-nav');
 
     if (!mobileNav) return;
+    var panel = mobileNav.querySelector('.pm-mobile-nav__panel');
 
     function openMobile() {
       mobileNav.classList.add('is-open');
       mobileNav.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
       if (openBtn) openBtn.setAttribute('aria-expanded', 'true');
+      // a11y: trap focus within the drawer panel; restored to the opener on close.
+      if (window.PmFocusTrap) PmFocusTrap.trap(panel || mobileNav);
     }
 
     function closeMobile() {
@@ -94,6 +102,7 @@
       mobileNav.setAttribute('aria-hidden', 'true');
       document.body.style.overflow = '';
       if (openBtn) openBtn.setAttribute('aria-expanded', 'false');
+      if (window.PmFocusTrap) PmFocusTrap.release();
     }
 
     if (openBtn)   openBtn.addEventListener('click', openMobile);
@@ -105,10 +114,31 @@
     });
   }
 
+  // ── Mega-menu keyboard support ──────────────────────────────────────────
+  // Hover opens the panel for mouse users; mirror that for keyboard users by
+  // opening on focus and closing when focus leaves the item (trigger + panel).
+  // Combined with visibility:hidden on the closed panel (CSS), this keeps the
+  // panel's links out of the tab order until the panel is actually open.
+  function initMegaKeyboard() {
+    var items = document.querySelectorAll('.pm-nav__item[data-key]');
+    Array.prototype.forEach.call(items, function (item) {
+      if (!item.querySelector('.pm-nav__link[aria-controls]')) return; // no mega on this item
+      var key = item.getAttribute('data-key');
+      item.addEventListener('focusin', function () {
+        if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
+        openPanel(key);
+      });
+      item.addEventListener('focusout', function (e) {
+        if (!item.contains(e.relatedTarget) && openKey === key) closePanel();
+      });
+    });
+  }
+
+  function initHeader() { initMobileNav(); initMegaKeyboard(); }
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initMobileNav);
+    document.addEventListener('DOMContentLoaded', initHeader);
   } else {
-    initMobileNav();
+    initHeader();
   }
 
   // ── Top-bar dismiss ──

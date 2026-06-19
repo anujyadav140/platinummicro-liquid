@@ -138,7 +138,9 @@
     modal.removeAttribute('aria-hidden');
     modal.classList.add('is-open');
     document.body.style.overflow = 'hidden';
-    setTimeout(focusFirstSku, 50);
+    // a11y: trap focus in the modal + land focus on the first SKU input.
+    if (window.PmFocusTrap) PmFocusTrap.trap(modal, { initial: '.pm-qo__sku' });
+    else setTimeout(focusFirstSku, 50);
     updateState();
   }
 
@@ -151,6 +153,7 @@
     hideAlert();
     // Full reset so the next open is a fresh modal.
     resetForm();
+    if (window.PmFocusTrap) PmFocusTrap.release(); // restore focus to the opener
   }
 
   function addRow() {

@@ -233,7 +233,7 @@
   {%- comment -%} Mobile nav overlay (driven by pm-header.js) {%- endcomment -%}
   <div class="pm-mobile-nav" id="pm-mobile-nav" aria-hidden="true">
     <div class="pm-mobile-nav__backdrop" id="pm-mobile-backdrop"></div>
-    <nav class="pm-mobile-nav__panel" aria-label="Mobile navigation">
+    <nav class="pm-mobile-nav__panel" role="dialog" aria-modal="true" aria-label="Mobile navigation">
       <div class="pm-mobile-nav__head">
         {%- if settings.logo != blank -%}
           {%- assign _lh = 32 -%}
@@ -306,6 +306,8 @@
   {%- render 'pm-compare-bar' -%}
 
   {%- comment -%} Deferred so they don't block the parser (theme-check: ParserBlockingScript) {%- endcomment -%}
+  {%- comment -%} Shared focus-trap helper — load first so window.PmFocusTrap exists before any dialog opens {%- endcomment -%}
+  <script src="{{ 'pm-focus-trap.js'      | asset_url }}" defer></script>
   <script src="{{ 'pm-header.js'          | asset_url }}" defer></script>
   <script src="{{ 'pm-predictive-search.js' | asset_url }}" defer></script>
   <script src="{{ 'pm-quick-order.js'     | asset_url }}" defer></script>

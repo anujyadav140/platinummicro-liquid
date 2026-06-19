@@ -538,14 +538,22 @@ shopify-account:not(:defined) { visibility: hidden; }
   z-index: 100;
   opacity: 0;
   transform: translateY(-6px);
+  visibility: hidden;
   pointer-events: none;
+  /* a11y: visibility flips to hidden AFTER the fade-out so the closed panel's
+     links leave the keyboard tab order, while the open/close fade still plays. */
   transition: opacity var(--pm-dur-base) var(--pm-ease-standard),
-              transform var(--pm-dur-base) var(--pm-ease-standard);
+              transform var(--pm-dur-base) var(--pm-ease-standard),
+              visibility 0s linear var(--pm-dur-base);
 }
 .pm-mega.is-visible {
   opacity: 1;
   transform: translateY(0);
+  visibility: visible;
   pointer-events: all;
+  transition: opacity var(--pm-dur-base) var(--pm-ease-standard),
+              transform var(--pm-dur-base) var(--pm-ease-standard),
+              visibility 0s;
 }
 .pm-mega__inner {
   max-width: var(--pm-container);

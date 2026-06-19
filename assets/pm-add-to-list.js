@@ -468,15 +468,28 @@
     renderPopoverFooter(false);
     popover.classList.add('is-open');
     positionPopover();
+    // a11y: move focus to the first list row (or first control) once visible.
+    var firstFocusable = popover.querySelector('.pm-list-popover__item') ||
+      popover.querySelector('button, [href], input');
+    if (firstFocusable) requestAnimationFrame(function () {
+      if (popover.classList.contains('is-open')) firstFocusable.focus();
+    });
   }
 
-  function closePopover() {
+  // keepFocus=true leaves focus where it is (used by the outside-click close so
+  // we don't yank focus back to the trigger). Every other caller (Esc, Tab,
+  // auto-close, toggle) returns focus to the trigger for keyboard users.
+  function closePopover(keepFocus) {
     if (!popover) return;
+    var trigger = currentTrigger;
     popover.classList.remove('is-open');
     if (currentTrigger) currentTrigger.setAttribute('aria-expanded', 'false');
     currentTrigger = null;
     recentlyChangedListId = null;
     recentlyChangedAction = null;
+    if (!keepFocus && trigger && document.body.contains(trigger)) {
+      try { trigger.focus({ preventScroll: true }); } catch (e) { try { trigger.focus(); } catch (e2) {} }
+    }
   }
 
   // ──────────────────────────── Wiring ──────────────────────────────
@@ -530,19 +543,37 @@
     }
   });
 
-  // Click-outside to close
+  // Click-outside to close (leave focus where the user clicked).
   document.addEventListener('mousedown', function (e) {
     if (!popover || !popover.classList.contains('is-open')) return;
     if (popover.contains(e.target)) return;
     if (currentTrigger && currentTrigger.contains(e.target)) return;
-    closePopover();
+    closePopover(true);
   });
 
-  // Escape to close
+  // Keyboard navigation for the list popover (WAI-ARIA menu).
   document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape' && popover && popover.classList.contains('is-open')) {
-      closePopover();
-    }
+    if (!popover || !popover.classList.contains('is-open')) return;
+    var key = e.key;
+    if (key === 'Escape') { e.preventDefault(); closePopover(); return; }
+    if (!popover.contains(document.activeElement)) return;
+    var cur = document.activeElement;
+    // Tab leaves the menu → close it and return focus to the trigger.
+    if (key === 'Tab') { e.preventDefault(); closePopover(); return; }
+    // Don't hijack arrows while typing a new list name.
+    if (cur.tagName === 'INPUT' || cur.tagName === 'TEXTAREA') return;
+    if (key !== 'ArrowDown' && key !== 'ArrowUp' && key !== 'Home' && key !== 'End') return;
+    var items = Array.prototype.filter.call(
+      popover.querySelectorAll('.pm-list-popover__item, .pm-list-popover__btn'),
+      function (b) { return !b.disabled && (b.offsetWidth || b.offsetHeight || b.getClientRects().length); }
+    );
+    if (!items.length) return;
+    e.preventDefault();
+    var i = items.indexOf(cur);
+    if (key === 'ArrowDown')    items[(i + 1 + items.length) % items.length].focus();
+    else if (key === 'ArrowUp') items[(i - 1 + items.length) % items.length].focus();
+    else if (key === 'Home')    items[0].focus();
+    else if (key === 'End')     items[items.length - 1].focus();
   });
 
   // Reposition on scroll/resize while open

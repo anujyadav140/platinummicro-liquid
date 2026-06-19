@@ -1027,9 +1027,13 @@
   function selectBundleRow(row) {
     if (!bundleRoot) return;
     bundleRoot.querySelectorAll('[data-pm-bundle-row]').forEach(function (r) {
-      r.classList.toggle('is-selected', r === row);
+      var on = r === row;
+      r.classList.toggle('is-selected', on);
       var btn = r.querySelector('[data-pm-bundle-select]');
-      if (btn) btn.setAttribute('aria-checked', r === row ? 'true' : 'false');
+      if (btn) {
+        btn.setAttribute('aria-checked', on ? 'true' : 'false');
+        btn.setAttribute('tabindex', on ? '0' : '-1'); // a11y: roving tabindex
+      }
     });
     bundleState.row = row;
     recomputeBundlePrice();
@@ -1038,6 +1042,33 @@
   if (bundleRoot) {
     // Default selection = "None" row, already marked .is-selected server-side.
     bundleState.row = bundleRoot.querySelector('[data-pm-bundle-row].is-selected');
+
+    // a11y: roving tabindex — only the checked radio is in the tab order.
+    bundleRoot.querySelectorAll('[data-pm-bundle-select]').forEach(function (b) {
+      b.setAttribute('tabindex', b.getAttribute('aria-checked') === 'true' ? '0' : '-1');
+    });
+
+    // a11y: arrow-key navigation within the radiogroup (WAI-ARIA radiogroup) —
+    // Down/Right → next, Up/Left → prev (both wrap), Home/End → first/last.
+    // Moving focus also moves the selection, per the radiogroup pattern.
+    bundleRoot.addEventListener('keydown', function (e) {
+      var btn = e.target.closest('[data-pm-bundle-select]');
+      if (!btn) return;
+      var key = e.key;
+      if (key !== 'ArrowDown' && key !== 'ArrowRight' && key !== 'ArrowUp' &&
+          key !== 'ArrowLeft' && key !== 'Home' && key !== 'End') return;
+      e.preventDefault();
+      var radios = Array.prototype.slice.call(bundleRoot.querySelectorAll('[data-pm-bundle-select]'));
+      var i = radios.indexOf(btn), next;
+      if (key === 'Home') next = radios[0];
+      else if (key === 'End') next = radios[radios.length - 1];
+      else if (key === 'ArrowDown' || key === 'ArrowRight') next = radios[(i + 1) % radios.length];
+      else next = radios[(i - 1 + radios.length) % radios.length];
+      if (!next) return;
+      var nextRow = next.closest('[data-pm-bundle-row]');
+      if (nextRow) selectBundleRow(nextRow); // updates tabindex + aria-checked + price
+      next.focus();
+    });
 
     bundleRoot.addEventListener('click', function (e) {
       var selectBtn = e.target.closest('[data-pm-bundle-select]');
