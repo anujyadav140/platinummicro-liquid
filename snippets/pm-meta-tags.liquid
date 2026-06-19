@@ -139,6 +139,17 @@
   ]
 }
 </script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "CollectionPage",
+  "name": {{ collection.title | json | replace: '</', '<\/' }},
+  {%- if collection.description != blank -%}
+  "description": {{ collection.description | strip_html | truncate: 320 | json | replace: '</', '<\/' }},
+  {%- endif -%}
+  "url": {{ shop.url | append: collection.url | json }}
+}
+</script>
 {%- endif -%}
 
 {%- if request.page_type == 'product' -%}

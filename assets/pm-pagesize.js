@@ -201,8 +201,8 @@
         var li = cardAt(i);
         if (li) frag.appendChild(li.cloneNode(true));
       }
-      g.innerHTML = '';
-      g.appendChild(frag);
+      // Single-op replace (one reflow) where supported; fall back for old browsers.
+      if (g.replaceChildren) { g.replaceChildren(frag); } else { g.innerHTML = ''; g.appendChild(frag); }
       renderNav(totalPages);
       renderCount(startIdx, endIdx);
       wrap.classList.remove('is-loading');

@@ -355,7 +355,7 @@
 
       html +=
         '<li>' +
-          '<button type="button" ' +
+          '<button type="button" role="menuitem" ' +
             'class="pm-list-popover__item' + (inThisList ? ' is-in-list' : '') + '" ' +
             'data-list-id="' + escapeHtml(l.id) + '" ' +
             'data-in-list="' + (inThisList ? '1' : '0') + '" ' +

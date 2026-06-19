@@ -55,16 +55,9 @@
             </button>
           </div>
 
-          <div class="pm-plp__control">
-            <label for="pm-plp-pagesize" class="pm-plp__control-label">Show</label>
-            {%- assign _page_sizes = '12,24,36,48' | split: ',' -%}
-            <select id="pm-plp-pagesize" name="page_size" data-pm-plp-control onchange="window.location.href = updateQueryStringParameter(window.location.href, 'page_size', this.value)">
-              {%- for n in _page_sizes -%}
-                {%- assign _n_int = n | times: 1 -%}
-                <option value="{{ n }}"{% if per_page == _n_int %} selected{% endif %}>{{ n }}</option>
-              {%- endfor -%}
-            </select>
-          </div>
+          {%- comment -%} The "Show N" page-size control is intentionally omitted on /search:
+              Shopify's native search pagination ignores a page_size param and pm-pagesize.js
+              doesn't run on /search, so the dropdown was a no-op. Search uses native pagination. {%- endcomment -%}
 
           {%- assign current_sort = search.sort_by | default: 'relevance' -%}
           {%- render 'pm-sort-menu', current: current_sort, context: 'search' -%}

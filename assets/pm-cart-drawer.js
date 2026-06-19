@@ -509,7 +509,7 @@
       var raw = window.localStorage.getItem('pm:quote:v1');
       if (!raw) return 0;
       var arr = JSON.parse(raw);
-      return Array.isArray(arr) ? arr.length : 0;
+      return Array.isArray(arr) ? arr.filter(function (it) { return it && typeof it.sku === 'string'; }).length : 0;
     } catch (e) { return 0; }
   }
 
