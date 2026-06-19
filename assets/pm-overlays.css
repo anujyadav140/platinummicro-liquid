@@ -736,6 +736,12 @@
   .pm-cart__qty-input { height: 44px; }
   .pm-cart__remove { width: 44px; height: 44px; }
 }
+/* A11y (audit): overlay/drawer close buttons must also meet the 44px touch target. */
+@media (pointer: coarse) {
+  .pm-mobile-nav__close,
+  .pm-qo__close,
+  .pm-cart__close { min-width: 44px; min-height: 44px; }
+}
 .pm-cart__foot {
   flex-shrink: 0;
   background: var(--pm-tan-pale);

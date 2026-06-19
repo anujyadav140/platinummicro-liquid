@@ -72,9 +72,9 @@
                 </div>
 
                 <div class="pm-cart-row__controls">
-                  {%- comment -%} TC-085: cap the + stepper at available stock (tracked + oversell denied). {%- endcomment -%}
+                  {%- comment -%} TC-085: cap the + stepper at on-hand stock for ANY tracked variant with a positive count — DENY + CONTINUE alike (matches the PDP gate). {%- endcomment -%}
                   {%- assign _cart_max = '' -%}
-                  {%- if item.variant.inventory_management == 'shopify' and item.variant.inventory_policy == 'deny' -%}{%- assign _cart_max = item.variant.inventory_quantity -%}{%- endif -%}
+                  {%- if item.variant.inventory_management == 'shopify' and item.variant.inventory_quantity and item.variant.inventory_quantity > 0 -%}{%- assign _cart_max = item.variant.inventory_quantity -%}{%- endif -%}
                   <div class="pm-qty"{% if _cart_max != '' %} data-cart-max="{{ _cart_max }}"{% endif %}>
                     <button class="pm-qty-btn" data-line="{{ forloop.index }}" data-qty="{{ item.quantity | minus: 1 }}" aria-label="Decrease quantity">−</button>
                     <span data-cart-qty-display>{{ item.quantity }}</span>

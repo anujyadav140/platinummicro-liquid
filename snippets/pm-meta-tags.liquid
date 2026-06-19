@@ -8,6 +8,19 @@
 {%- endcomment -%}
 <link rel="canonical" href="{{ canonical_url }}">
 
+{%- comment -%} rel=prev/next for paginated COLLECTIONS (crawl hint for the page series;
+    search is noindex so skipped). per_page mirrors the collection section default of 24. {%- endcomment -%}
+{%- if request.page_type == 'collection' and collection -%}
+  {%- assign _cp = current_page | default: 1 | plus: 0 -%}
+  {%- if _cp > 1 -%}
+    {%- assign _prev = _cp | minus: 1 -%}
+    {%- if _prev <= 1 -%}<link rel="prev" href="{{ shop.url }}{{ collection.url }}">
+    {%- else -%}<link rel="prev" href="{{ shop.url }}{{ collection.url }}?page={{ _prev }}">{%- endif -%}
+  {%- endif -%}
+  {%- assign _seen = _cp | times: 24 -%}
+  {%- if _seen < collection.products_count -%}<link rel="next" href="{{ shop.url }}{{ collection.url }}?page={{ _cp | plus: 1 }}">{%- endif -%}
+{%- endif -%}
+
 {%- liquid
   assign og_title = page_title
   if request.page_type == 'index'

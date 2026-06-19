@@ -70,11 +70,12 @@
       </div>
 
       {%- if product.available -%}
-        {%- comment -%} TC-084: expose the inventory cap (only when stock is tracked
-            and oversell is denied) so pm-add-to-cart.js can disable "+ Add" once the
-            cart already holds every available unit. {%- endcomment -%}
+        {%- comment -%} TC-084: expose the inventory cap for ANY tracked variant with a
+            positive count — DENY + CONTINUE alike (matches the PDP gate; CONTINUE is the
+            inventory-desync workaround) — so pm-add-to-cart.js can disable "+ Add" once
+            the cart already holds every available unit. {%- endcomment -%}
         {%- assign _maxq = '' -%}
-        {%- if _v.inventory_management == 'shopify' and _v.inventory_policy == 'deny' -%}{%- assign _maxq = _v.inventory_quantity -%}{%- endif -%}
+        {%- if _v.inventory_management == 'shopify' and _v.inventory_quantity and _v.inventory_quantity > 0 -%}{%- assign _maxq = _v.inventory_quantity -%}{%- endif -%}
         <button
           type="button"
           class="pm-pcard__add"
