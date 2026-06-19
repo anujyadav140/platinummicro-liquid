@@ -308,6 +308,11 @@
     if (labelEl) labelEl.textContent = 'Preparing…';
 
     return loadJsPDF()
+      .then(function () {
+        // The PDP loads pm-product-specs.json on demand; make sure those specs
+        // are populated into the on-page table before we read it for the PDF.
+        return (window.PmPdpSpecs && window.PmPdpSpecs.ensure) ? window.PmPdpSpecs.ensure() : null;
+      })
       .then(function () { return fetchImageAsDataURL(data.image); })
       .then(function (imgData) {
         var jsPDF = window.jspdf.jsPDF;

@@ -1317,40 +1317,65 @@
     wireSpecsToggle(serverTotal);
   }
 
-  // Asset-driven hydration — only when the table is currently empty.
+  // ── Asset-driven specs: lazy-hydrate only when needed ──
+  // pm-product-specs.json is ~2 MB; fetch + parse it ONLY when the buyer
+  // engages — the specs section nears the viewport, the page is scrolled, or
+  // the PDF datasheet build asks via window.PmPdpSpecs.ensure(). PDPs where
+  // nobody scrolls and nobody downloads the datasheet skip the 2 MB entirely.
+  // The parsed map is cached in sessionStorage for reuse across PDPs, and
+  // ensureSpecs() is idempotent (one shared promise, safe to call repeatedly).
   if (specsRoot && specsDl && !specsDl.querySelector('.pm-pdp__spec-row')) {
     var handle   = specsRoot.getAttribute('data-pm-pdp-handle');
     var assetUrl = specsRoot.getAttribute('data-pm-pdp-specs-asset');
-    if (handle && assetUrl) {
+
+    var ensurePromise = null;
+    var ensureSpecs = function () {
+      if (ensurePromise) return ensurePromise;
+      if (!handle || !assetUrl) { ensurePromise = Promise.resolve(); return ensurePromise; }
       var cacheKey = 'pm-specs-v1:' + assetUrl;
-      var fromCache = null;
+      var apply = function (map) {
+        if (map && typeof map === 'object' && map[handle]) populateSpecs(map[handle]);
+      };
+      // sessionStorage hit → reuse the parsed map, no network/parse of 2 MB.
       try {
         var raw = sessionStorage.getItem(cacheKey);
-        if (raw) fromCache = JSON.parse(raw);
+        if (raw) { apply(JSON.parse(raw)); ensurePromise = Promise.resolve(); return ensurePromise; }
       } catch (e) { /* ignore */ }
+      ensurePromise = fetch(assetUrl, { cache: 'force-cache' })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (map) {
+          if (!map) return;
+          try { sessionStorage.setItem(cacheKey, JSON.stringify(map)); } catch (e) { /* quota */ }
+          apply(map);
+        })
+        .catch(function () { /* silent */ });
+      return ensurePromise;
+    };
 
-      var apply = function (map) {
-        if (!map || typeof map !== 'object') return;
-        var specs = map[handle];
-        if (specs) populateSpecs(specs);
-      };
+    // The PDF datasheet awaits this so it still includes asset-driven specs
+    // even when the buyer downloads it without scrolling to the spec table.
+    window.PmPdpSpecs = { ensure: ensureSpecs };
 
-      if (fromCache) {
-        apply(fromCache);
-      } else {
-        // Defer the fetch one tick so it doesn't block initial render.
-        setTimeout(function () {
-          fetch(assetUrl, { cache: 'force-cache' })
-            .then(function (r) { return r.ok ? r.json() : null; })
-            .then(function (map) {
-              if (!map) return;
-              try { sessionStorage.setItem(cacheKey, JSON.stringify(map)); } catch (e) { /* quota */ }
-              apply(map);
-            })
-            .catch(function () { /* silent */ });
-        }, 0);
-      }
-    }
+    // Trigger 1 — the first scroll (any amount). This preloads the specs (and
+    // the asset-driven "At a glance" bullets) on the earliest sign of
+    // engagement, well before the buyer reaches the spec table further down.
+    window.addEventListener('scroll', function onFirstScroll() {
+      window.removeEventListener('scroll', onFirstScroll);
+      ensureSpecs();
+    }, { passive: true });
+
+    // Trigger 2 — short pages where the spec table is already on-screen once
+    // the layout settles (images loaded) hydrate without needing a scroll. We
+    // check on `load` (not via IntersectionObserver) so the test runs against
+    // the SETTLED layout, not the taller-than-real pre-image-load layout.
+    var loadIfVisible = function () {
+      var r = specsRoot.getBoundingClientRect();
+      // Only if the spec section is actually on-screen after settle; anything
+      // below the fold waits for the first scroll (which preloads it anyway).
+      if (r.top < window.innerHeight) ensureSpecs();
+    };
+    if (document.readyState === 'complete') loadIfVisible();
+    else window.addEventListener('load', loadIfVisible);
   }
 
   // Add to Quote is wired via the global pm-quote.js delegated
