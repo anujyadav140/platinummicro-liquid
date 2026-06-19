@@ -144,29 +144,12 @@
     </style>
   {%- endif -%}
 
-  {%- if template.name == 'collection' -%}
-    {%- comment -%}
-      TC-088: default product lists to show ALL products with IN-STOCK FIRST. On
-      a FULL page load of a collection with no filters applied, select BOTH
-      availability values (In stock + Available for Quote). pm-pagesize.js then
-      streams the two availability views in-stock-first across all pages (Shopify
-      can't sort by stock). Runs in <head> before paint (location.replace → no
-      flash). Filter changes are AJAX (no reload), so unchecking either box still
-      works — this only fires on a real page load.
-    {%- endcomment -%}
-    <script>
-      (function () {
-        try {
-          var loc = window.location;
-          if (loc.search.indexOf('filter.') === -1) {
-            document.documentElement.dataset.pmRedirecting = '1';
-            loc.replace(loc.pathname + loc.search + (loc.search ? '&' : '?') + 'filter.v.availability=1&filter.v.availability=0');
-          }
-        } catch (e) {}
-      })();
-    </script>
-    <style>html[data-pm-redirecting] body { visibility: hidden; }</style>
-  {%- endif -%}
+  {%- comment -%}
+    TC-088 in-stock-first is now rendered SERVER-SIDE in sections/pm-collection.liquid
+    (available products first, then "Available for Quote", sort preserved within each
+    group). No more pre-paint redirect → collections load directly, the eager first
+    row keeps its LCP benefit, and no-JS / crawlers get the same in-stock-first order.
+  {%- endcomment -%}
 
   {%- if template.name == 'search' -%}
     {%- comment -%}

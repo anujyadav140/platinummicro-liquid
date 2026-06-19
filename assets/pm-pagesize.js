@@ -63,13 +63,11 @@
     return u.pathname + (qs ? '?' + qs : '');
   }
 
-  // Show-all (→ in-stock-first) when there's no availability filter, or both values.
+  // TC-088 in-stock-first is now rendered SERVER-SIDE (pm-collection.liquid emits
+  // available products before "Available for Quote"), so the client-side availability
+  // stitch is retired. Normal page-size mode (TC-091) only — no skeleton, no re-order.
   function detectSplit() {
-    var vals;
-    try { vals = new URL(window.location.href).searchParams.getAll('filter.v.availability'); }
-    catch (e) { vals = []; }
-    if (vals.length === 0) return true;
-    return vals.indexOf('1') !== -1 && vals.indexOf('0') !== -1;
+    return false;
   }
 
   function cloneGrid(dom) {

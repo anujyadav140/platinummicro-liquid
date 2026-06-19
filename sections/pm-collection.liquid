@@ -75,31 +75,34 @@
       <div class="pm-plp__main">
 
         <div id="pm-plp-grid-wrap" class="pm-plp__grid-wrap" data-pm-cols="{{ columns_d }}">
-          {%- comment -%} TC-088: when showing all products (in-stock-first mode),
-              skeleton the grid BEFORE first paint so the server's default order
-              never flashes before pm-pagesize re-orders it. Runs synchronously
-              here; no-JS skips it and sees the products; failsafe reveals it. {%- endcomment -%}
-          <script>
-            (function () {
-              try {
-                var sp = new URLSearchParams(window.location.search).getAll('filter.v.availability');
-                var split = sp.length === 0 || (sp.indexOf('1') !== -1 && sp.indexOf('0') !== -1);
-                var w = document.currentScript && document.currentScript.parentElement;
-                if (split && w) {
-                  w.classList.add('is-reordering');
-                  setTimeout(function () { w.classList.remove('is-reordering'); }, 6000);
-                }
-              } catch (e) {}
-            })();
-          </script>
+          {%- comment -%} TC-088: in-stock-first is rendered SERVER-SIDE below, so the
+              grid is correct on first paint — no skeleton, no client-side re-order. {%- endcomment -%}
           {%- if collection.products.size > 0 -%}
             <ul class="pm-plp__grid" data-pm-view-mode="grid" data-pm-total="{{ paginate.items }}" data-pm-server-size="{{ per_page }}">
+              {%- comment -%} TC-088 in-stock-first (server-side): emit available
+                  products first, then "Available for Quote", preserving the chosen
+                  sort within each group. _emitted tracks the global output position
+                  so the first row stays eager for LCP regardless of grouping. {%- endcomment -%}
+              {%- assign _emitted = 0 -%}
               {%- for product in collection.products -%}
-                {%- if forloop.index <= columns_d -%}
-                  <li>{%- render 'pm-product-card', product: product, eager: true -%}</li>
-                {%- else -%}
-                  <li>{%- render 'pm-product-card', product: product -%}</li>
+                {%- if product.available -%}
+                  {%- if _emitted < columns_d -%}
+                    <li>{%- render 'pm-product-card', product: product, eager: true -%}</li>
+                  {%- else -%}
+                    <li>{%- render 'pm-product-card', product: product -%}</li>
+                  {%- endif -%}
+                  {%- assign _emitted = _emitted | plus: 1 -%}
                 {%- endif -%}
+              {%- endfor -%}
+              {%- for product in collection.products -%}
+                {%- unless product.available -%}
+                  {%- if _emitted < columns_d -%}
+                    <li>{%- render 'pm-product-card', product: product, eager: true -%}</li>
+                  {%- else -%}
+                    <li>{%- render 'pm-product-card', product: product -%}</li>
+                  {%- endif -%}
+                  {%- assign _emitted = _emitted | plus: 1 -%}
+                {%- endunless -%}
               {%- endfor -%}
             </ul>
 
