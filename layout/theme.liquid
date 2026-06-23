@@ -85,6 +85,7 @@
   {{ 'pm-compare.css'       | asset_url | stylesheet_tag }}
   {{ 'pm-lists.css'         | asset_url | stylesheet_tag }}
   {{ 'pm-auth-misc.css'     | asset_url | stylesheet_tag }}
+  {%- if template.name == 'blog' or template.name == 'article' -%}{{ 'pm-blog.css' | asset_url | stylesheet_tag }}{%- endif -%}
 
   {%- comment -%}
     Collection 404 → search redirect. Runs in <head> BEFORE the body

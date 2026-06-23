@@ -1,0 +1,8 @@
+{
+  "sections": {
+    "pm-article": {
+      "type": "pm-article"
+    }
+  },
+  "order": ["pm-article"]
+}

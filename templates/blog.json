@@ -1,0 +1,11 @@
+{
+  "sections": {
+    "pm-blog": {
+      "type": "pm-blog",
+      "settings": {
+        "per_page": 12
+      }
+    }
+  },
+  "order": ["pm-blog"]
+}

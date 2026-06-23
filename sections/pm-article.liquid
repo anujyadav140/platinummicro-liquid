@@ -1,0 +1,120 @@
+{%- comment -%}
+  PM — Article (blog post). Breadcrumb, category eyebrow (first tag), title, date,
+  body, tags, share row (Email · Facebook · X), related posts.
+  BlogPosting + BreadcrumbList JSON-LD for SEO. Styled by pm-blog.css.
+{%- endcomment -%}
+{%- assign _abs = shop.url | append: article.url -%}
+{%- assign _cat = article.tags.first -%}
+<article class="pm-article">
+  <div class="pm-article__container">
+    <nav class="pm-article__crumbs" aria-label="Breadcrumb">
+      <a href="{{ routes.root_url }}">Home</a>
+      <span class="sep">/</span>
+      <a href="{{ blog.url }}">{{ blog.title }}</a>
+      <span class="sep">/</span>
+      <span class="current">{{ article.title }}</span>
+    </nav>
+
+    {%- if _cat != blank -%}<div class="pm-article__eyebrow">{{ _cat }}</div>{%- endif -%}
+    <h1 class="pm-article__title">{{ article.title }}</h1>
+    <div class="pm-article__meta">
+      <time datetime="{{ article.published_at | date: '%Y-%m-%d' }}">{{ article.published_at | date: '%B %-d, %Y' }}</time>
+      {%- if article.author != blank -%} &middot; {{ article.author }}{%- endif -%}
+    </div>
+
+    {%- if article.image -%}
+      <div class="pm-article__hero">
+        <img
+          src="{{ article.image | image_url: width: 1200 }}"
+          srcset="{{ article.image | image_url: width: 760 }} 760w, {{ article.image | image_url: width: 1200 }} 1200w"
+          sizes="(min-width: 820px) 820px, 100vw"
+          alt="{{ article.image.alt | default: article.title | escape }}"
+          width="1200" height="675" loading="eager" fetchpriority="high">
+      </div>
+    {%- endif -%}
+
+    <div class="pm-article__body rte">{{ article.content }}</div>
+
+    <div class="pm-article__foot">
+      {%- if article.tags.size > 0 -%}
+        <div class="pm-article__tags">
+          <span class="pm-article__tags-label">Tags:</span>
+          {%- for tag in article.tags -%}
+            <a class="pm-article__tag" href="{{ blog.url }}/tagged/{{ tag | handleize }}">{{ tag }}</a>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+
+      {%- comment -%} Share: Email (first) · Facebook · X {%- endcomment -%}
+      {%- capture _sub -%}{{ shop.name }}: {{ article.title }}{%- endcapture -%}
+      {%- capture _body -%}Thought you would find this useful from {{ shop.name }}:
+{{ article.title }}
+{{ _abs }}{%- endcapture -%}
+      <div class="pm-article__share">
+        <span class="pm-article__share-label">Share:</span>
+        <a class="pm-article__share-btn" href="mailto:?subject={{ _sub | url_encode | replace: '+', '%20' }}&body={{ _body | url_encode | replace: '+', '%20' }}" aria-label="Share by email">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M3 4h18a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Zm8.99 7L4.2 6h15.6L11.99 11Zm0 2.2L4 7.8V18h16V7.8l-8.01 5.4Z"/></svg>
+        </a>
+        <a class="pm-article__share-btn" href="https://www.facebook.com/sharer/sharer.php?u={{ _abs | url_encode }}" target="_blank" rel="noopener noreferrer" aria-label="Share on Facebook">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M22 12.06C22 6.5 17.52 2 12 2S2 6.5 2 12.06c0 4.99 3.66 9.13 8.44 9.88v-6.99H7.9v-2.9h2.54V9.85c0-2.51 1.49-3.9 3.78-3.9 1.1 0 2.24.2 2.24.2v2.46h-1.26c-1.24 0-1.63.77-1.63 1.56v1.87h2.78l-.44 2.9h-2.34v6.99C18.34 21.19 22 17.05 22 12.06Z"/></svg>
+        </a>
+        <a class="pm-article__share-btn" href="https://twitter.com/intent/tweet?url={{ _abs | url_encode }}&text={{ article.title | url_encode }}" target="_blank" rel="noopener noreferrer" aria-label="Share on X">
+          <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.9 2h3.3l-7.2 8.23L23.5 22h-6.64l-5.2-6.8L5.7 22H2.4l7.7-8.8L1 2h6.8l4.7 6.2L18.9 2Zm-1.16 18h1.83L7.34 3.9H5.38L17.74 20Z"/></svg>
+        </a>
+      </div>
+    </div>
+
+    {%- comment -%} Related posts: recent others from this blog {%- endcomment -%}
+    {%- assign _rel_count = 0 -%}
+    {%- capture _related_cards -%}
+      {%- for a in blog.articles -%}
+        {%- if a.id != article.id and _rel_count < 3 -%}
+          {%- render 'pm-blog-card', article: a -%}
+          {%- assign _rel_count = _rel_count | plus: 1 -%}
+        {%- endif -%}
+      {%- endfor -%}
+    {%- endcapture -%}
+    {%- if _rel_count > 0 -%}
+      <section class="pm-article__related" aria-label="Related posts">
+        <h2 class="pm-article__related-title">Related posts</h2>
+        <div class="pm-article__related-grid">{{ _related_cards }}</div>
+      </section>
+    {%- endif -%}
+  </div>
+
+  {%- comment -%} ── SEO: BlogPosting + BreadcrumbList JSON-LD ── {%- endcomment -%}
+  {%- assign _desc = article.excerpt_or_content | strip_html | truncate: 300 -%}
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BlogPosting",
+    "headline": {{ article.title | json | replace: '</', '<\/' }},
+    "mainEntityOfPage": {{ _abs | json }},
+    {%- if article.image -%}
+    "image": [{{ article.image | image_url: width: 1200 | prepend: 'https:' | json }}],
+    {%- endif -%}
+    "datePublished": {{ article.published_at | date: '%Y-%m-%dT%H:%M:%S%z' | json }},
+    "dateModified": {{ article.updated_at | date: '%Y-%m-%dT%H:%M:%S%z' | json }},
+    {%- if article.author != blank -%}
+    "author": { "@type": "Person", "name": {{ article.author | json }} },
+    {%- endif -%}
+    "publisher": { "@type": "Organization", "name": {{ shop.name | json }}{% if shop.brand.logo != blank %}, "logo": { "@type": "ImageObject", "url": {{ shop.brand.logo | image_url: width: 400 | prepend: 'https:' | json }} }{% endif %} },
+    "description": {{ _desc | json | replace: '</', '<\/' }}
+  }
+  </script>
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    "itemListElement": [
+      { "@type": "ListItem", "position": 1, "name": "Home", "item": {{ shop.url | json }} },
+      { "@type": "ListItem", "position": 2, "name": {{ blog.title | json }}, "item": {{ shop.url | append: blog.url | json }} },
+      { "@type": "ListItem", "position": 3, "name": {{ article.title | json | replace: '</', '<\/' }} }
+    ]
+  }
+  </script>
+</article>
+
+{% schema %}
+{ "name": "PM — Article", "settings": [] }
+{% endschema %}

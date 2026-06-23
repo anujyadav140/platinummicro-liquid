@@ -1,0 +1,55 @@
+{%- comment -%}
+  PM — Blog index. Renders any Shopify blog (Content -> Blog posts).
+  Tag-filter row + post-card grid + pagination. Styled by pm-blog.css.
+{%- endcomment -%}
+<div class="pm-blog">
+  <div class="pm-blog__container">
+    <header class="pm-blog__head">
+      <h1 class="pm-blog__title">{{ blog.title }}</h1>
+      {%- if section.settings.intro != blank -%}
+        <p class="pm-blog__intro">{{ section.settings.intro }}</p>
+      {%- endif -%}
+    </header>
+
+    {%- if blog.all_tags.size > 0 -%}
+      <nav class="pm-blog__tags" aria-label="Filter posts by topic">
+        <a class="pm-blog__tag{% unless current_tags %} is-active{% endunless %}" href="{{ blog.url }}">All Posts</a>
+        {%- for tag in blog.all_tags -%}
+          <a class="pm-blog__tag{% if current_tags contains tag %} is-active{% endif %}" href="{{ blog.url }}/tagged/{{ tag | handleize }}">{{ tag }}</a>
+        {%- endfor -%}
+      </nav>
+    {%- endif -%}
+
+    {%- paginate blog.articles by section.settings.per_page -%}
+      {%- if blog.articles.size > 0 -%}
+        <div class="pm-blog__grid">
+          {%- for article in blog.articles -%}
+            {%- render 'pm-blog-card', article: article -%}
+          {%- endfor -%}
+        </div>
+        {%- if paginate.pages > 1 -%}
+          <nav class="pm-blog__pager" aria-label="Pagination">
+            {%- if paginate.previous -%}<a href="{{ paginate.previous.url }}" rel="prev" aria-label="Previous page">&lsaquo;</a>{%- endif -%}
+            {%- for part in paginate.parts -%}
+              {%- if part.is_link -%}<a href="{{ part.url }}">{{ part.title }}</a>
+              {%- else -%}<span class="{% if part.title == paginate.current_page %}is-current{% endif %}">{{ part.title }}</span>{%- endif -%}
+            {%- endfor -%}
+            {%- if paginate.next -%}<a href="{{ paginate.next.url }}" rel="next" aria-label="Next page">&rsaquo;</a>{%- endif -%}
+          </nav>
+        {%- endif -%}
+      {%- else -%}
+        <p class="pm-blog__empty">No posts yet. Check back soon.</p>
+      {%- endif -%}
+    {%- endpaginate -%}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "PM — Blog",
+  "settings": [
+    { "type": "textarea", "id": "intro", "label": "Intro text (optional)", "info": "Shown under the blog title." },
+    { "type": "range", "id": "per_page", "label": "Posts per page", "min": 6, "max": 24, "step": 3, "default": 12 }
+  ]
+}
+{% endschema %}
