@@ -147,7 +147,7 @@
 
   {%- capture _children_servers -%}Accessories~accessories~BRT-0003-RR__98568.jpg~171 products. iStarUSA BRT-0003-RR Bracket for 2U PS in 3U CASE|Barebones~barebones~ZBOX-CI325NANO-U-6__21696.jpg~82 products. ZOTAC ZBOX-CI325NANO-U Series Nano Fan-Less Mini PC|General Purpose Servers~general-purspose-servers~e283-z90-aad1-01__62526.jpg~67 products. Gigabyte 2U Edge Server Barebone — AMD EPYC 9004|GPU Servers~gpu-servers~R152-P31_rev-100-01-2__85749.png~13 products. Gigabyte R152-P31 1U AI Inference Server|High Density Servers~high-density-servers~h273-z80-aan1-01__65814.jpg~3 products. Gigabyte 2U High Density Server Barebone|Storage Servers~storage-servers~s472-z30-01__97626.jpg~3 products. Gigabyte 4U Storage Server Barebone — AMD EPYC 7003{%- endcapture -%}
 
-  {%- capture _children_storage -%}Storage Devices~storage-devices~33447_5_-5__72396.jpg~1,007 products. Adata ALRAI910CWH MFi Certified Lightning Card Reader/Writer Plus|Solid State Drives~solid-state-drives~33447_5_-4__76799.jpg~573 products. Adata ASD700-512GU3-CBK SD700 Durable 512GB Portable USB3.1|Internal Hard Drives~internal-hard-drives~WD1003FZEX_2__19420.jpg~311 products. WD 3.5-Inch Black Performance Desktop Hard Disk Drive|External Hard Drives~external-hard-drives~31kJ7BvAISL-1__06902.jpg~208 products. Seagate STEA1500400 Expansion 1.5TB 2.5" Portable USB 3.0|Network Attached Storage~network-attached-storage~TS-231P-US__80459.jpg~199 products. Qnap TS-231P-US Personal Cloud NAS with DLNA mobile apps|USB Flash Drive~usb-flash-drive~33447_5_-5__72396.jpg~57 products. Adata ALRAI910CWH MFi Certified Lightning Card Reader{%- endcapture -%}
+  {%- capture _children_storage -%}Storage Devices~storage-devices~33447_5_-5__72396.jpg~Portable SSDs, memory cards & flash media|Solid State Drives~solid-state-drives~33447_5_-4__76799.jpg~NVMe, SATA & U.2 SSDs — boot drives to data-center storage|Internal Hard Drives~internal-hard-drives~WD1003FZEX_2__19420.jpg~3.5-inch & 2.5-inch hard drives for desktops, servers & NAS|External Hard Drives~external-hard-drives~31kJ7BvAISL-1__06902.jpg~Portable & desktop USB drives for backup and expansion|Network Attached Storage~network-attached-storage~TS-231P-US__80459.jpg~Multi-bay NAS systems for shared storage & backups|USB Flash Drive~usb-flash-drive~33447_5_-5__72396.jpg~Plug-and-play USB flash drives for everyday transfer{%- endcapture -%}
 
   {%- capture _children_networking -%}Network Attached Storage~network-attached-storage~TS-231P-US__80459.jpg~221 products. Qnap TS-231P-US Personal Cloud NAS with DLNA mobile apps|Switches & Hub~switches-hub~514JLOCpwCL._AC_SL1500___10235.jpg~35 products. HPE Networking Instant On 1960 24-Port Gb Smart Switch|Access Point~access-point~61JHL83k35L._AC_SL1500___86784.1613714737.500.750__21201.jpg~22 products. Cisco Catalyst 9117AXI-B Wireless Access Point, Wi-Fi 6|Wireless Routers~wireless-routers~R2X10A__98320.1666031953.500.750__87395.jpg~7 products. HPE Networking Instant On AP17 2x2 Outdoor Access Point{%- endcapture -%}
 
@@ -215,6 +215,18 @@
         {%- endcomment -%}
         {%- assign _use_admin = false -%}
         {%- if _has_admin_children -%}{%- assign _use_admin = true -%}{%- endif -%}
+
+        {%- comment -%}
+          CURATED categories render their card-grid from the hand-tuned
+          _children_* maps (smart blurb + fitting product image) instead of the
+          live admin-nav children, which can only show "N products. <first
+          product>" and go blank when a collection is thin on the storefront.
+          Admin children are left intact (never deleted) — just bypassed for the
+          card grid of the listed panels. Add a category's key here once its
+          _children_* map has been curated. (keys are exact, no substring clashes)
+        {%- endcomment -%}
+        {%- assign _curated_categories = 'storage' -%}
+        {%- if _has_static_children and _curated_categories contains _key -%}{%- assign _use_admin = false -%}{%- endif -%}
 
         <div
           class="pm-nav__item{% if _show_brands %} pm-nav__item--with-brands{% endif %}"
