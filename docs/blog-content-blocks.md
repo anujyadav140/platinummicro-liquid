@@ -35,6 +35,30 @@ comparison table → procurement/compliance callout → (optional) video/chart �
 
 ---
 
+## The easy way — most posts need zero HTML
+
+Use the editor **toolbar**, not code. The theme now auto-styles everything the toolbar produces:
+
+| Click in the toolbar | You get (auto-styled, on-brand) |
+|---|---|
+| Heading dropdown | Section headings |
+| Bold / italic | Emphasis |
+| Bulleted / numbered list | Lists with proper bullets |
+| **Table** | A polished comparison / spec table |
+| **Image** | Full-width image (add a caption line underneath) |
+| **Insert video** | A responsive 16:9 video |
+| **Quote** | A navy callout box |
+
+So for most posts you just **type your text and pick a format** — no HTML at all. You only
+need the snippets below for three fancy blocks: **Key takeaways**, the **FAQ accordion**, and **Pros/Cons**.
+
+## Preview before you publish
+
+Shopify shows you the real thing before it goes live:
+1. In the post, set **Visibility → Hidden**.
+2. Click **View** (top-right of the editor) — it opens the post in the live theme so you see exactly how it looks.
+3. Happy with it? Set **Visibility → Visible** and **Save**.
+
 ## Writing checklist (every post)
 
 - [ ] First sentence answers the title directly (quotable).
@@ -48,9 +72,10 @@ comparison table → procurement/compliance callout → (optional) video/chart �
 
 ---
 
-## Copy-paste blocks
+## Copy-paste blocks (only for the 3 fancy formats)
 
-Paste into the editor's **HTML view** (`</>`), then edit the words.
+For **Key takeaways**, the **FAQ accordion**, and **Pros/Cons**, paste into the editor's
+**HTML view** (`</>`) and edit the words. Everything else uses the toolbar above — no code.
 
 ### Key takeaways (use near the top)
 ```html
