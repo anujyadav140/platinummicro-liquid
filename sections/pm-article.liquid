@@ -6,14 +6,17 @@
 {%- assign _abs = shop.url | append: article.url -%}
 {%- assign _cat = article.tags.first -%}
 <article class="pm-article">
+  <nav class="pm-article__crumbs" aria-label="Breadcrumb">
+    <a href="{{ routes.root_url }}" class="pm-article__crumb-link">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Home</span>
+    </a>
+    <svg class="pm-article__crumb-sep" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+    <a href="{{ blog.url }}" class="pm-article__crumb-link">{{ blog.title }}</a>
+    <svg class="pm-article__crumb-sep" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+    <span class="pm-article__crumb-current">{{ article.title | truncate: 80 }}</span>
+  </nav>
   <div class="pm-article__container">
-    <nav class="pm-article__crumbs" aria-label="Breadcrumb">
-      <a href="{{ routes.root_url }}">Home</a>
-      <span class="sep">/</span>
-      <a href="{{ blog.url }}">{{ blog.title }}</a>
-      <span class="sep">/</span>
-      <span class="current">{{ article.title }}</span>
-    </nav>
 
     {%- if _cat != blank -%}<div class="pm-article__eyebrow">{{ _cat }}</div>{%- endif -%}
     <h1 class="pm-article__title">{{ article.title }}</h1>
