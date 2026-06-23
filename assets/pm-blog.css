@@ -137,3 +137,86 @@
   .pm-blog-card, .pm-blog__tag, .pm-article__share-btn { transition: none; }
   .pm-blog-card:hover { transform: none; }
 }
+
+/* =============================================================================
+   CONTENT BLOCKS — drop-in formats for posts (see docs/blog-content-blocks.md)
+   2026 research-backed: the proven win is QUOTABLE, committee-serving content
+   (key takeaways, comparison tables, clear Q&A). Video/charts are supported for
+   UX (no proven ranking lift). FAQ rich results were removed May 2026, so the
+   FAQ block is visible content only — no FAQPage schema.
+   ============================================================================= */
+
+/* Reading time (appended to the meta line) */
+.pm-article__readtime::before { content: '·'; margin: 0 6px; color: var(--pm-ink-300); }
+
+/* Key takeaways — quotable summary box (place near the top) */
+.pm-takeaways {
+  background: var(--pm-terracotta-pale); border: 1px solid #EAD7D3;
+  border-left: 4px solid var(--pm-terracotta); border-radius: 12px;
+  padding: 18px 22px; margin: 0 0 28px;
+}
+.pm-takeaways__title {
+  font-weight: 800; font-size: 13px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--pm-terracotta); margin: 0 0 10px;
+}
+.pm-takeaways ul { margin: 0; padding-left: 20px; }
+.pm-takeaways li { margin-bottom: 6px; color: var(--pm-ink-800); }
+
+/* Callout / note + public-sector procurement variant (serve the committee) */
+.pm-callout {
+  background: var(--pm-navy-pale); border: 1px solid #D4E2F2; border-left: 4px solid var(--pm-navy-light);
+  border-radius: 12px; padding: 16px 20px; margin: 0 0 24px; color: var(--pm-ink-800);
+}
+.pm-callout__title { font-weight: 700; color: var(--pm-navy-deep); margin: 0 0 6px; }
+.pm-callout--gov { background: var(--pm-tan-pale); border-color: #E6DCC9; border-left-color: var(--pm-tan); }
+.pm-callout--gov .pm-callout__title { color: var(--pm-tan); }
+
+/* Comparison / spec table polish (quotable structured data) */
+.pm-table-wrap { overflow-x: auto; margin: 0 0 24px; border: 1px solid var(--pm-ink-200); border-radius: 12px; }
+.pm-table-wrap table { margin: 0; }
+.pm-article__body thead th { background: var(--pm-navy-deep); color: var(--pm-white); }
+.pm-article__body tbody tr:nth-child(even) { background: var(--pm-paper); }
+.pm-article__body td:first-child { font-weight: 600; color: var(--pm-navy-deep); }
+
+/* FAQ — visible Q&A accordion (no JS, no FAQ rich result; content value only) */
+.pm-faq { margin: 0 0 24px; border-top: 1px solid var(--pm-ink-200); }
+.pm-faq details { border-bottom: 1px solid var(--pm-ink-200); }
+.pm-faq summary {
+  cursor: pointer; list-style: none; padding: 16px 0; font-weight: 700; color: var(--pm-navy-deep);
+  display: flex; justify-content: space-between; align-items: center; gap: 12px;
+}
+.pm-faq summary::-webkit-details-marker { display: none; }
+.pm-faq summary::after { content: '+'; font-size: 22px; color: var(--pm-terracotta); font-weight: 400; line-height: 1; }
+.pm-faq details[open] summary::after { content: '\2212'; }
+.pm-faq details > *:not(summary) { margin: 0 0 16px; color: var(--pm-ink-700); }
+
+/* Pros / cons */
+.pm-proscons { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 0 0 24px; }
+@media (max-width: 600px) { .pm-proscons { grid-template-columns: 1fr; } }
+.pm-proscons__col { border: 1px solid var(--pm-ink-200); border-radius: 12px; padding: 16px 18px; }
+.pm-proscons__title { font-weight: 800; font-size: 13px; text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 10px; }
+.pm-proscons__col--pro .pm-proscons__title { color: var(--pm-success); }
+.pm-proscons__col--con .pm-proscons__title { color: var(--pm-danger); }
+.pm-proscons ul { margin: 0; padding-left: 18px; }
+.pm-proscons li { margin-bottom: 6px; }
+
+/* Responsive video (editor "video embed" or pasted iframe) */
+.pm-article__body iframe { width: 100%; aspect-ratio: 16 / 9; height: auto; border: 0; border-radius: 12px; margin: 8px 0; }
+.pm-video { position: relative; width: 100%; aspect-ratio: 16 / 9; border-radius: 12px; overflow: hidden; margin: 8px 0 24px; }
+.pm-video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 0; margin: 0; }
+
+/* Figure + caption (charts, diagrams, screenshots) */
+.pm-article__body figure { margin: 0 0 24px; }
+.pm-article__body figure img { width: 100%; border-radius: 12px; margin: 0; }
+.pm-article__body figcaption { font-size: 13px; color: var(--pm-ink-500); text-align: center; margin-top: 8px; }
+
+/* Shop-these-products (internal links to PDPs — commercial intent + crawl depth) */
+.pm-products { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 8px 0 28px; }
+@media (max-width: 700px) { .pm-products { grid-template-columns: 1fr; } }
+.pm-products a {
+  display: block; border: 1px solid var(--pm-ink-200); border-radius: 12px; padding: 14px 16px;
+  text-decoration: none; color: var(--pm-navy-deep); font-weight: 600; font-size: 15px;
+  transition: border-color var(--pm-dur-base) var(--pm-ease-standard), box-shadow var(--pm-dur-base) var(--pm-ease-standard);
+}
+.pm-products a:hover { border-color: var(--pm-terracotta); box-shadow: var(--pm-shadow-md); }
+.pm-products .price { display: block; color: var(--pm-terracotta); font-weight: 700; margin-top: 4px; }
