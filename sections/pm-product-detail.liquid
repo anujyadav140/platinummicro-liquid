@@ -632,6 +632,26 @@
           <h2 class="pm-pdp__h2">Description</h2>
           {%- if product.description != blank -%}
             <div class="pm-pdp__desc-body rte">{{ product.description }}</div>
+            {%- comment -%}
+              Hide broken inline images in the migrated description. Some BigCommerce
+              descriptions embedded images hosted on BC's CDN that weren't rehosted
+              during migration, so they 404 and render a broken-image icon. This
+              hides any description image that fails to load (already-failed on parse,
+              OR fails later). Storefront-side cosmetic mask only — the description
+              HTML itself is untouched.
+            {%- endcomment -%}
+            <script>
+              (function () {
+                var imgs = document.querySelectorAll('.pm-pdp__desc-body img');
+                for (var i = 0; i < imgs.length; i++) {
+                  (function (img) {
+                    var hide = function () { img.style.display = 'none'; };
+                    if (img.complete && img.naturalWidth === 0) { hide(); }
+                    img.addEventListener('error', hide);
+                  })(imgs[i]);
+                }
+              })();
+            </script>
           {%- else -%}
             <p class="pm-pdp__empty">
               A long-form description for this part is not yet published.
