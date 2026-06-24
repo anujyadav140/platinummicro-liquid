@@ -79,13 +79,14 @@
         {%- endif -%}
       {%- endfor -%}
     {%- endcapture -%}
-    {%- if _rel_count > 0 -%}
-      <section class="pm-article__related" aria-label="Related posts">
-        <h2 class="pm-article__related-title">Related posts</h2>
-        <div class="pm-article__related-grid">{{ _related_cards }}</div>
-      </section>
-    {%- endif -%}
   </div>
+
+  {%- if _rel_count > 0 -%}
+    <section class="pm-article__related" aria-label="Related posts">
+      <h2 class="pm-article__related-title">Related posts</h2>
+      <div class="pm-article__related-grid">{{ _related_cards }}</div>
+    </section>
+  {%- endif -%}
 
   {%- comment -%} ── SEO: BlogPosting + BreadcrumbList JSON-LD ── {%- endcomment -%}
   {%- assign _desc = article.excerpt_or_content | strip_html | truncate: 300 -%}
