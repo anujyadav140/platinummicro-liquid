@@ -150,7 +150,7 @@
 .pm-article__share-btn:hover { background: var(--pm-navy-deep); border-color: var(--pm-navy-deep); color: var(--pm-white); }
 
 /* ---- Related (breaks out of the narrow article column to a wide grid) ---- */
-.pm-article__related { max-width: 1320px; margin: 64px auto 0; padding: 0 20px; }
+.pm-article__related { max-width: 1320px; margin: 48px auto 0; padding: 0 20px 88px; }
 .pm-article__related-title { font-family: var(--pm-font-heading); font-size: 24px; font-weight: 800; color: var(--pm-navy-deep); text-align: center; margin: 0 0 24px; }
 .pm-article__related-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
 @media (max-width: 760px) { .pm-article__related-grid { grid-template-columns: 1fr; } }
