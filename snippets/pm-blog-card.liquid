@@ -3,6 +3,7 @@
   Params: article (required)
   The post's FIRST tag renders as the category eyebrow (admin-controlled via tags).
 {%- endcomment -%}
+{%- assign _ex = article.excerpt_or_content | strip_html | strip -%}
 <article class="pm-blog-card">
   <a href="{{ article.url }}" class="pm-blog-card__media" aria-label="{{ article.title | escape }}">
     {%- if article.image -%}
@@ -17,6 +18,12 @@
         <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
       </span>
     {%- endif -%}
+    {%- if _ex != blank -%}
+      <span class="pm-blog-card__peek" aria-hidden="true">
+        <span class="pm-blog-card__peek-text">{{ _ex | truncatewords: 28 }}</span>
+        <span class="pm-blog-card__peek-cta">Read article &rarr;</span>
+      </span>
+    {%- endif -%}
   </a>
   <div class="pm-blog-card__body">
     {%- if article.tags.size > 0 -%}
@@ -26,9 +33,5 @@
     <div class="pm-blog-card__meta">
       {{ article.published_at | date: '%b %-d, %Y' }}{% if article.author != blank %} &middot; {{ article.author }}{% endif %}
     </div>
-    {%- assign _ex = article.excerpt_or_content | strip_html | strip -%}
-    {%- if _ex != blank -%}
-      <p class="pm-blog-card__excerpt">{{ _ex | truncatewords: 22 }}</p>
-    {%- endif -%}
   </div>
 </article>
