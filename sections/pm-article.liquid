@@ -69,6 +69,32 @@
       </div>
     </div>
 
+    {%- comment -%} Previous / Next post nav (adjacent articles in this blog) {%- endcomment -%}
+    {%- assign _seen = false -%}
+    {%- assign _older = false -%}
+    {%- assign _newer = false -%}
+    {%- for _a in blog.articles -%}
+      {%- if _a.id == article.id -%}{%- assign _seen = true -%}
+      {%- elsif _seen -%}{%- unless _older -%}{%- assign _older = _a -%}{%- endunless -%}
+      {%- else -%}{%- assign _newer = _a -%}{%- endif -%}
+    {%- endfor -%}
+    {%- if _older or _newer -%}
+      <nav class="pm-article__pn" aria-label="More posts">
+        {%- if _older -%}
+          <a class="pm-article__pn-link pm-article__pn-prev" href="{{ _older.url }}">
+            <span class="pm-article__pn-label">&lsaquo; Previous post</span>
+            <span class="pm-article__pn-title">{{ _older.title }}</span>
+          </a>
+        {%- else -%}<span></span>{%- endif -%}
+        {%- if _newer -%}
+          <a class="pm-article__pn-link pm-article__pn-next" href="{{ _newer.url }}">
+            <span class="pm-article__pn-label">Next post &rsaquo;</span>
+            <span class="pm-article__pn-title">{{ _newer.title }}</span>
+          </a>
+        {%- else -%}<span></span>{%- endif -%}
+      </nav>
+    {%- endif -%}
+
     {%- comment -%} Related posts: recent others from this blog {%- endcomment -%}
     {%- assign _rel_count = 0 -%}
     {%- capture _related_cards -%}
