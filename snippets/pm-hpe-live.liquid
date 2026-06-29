@@ -1,0 +1,52 @@
+{%- comment -%}
+  PM — HPE live data panel (API-driven).
+  Renders only on HPE / ProLiant PDPs. The JS extracts the HPE part number
+  (e.g. P69302-005) from the title, fetches the middleware, and fills price /
+  availability / specs. Hidden until data arrives, so a non-HPE or unwired
+  product shows nothing.
+
+  Swap the data source by changing ONLY the middleware (mock -> TD SYNNEX -> HPE);
+  this template never changes. Set hpe_endpoint to the deployed middleware URL.
+  Param: product (required)
+{%- endcomment -%}
+
+{%- assign _is_hpe = false -%}
+{%- if product.title contains 'ProLiant' or product.vendor contains 'Hewlett' or product.vendor contains 'HPE' -%}
+  {%- assign _is_hpe = true -%}
+{%- endif -%}
+
+{%- if _is_hpe -%}
+  {%- comment -%} >>> middleware URL (mock today; swap to TD SYNNEX/HPE feed later, same URL) <<< {%- endcomment -%}
+  {%- assign hpe_endpoint = 'https://deft-moxie-7cc2ec.netlify.app' -%}
+  {%- assign _v = product.selected_or_first_available_variant | default: product.variants.first -%}
+
+  <section class="pm-hpe" data-pm-hpe hidden
+           data-endpoint="{{ hpe_endpoint }}"
+           data-title="{{ product.title | escape }}"
+           data-sku="{{ _v.sku | escape }}">
+    <div class="pm-hpe__head">
+      <span class="pm-hpe__badge">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+        HPE live data
+      </span>
+      <span class="pm-hpe__source" data-pm-hpe-source></span>
+    </div>
+
+    <div class="pm-hpe__grid">
+      <div class="pm-hpe__cell">
+        <div class="pm-hpe__label">List price (MSRP)</div>
+        <div class="pm-hpe__price" data-pm-hpe-price>—</div>
+      </div>
+      <div class="pm-hpe__cell">
+        <div class="pm-hpe__label">Availability</div>
+        <div class="pm-hpe__avail" data-pm-hpe-avail>—</div>
+      </div>
+    </div>
+
+    <div class="pm-hpe__specs" data-pm-hpe-specs></div>
+    <div class="pm-hpe__foot" data-pm-hpe-foot></div>
+  </section>
+
+  {{ 'pm-hpe-live.css' | asset_url | stylesheet_tag }}
+  <script src="{{ 'pm-hpe-live.js' | asset_url }}" defer></script>
+{%- endif -%}

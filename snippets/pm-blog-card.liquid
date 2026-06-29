@@ -4,6 +4,14 @@
   The post's FIRST tag renders as the category eyebrow (admin-controlled via tags).
 {%- endcomment -%}
 {%- assign _ex = article.excerpt_or_content | strip_html | strip -%}
+{%- comment -%} Block-built posts have empty article.content; derive the peek from the blocks. {%- endcomment -%}
+{%- if _ex == blank -%}
+  {%- assign _cbx = article.metafields.custom.content_blocks.value -%}
+  {%- if _cbx != blank and _cbx.size > 0 -%}
+    {%- capture _ex -%}{%- render 'pm-block-excerpt', blocks: _cbx -%}{%- endcapture -%}
+    {%- assign _ex = _ex | strip -%}
+  {%- endif -%}
+{%- endif -%}
 <article class="pm-blog-card">
   <a href="{{ article.url }}" class="pm-blog-card__media" aria-label="{{ article.title | escape }}">
     {%- if article.image -%}

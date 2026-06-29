@@ -1,0 +1,78 @@
+/* PM — HPE live data panel. Self-contained; only loads on HPE/ProLiant PDPs. */
+.pm-hpe {
+  --pm-hpe-navy: #14213d;
+  --pm-hpe-accent: #01a982; /* HPE green */
+  --pm-hpe-line: #e4e7ec;
+  margin: 18px 0 4px;
+  padding: 16px 18px;
+  border: 1px solid var(--pm-hpe-line);
+  border-radius: 12px;
+  background: linear-gradient(180deg, #fafbfc, #fff);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, .04);
+}
+.pm-hpe__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.pm-hpe__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: .02em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--pm-hpe-accent);
+  padding: 4px 9px;
+  border-radius: 999px;
+}
+.pm-hpe__source { font-size: 11px; color: #98a2b3; }
+.pm-hpe__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.pm-hpe__cell {
+  padding: 10px 12px;
+  border: 1px solid var(--pm-hpe-line);
+  border-radius: 9px;
+  background: #fff;
+}
+.pm-hpe__label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .03em;
+  color: #98a2b3;
+  margin-bottom: 4px;
+}
+.pm-hpe__price { font-size: 22px; font-weight: 800; color: var(--pm-hpe-navy); }
+.pm-hpe__avail { font-size: 14px; font-weight: 600; color: #475467; }
+.pm-hpe__avail.is-in-stock { color: var(--pm-hpe-accent); }
+.pm-hpe__avail.is-lead { color: #b54708; }
+.pm-hpe__specs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px 18px;
+  border-top: 1px solid var(--pm-hpe-line);
+  padding-top: 12px;
+}
+.pm-hpe__spec {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 5px 0;
+  border-bottom: 1px dashed #eef0f3;
+  font-size: 13px;
+}
+.pm-hpe__spec-k { color: #667085; }
+.pm-hpe__spec-v { color: #1d2939; font-weight: 600; text-align: right; }
+.pm-hpe__foot { margin-top: 10px; font-size: 11px; color: #98a2b3; }
+@media (max-width: 600px) {
+  .pm-hpe__grid, .pm-hpe__specs { grid-template-columns: 1fr; }
+}

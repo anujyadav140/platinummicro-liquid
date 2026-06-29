@@ -1,0 +1,20 @@
+{%- comment -%}
+  PM — Rich text renderer. Converts a Shopify rich_text_field value (parsed JSON) to
+  HTML. Needed because metaobject rich-text fields output raw JSON in Liquid (the
+  metafield_tag filter only works on resource metafields, not metaobject values).
+  Input: `rt` = the field value, e.g. blk.body.value  (a navigable object with .children).
+  Handles paragraph, heading, lists; inline text/links via pm-richtext-inline.
+{%- endcomment -%}
+{%- for node in rt.children -%}
+  {%- case node.type -%}
+  {%- when 'paragraph' -%}
+    <p>{%- render 'pm-richtext-inline', nodes: node.children -%}</p>
+  {%- when 'heading' -%}
+    {%- assign _lvl = node.level | default: 2 | at_least: 2 | at_most: 4 -%}
+    <h{{ _lvl }}>{%- render 'pm-richtext-inline', nodes: node.children -%}</h{{ _lvl }}>
+  {%- when 'list' -%}
+    {%- if node.listType == 'ordered' -%}<ol>{%- else -%}<ul>{%- endif -%}
+      {%- for li in node.children -%}<li>{%- render 'pm-richtext-inline', nodes: li.children -%}</li>{%- endfor -%}
+    {%- if node.listType == 'ordered' -%}</ol>{%- else -%}</ul>{%- endif -%}
+  {%- endcase -%}
+{%- endfor -%}

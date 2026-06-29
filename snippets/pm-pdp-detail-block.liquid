@@ -1,0 +1,93 @@
+{%- comment -%}
+  PM — PDP Description + Specifications, rendered in the LEFT column under the gallery
+  (CDW-style: image → description → specs flow down the left, beside the buy/configure column).
+  Description shows open; Specs show ~8 rows then "Show N more" (existing JS targets the
+  data-attributes, so hydration + the toggle keep working here unchanged).
+  Params: product (required), features (array), spec_pairs (array), spec_count (number)
+{%- endcomment -%}
+<section id="pm-product-description" class="pm-pdp__detailblock">
+
+  {%- comment -%} ── Description ── {%- endcomment -%}
+  <div class="pm-pdp__desc-col">
+    <h2 class="pm-pdp__h2">Description</h2>
+    {%- if product.description != blank -%}
+      <div class="pm-pdp__desc-body rte">{{ product.description }}</div>
+      <script>
+        (function () {
+          var imgs = document.querySelectorAll('.pm-pdp__desc-body img');
+          for (var i = 0; i < imgs.length; i++) {
+            (function (img) {
+              var hide = function () { img.style.display = 'none'; };
+              if (img.complete && img.naturalWidth === 0) { hide(); }
+              img.addEventListener('error', hide);
+            })(imgs[i]);
+          }
+        })();
+      </script>
+    {%- else -%}
+      <p class="pm-pdp__empty">
+        A long-form description for this part is not yet published.
+        Reach out to your account manager for spec sheets and configuration guidance.
+      </p>
+    {%- endif -%}
+
+    {%- if features.size > 0 -%}
+      <div class="pm-pdp__features">
+        <div class="pm-pdp__features-eyebrow">Key features</div>
+        <ul class="pm-pdp__features-list">
+          {%- for f in features -%}
+            {%- assign _ft = f | strip -%}
+            {%- if _ft != blank -%}
+              <li><span class="pm-pdp__glance-dot" aria-hidden="true"></span><span>{{ _ft | escape }}</span></li>
+            {%- endif -%}
+          {%- endfor -%}
+        </ul>
+      </div>
+    {%- endif -%}
+  </div>
+
+  {%- comment -%} ── Specifications (≤8 rows shown, then "Show N more") ── {%- endcomment -%}
+  <div
+    class="pm-pdp__specs-col"
+    data-pm-pdp-handle="{{ product.handle }}"
+    data-pm-pdp-specs-asset="{{ 'pm-product-specs.json' | asset_url }}"
+  >
+    <div class="pm-pdp__specs-head">
+      <h2 class="pm-pdp__h2">Specifications</h2>
+      <span class="pm-pdp__specs-count" data-pm-pdp-specs-count {% if spec_count == 0 %}hidden{% endif %}>
+        {%- if spec_count > 0 -%}{{ spec_count }} {% if spec_count == 1 %}spec{% else %}specs{% endif %}{%- endif -%}
+      </span>
+    </div>
+
+    <dl class="pm-pdp__specs" data-pm-pdp-specs data-total="{{ spec_count }}" {% if spec_count == 0 %}hidden{% endif %}>
+      {%- assign _i = 0 -%}
+      {%- for pair in spec_pairs -%}
+        {%- assign _p = pair | strip -%}
+        {%- if _p == '' -%}{%- continue -%}{%- endif -%}
+        {%- unless _p contains '~~KV~~' -%}{%- continue -%}{%- endunless -%}
+        {%- assign _kv = _p | split: '~~KV~~' -%}
+        {%- assign _nm = _kv[0] | strip -%}
+        {%- assign _vl = _kv[1] | strip -%}
+        {%- if _nm != '' and _vl != '' -%}
+          <div class="pm-pdp__spec-row{% if _i >= 8 %} is-extra{% endif %}" data-pm-pdp-spec-row>
+            <dt class="pm-pdp__spec-key">{{ _nm }}</dt>
+            <dd class="pm-pdp__spec-val">{{ _vl }}</dd>
+          </div>
+          {%- assign _i = _i | plus: 1 -%}
+        {%- endif -%}
+      {%- endfor -%}
+    </dl>
+
+    {%- assign _extra = spec_count | minus: 8 -%}
+    <button type="button" class="pm-pdp__specs-toggle" data-pm-pdp-specs-toggle aria-expanded="false" {% if spec_count <= 8 %}hidden{% endif %}>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><polyline points="6 9 12 15 18 9"/></svg>
+      <span data-pm-pdp-specs-toggle-label>{%- if spec_count > 8 -%}Show {{ _extra }} more {% if _extra == 1 %}spec{% else %}specs{% endif %}{%- endif -%}</span>
+    </button>
+
+    <p class="pm-pdp__empty" data-pm-pdp-specs-empty {% if spec_count > 0 %}hidden{% endif %}>
+      Detailed specifications for this part are not yet published. Reach out to your account
+      manager — dimensions, voltage, capacity, and supported configurations will be confirmed
+      within one business day.
+    </p>
+  </div>
+</section>

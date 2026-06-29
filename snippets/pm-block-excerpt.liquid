@@ -1,0 +1,29 @@
+{%- comment -%}
+  PM — Build a plain-text excerpt from a list of "Blog block" metaobjects.
+  Block-built posts have an empty article.content, so article.excerpt_or_content is
+  blank and cards/SEO have nothing to preview. This walks the blocks and emits readable
+  text (key takeaways, prose, callouts, FAQ). Caller strips/truncates.
+  Param: blocks (article.metafields.custom.content_blocks.value)
+{%- endcomment -%}
+{%- capture _ex_raw -%}
+  {%- for blk in blocks -%}
+    {%- case blk.block_type.value -%}
+    {%- when 'Key takeaways' -%}
+      {{ blk.heading.value | default: 'Key takeaways' }}: {% for it in blk.list_items.value %}{{ it }}{% unless forloop.last %}; {% endunless %}{% endfor %}.
+    {%- when 'Pros and cons' -%}
+      Pros: {% for it in blk.list_items.value %}{{ it }}{% unless forloop.last %}, {% endunless %}{% endfor %}.
+    {%- when 'Rich text' -%}
+      {%- render 'pm-richtext', rt: blk.body.value -%}
+    {%- when 'Callout' -%}
+      {%- if blk.heading.value != blank -%}{{ blk.heading.value }}: {% endif -%}{%- render 'pm-richtext', rt: blk.body.value -%}
+    {%- when 'Procurement note' -%}
+      {{ blk.heading.value | default: 'For schools and government buyers' }}: {%- render 'pm-richtext', rt: blk.body.value -%}
+    {%- when 'FAQ item' -%}
+      {{ blk.heading.value }} {%- render 'pm-richtext', rt: blk.body.value -%}
+    {%- when 'Comparison table' -%}
+      {%- if blk.heading.value != blank -%}{{ blk.heading.value }}. {% endif -%}
+    {%- endcase -%}
+    {{ ' ' }}
+  {%- endfor -%}
+{%- endcapture -%}
+{{ _ex_raw | strip_html | strip }}

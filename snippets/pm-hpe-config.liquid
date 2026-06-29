@@ -1,0 +1,28 @@
+{%- comment -%}
+  PM — HPE ProLiant configurator (stepped wizard, lives in the buy-box under the CTAs).
+  Minimal mount; the JS builds the step UI from the middleware. Base price = the real
+  Shopify variant price. Styled in Platinum Micro tokens (navy / terracotta / paper).
+  Renders only on HPE/ProLiant PDPs. Param: product (required)
+{%- endcomment -%}
+
+{%- assign _is_hpe = false -%}
+{%- if product.title contains 'ProLiant' or product.vendor contains 'Hewlett' or product.vendor contains 'HPE' -%}
+  {%- assign _is_hpe = true -%}
+{%- endif -%}
+
+{%- if _is_hpe -%}
+  {%- assign hpe_endpoint = 'https://deft-moxie-7cc2ec.netlify.app' -%}
+  {%- assign _v = product.selected_or_first_available_variant | default: product.variants.first -%}
+
+  <section class="pm-cfg" data-pm-cfg hidden
+           data-endpoint="{{ hpe_endpoint }}"
+           data-title="{{ product.title | escape }}"
+           data-sku="{{ _v.sku | escape }}"
+           data-variant-id="{{ _v.id }}"
+           data-base-cents="{{ _v.price }}">
+    <div class="pm-cfg__boot">Loading configuration…</div>
+  </section>
+
+  {{ 'pm-hpe-config.css' | asset_url | stylesheet_tag }}
+  <script src="{{ 'pm-hpe-config.js' | asset_url }}" defer></script>
+{%- endif -%}

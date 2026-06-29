@@ -5,6 +5,13 @@
 {%- endcomment -%}
 {%- assign _abs = shop.url | append: article.url -%}
 {%- assign _cat = article.tags.first -%}
+{%- comment -%} No-code blocks (custom.content_blocks metaobjects) take over the body when present; else legacy rich-text content. {%- endcomment -%}
+{%- assign _blocks = article.metafields.custom.content_blocks.value -%}
+{%- if _blocks != blank and _blocks.size > 0 -%}
+  {%- capture _body_html -%}{%- render 'pm-article-blocks', blocks: _blocks -%}{%- endcapture -%}
+{%- else -%}
+  {%- capture _body_html -%}<div class="pm-article__body rte">{{ article.content }}</div>{%- endcapture -%}
+{%- endif -%}
 <article class="pm-article">
   <nav class="pm-article__crumbs" aria-label="Breadcrumb">
     <a href="{{ routes.root_url }}" class="pm-article__crumb-link">
@@ -23,7 +30,7 @@
     <div class="pm-article__meta">
       <time datetime="{{ article.published_at | date: '%Y-%m-%d' }}">{{ article.published_at | date: '%B %-d, %Y' }}</time>
       {%- if article.author != blank -%} &middot; {{ article.author }}{%- endif -%}
-      {%- assign _rt = article.content | strip_html | strip | split: ' ' | size | divided_by: 200 | at_least: 1 -%}
+      {%- assign _rt = _body_html | strip_html | strip | split: ' ' | size | divided_by: 200 | at_least: 1 -%}
       <span class="pm-article__readtime">{{ _rt }} min read</span>
     </div>
 
@@ -38,7 +45,7 @@
       </div>
     {%- endif -%}
 
-    <div class="pm-article__body rte">{{ article.content }}</div>
+    {{ _body_html }}
 
     <div class="pm-article__foot">
       {%- if article.tags.size > 0 -%}
@@ -115,7 +122,8 @@
   {%- endif -%}
 
   {%- comment -%} ── SEO: BlogPosting + BreadcrumbList JSON-LD ── {%- endcomment -%}
-  {%- assign _desc = article.excerpt_or_content | strip_html | truncate: 300 -%}
+  {%- assign _desc = article.excerpt_or_content | strip_html | strip | truncate: 300 -%}
+  {%- if _desc == blank -%}{%- assign _desc = _body_html | strip_html | strip | truncate: 300 -%}{%- endif -%}
   <script type="application/ld+json">
   {
     "@context": "https://schema.org",

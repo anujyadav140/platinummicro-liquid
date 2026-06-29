@@ -1,0 +1,63 @@
+/* PM — HPE ProLiant configurator (stepped wizard, buy-box column).
+   Platinum Micro design language: navy + terracotta + paper, pm-tokens. */
+.pm-cfg { display: block; margin: 16px 0 4px; font-family: var(--pm-font-body); }
+.pm-cfg__boot { padding: 16px; color: var(--pm-ink-400); font-size: 13px; }
+
+.pm-cfg__card {
+  border: 1px solid var(--pm-ink-200);
+  border-radius: 14px;
+  background: var(--pm-white);
+  overflow: hidden;
+  box-shadow: var(--pm-shadow-sm);
+}
+
+/* head */
+.pm-cfg__head { padding: 14px 16px 12px; border-bottom: 1px solid var(--pm-ink-100); }
+.pm-cfg__eyebrow {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 12.5px; font-weight: 700; letter-spacing: .01em; color: var(--pm-navy-deep);
+}
+.pm-cfg__eyebrow svg { color: var(--pm-terracotta); }
+.pm-cfg__headrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.pm-cfg__nav { display: flex; align-items: center; gap: 7px; }
+.pm-cfg__back {
+  width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;
+  border: 1.5px solid var(--pm-ink-200); background: var(--pm-white); color: var(--pm-navy-deep);
+  border-radius: 8px; font-size: 18px; line-height: 1; cursor: pointer; transition: all .12s;
+}
+.pm-cfg__back:hover:not([disabled]) { border-color: var(--pm-terracotta); color: var(--pm-terracotta); }
+.pm-cfg__back[disabled] { opacity: .4; cursor: default; color: var(--pm-ink-300); }
+.pm-cfg__next {
+  display: inline-flex; align-items: center; gap: 4px; height: 30px; padding: 0 14px;
+  border: 1.5px solid var(--pm-terracotta); background: var(--pm-terracotta); color: #fff;
+  border-radius: 8px; font-size: 12.5px; font-weight: 700; line-height: 1; cursor: pointer; transition: all .12s;
+}
+.pm-cfg__next > span { font-size: 15px; }
+.pm-cfg__next:hover:not([disabled]) { filter: brightness(.93); }
+.pm-cfg__next[disabled] { opacity: .4; cursor: default; }
+.pm-cfg__stepname { margin-top: 10px; font-size: 12px; font-weight: 600; color: var(--pm-ink-600); }
+
+/* options */
+.pm-cfg__body { padding: 12px 16px 4px; }
+.pm-cfg__opt {
+  display: flex; align-items: center; gap: 11px; width: 100%; text-align: left;
+  padding: 11px 12px; margin-bottom: 8px; cursor: pointer;
+  border: 1.5px solid var(--pm-ink-200); border-radius: 10px; background: var(--pm-white);
+  transition: border-color .12s, background .12s;
+}
+.pm-cfg__opt:hover { border-color: var(--pm-ink-300); background: var(--pm-paper); }
+.pm-cfg__opt.is-on { border-color: var(--pm-terracotta); background: var(--pm-terracotta-pale); }
+.pm-cfg__radio { flex: none; width: 17px; height: 17px; border-radius: 50%; border: 2px solid var(--pm-ink-300); transition: all .12s; }
+.pm-cfg__opt.is-on .pm-cfg__radio { border-color: var(--pm-terracotta); box-shadow: inset 0 0 0 3.5px var(--pm-terracotta); }
+.pm-cfg__opt-label { flex: 1; font-size: 13.5px; line-height: 1.35; color: var(--pm-ink-800); }
+.pm-cfg__opt-price { font-size: 13px; font-weight: 700; color: var(--pm-navy-deep); white-space: nowrap; }
+.pm-cfg__opt.is-on .pm-cfg__opt-price { color: var(--pm-terracotta); }
+
+/* footer — just the live price now; navigation lives in the title arrows */
+.pm-cfg__foot {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px;
+  padding: 13px 16px 15px; border-top: 1px solid var(--pm-ink-100); background: var(--pm-paper);
+}
+.pm-cfg__price-label { flex: 1 0 100%; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--pm-ink-400); }
+.pm-cfg__price-val { font-size: 24px; font-weight: 800; color: var(--pm-navy-deep); }
+.pm-cfg__price-base { flex: 1 0 100%; font-size: 12px; color: var(--pm-ink-400); }

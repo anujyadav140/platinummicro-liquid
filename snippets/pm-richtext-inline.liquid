@@ -1,0 +1,14 @@
+{%- comment -%}
+  PM — Rich text INLINE renderer. Renders inline rich-text nodes (text, link) to HTML.
+  Input: `nodes` = an array of inline nodes from a Shopify rich_text_field value.
+  Used by pm-richtext.liquid. Metaobject rich-text fields output raw JSON otherwise
+  (no metafield_tag filter for metaobjects), so we walk the parsed value ourselves.
+{%- endcomment -%}
+{%- for n in nodes -%}
+  {%- case n.type -%}
+  {%- when 'text' -%}
+    {%- if n.bold -%}<strong>{%- endif -%}{%- if n.italic -%}<em>{%- endif -%}{{ n.value | escape | newline_to_br }}{%- if n.italic -%}</em>{%- endif -%}{%- if n.bold -%}</strong>{%- endif -%}
+  {%- when 'link' -%}
+    <a href="{{ n.url }}"{% if n.title != blank %} title="{{ n.title | escape }}"{% endif %}{% if n.target != blank %} target="{{ n.target }}" rel="noopener"{% endif %}>{%- render 'pm-richtext-inline', nodes: n.children -%}</a>
+  {%- endcase -%}
+{%- endfor -%}

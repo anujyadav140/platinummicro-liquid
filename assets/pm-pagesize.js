@@ -63,11 +63,19 @@
     return u.pathname + (qs ? '?' + qs : '');
   }
 
-  // TC-088 in-stock-first is now rendered SERVER-SIDE (pm-collection.liquid emits
-  // available products before "Available for Quote"), so the client-side availability
-  // stitch is retired. Normal page-size mode (TC-091) only — no skeleton, no re-order.
+  // TC-088 GLOBAL in-stock-first: when showing all products (no availability filter,
+  // or both values selected), stream the two availability views
+  // (?filter.v.availability=1 / =0) and concatenate [every in-stock product] then
+  // [every "Available for Quote" product] across ALL pages. The server-side double-loop
+  // in pm-collection.liquid is the no-JS fallback / first paint; this client stitch makes
+  // the ordering GLOBAL instead of only per server page. Filtering to a single
+  // availability (or /search) uses the normal single-source path untouched.
   function detectSplit() {
-    return false;
+    var vals;
+    try { vals = new URL(window.location.href).searchParams.getAll('filter.v.availability'); }
+    catch (e) { vals = []; }
+    if (vals.length === 0) return true;
+    return vals.indexOf('1') !== -1 && vals.indexOf('0') !== -1;
   }
 
   function cloneGrid(dom) {

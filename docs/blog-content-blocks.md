@@ -1,8 +1,8 @@
 # Blog content blocks — staff playbook (2026)
 
-How to write high-performing posts for the Platinum Micro blog, and copy-paste
-blocks for the formats that work. No coding needed — paste a block into the post
-editor's **HTML view** (the `</>` button in the toolbar) and edit the text.
+How to write high-performing posts for the Platinum Micro blog. **No HTML, no code.**
+You build a post by adding **blocks**: pick a format from a dropdown, type plain text
+into labelled fields, and the theme styles it on-brand automatically.
 
 ---
 
@@ -11,8 +11,8 @@ editor's **HTML view** (the `</>` button in the toolbar) and edit the text.
 The honest, fact-checked version — we ran adversarial research and threw out the hype:
 
 - **Google AI Overviews cut organic clicks ~61%.** The one proven defense is making
-  content **quotable**: lead with a clear answer, use **key-takeaway summaries**, and
-  put facts in **comparison tables** so Google's AI lifts *your* sentence.
+  content **quotable**: lead with a clear answer, use a **Key takeaways** block, and
+  put facts in a **Comparison table** so Google's AI lifts *your* sentence.
 - **"AI/answer-engine optimization" is just good SEO.** Google's own 2026 guidance:
   no magic schema, no special files. Win with **unique, expert content** a competitor
   can't copy (real spec comparisons, real procurement guidance, real numbers).
@@ -25,155 +25,86 @@ The honest, fact-checked version — we ran adversarial research and threw out t
 - **Never** paste raw AI-generated filler or stuff keywords — both are Google spam
   violations and get pages demoted. Use AI to draft, then add real expertise.
 
-**Format priority (build posts in this order):** Key Takeaways → clear Q&A headings →
-comparison table → procurement/compliance callout → (optional) video/chart → FAQ →
-"Shop these products."
-
-> Charts and video are supported and easy to add, but be honest: the data did **not**
-> show they boost rankings by themselves. Use them when they genuinely help a reader
-> decide — not as an SEO trick.
+**Block order (build posts in this order):** Key takeaways → Rich text intro →
+Comparison table → Procurement note → (optional) Image/Video → FAQ items →
+Shop these products.
 
 ---
 
-## The easy way — most posts need zero HTML
+## How to write a post (no HTML)
 
-Use the editor **toolbar**, not code. The theme now auto-styles everything the toolbar produces:
+1. **Content → Blog posts → Add blog post.** Give it a **Title** and pick the **Blog**.
+2. Leave the big **Content** box empty — we build the body from blocks instead.
+3. Set the first **Tag** to the category label shown on the card (e.g. `Buying Guide`).
+   That tag also becomes the eyebrow above the title.
+4. Add a **featured image** in the sidebar (this is the card/hero image).
+5. In **Metafields → Content blocks**, click the field, then **Add new entry**.
+   A "Add Blog block" panel opens. **Pick a Block type** from the dropdown and fill the
+   fields it needs (see the cheat sheet below). Click **Save**.
+6. Repeat **Add new entry** for each block. **Drag the chips** to reorder blocks.
+7. Preview, then publish (see below).
 
-| Click in the toolbar | You get (auto-styled, on-brand) |
+That's it — you never touch HTML. The dropdown decides the format; you just type.
+
+### Cheat sheet — which fields each Block type uses
+
+| Block type | Fill these fields |
 |---|---|
-| Heading dropdown | Section headings |
-| Bold / italic | Emphasis |
-| Bulleted / numbered list | Lists with proper bullets |
-| **Table** | A polished comparison / spec table |
-| **Image** | Full-width image (add a caption line underneath) |
-| **Insert video** | A responsive 16:9 video |
-| **Quote** | A navy callout box |
+| **Rich text** | **Body** (toolbar: bold, italic, links, lists) — for normal paragraphs |
+| **Key takeaways** | **List items** (one bullet each). *Heading* optional (defaults to "Key takeaways") |
+| **Callout** | **Heading** (the box title) + **Body** |
+| **Procurement note** | **Body** (+ optional **Heading**; defaults to "For schools & government buyers") |
+| **Comparison table** | **Table data** — one row per line, columns separated by `|`. **First row = headers.** *Heading* = optional caption |
+| **Pros and cons** | **List items** = pros · **List items B** = cons |
+| **FAQ item** | **Heading** = the question · **Body** = the answer. *Add several in a row — they merge into one accordion.* |
+| **Image** | **Image** (pick a file). *Heading* = optional caption |
+| **Video** | **Video URL** (paste a YouTube link). *Heading* = optional title |
+| **Shop these products** | **Products** (pick real products — title/price/link pull in automatically) |
 
-So for most posts you just **type your text and pick a format** — no HTML at all. You only
-need the snippets below for three fancy blocks: **Key takeaways**, the **FAQ accordion**, and **Pros/Cons**.
+> **Comparison table example** — type this into the *Table data* field:
+> ```
+> Factor | Refurbished | New
+> Acquisition cost | 50-70% lower | Full list price
+> Warranty | 1-3 yr, reseller-backed | 3-5 yr manufacturer
+> ```
+> It renders as a polished table with a navy header and zebra rows.
+
+### Editing / reusing blocks
+- Blocks are saved entries. Click a chip to **edit** it; the change shows on every post
+  that uses it. To tweak one post only, make a new entry instead of editing a shared one.
+- See all blocks under **Content → Metaobjects → Blog block**.
 
 ## Preview before you publish
 
-Shopify shows you the real thing before it goes live:
 1. In the post, set **Visibility → Hidden**.
-2. Click **View** (top-right of the editor) — it opens the post in the live theme so you see exactly how it looks.
+2. Click **View** (top-right) — it opens the post in the live theme so you see exactly
+   how the blocks look.
 3. Happy with it? Set **Visibility → Visible** and **Save**.
 
 ## Writing checklist (every post)
 
-- [ ] First sentence answers the title directly (quotable).
-- [ ] A **Key Takeaways** box near the top.
-- [ ] H2 headings phrased as the questions buyers actually search ("Is NVMe worth it for a school server?").
-- [ ] At least one **comparison table** with real specs/prices.
-- [ ] One **procurement/compliance** note for public-sector buyers (contract vehicles, TCO, warranty).
-- [ ] First **tag** = the category label shown on the card (e.g. `Buying Guide`).
+- [ ] First **Key takeaways** block near the top, answering the title directly (quotable).
+- [ ] An H2-style **Rich text** lead phrased as the question buyers search.
+- [ ] At least one **Comparison table** with real specs/prices.
+- [ ] One **Procurement note** for public-sector buyers (contract vehicles, TCO, warranty).
+- [ ] First **tag** = the category label (e.g. `Buying Guide`).
 - [ ] A **featured image** set in the sidebar.
-- [ ] Links to 2–4 relevant products ("Shop these products").
+- [ ] A **Shop these products** block linking 2–4 relevant products.
 
 ---
 
-## Copy-paste blocks (only for the 3 fancy formats)
+## How it works under the hood (for devs)
 
-For **Key takeaways**, the **FAQ accordion**, and **Pros/Cons**, paste into the editor's
-**HTML view** (`</>`) and edit the words. Everything else uses the toolbar above — no code.
-
-### Key takeaways (use near the top)
-```html
-<div class="pm-takeaways">
-  <p class="pm-takeaways__title">Key takeaways</p>
-  <ul>
-    <li>NVMe is the better buy for most new server and workstation builds in 2026.</li>
-    <li>SATA still wins for bulk, budget, and legacy systems.</li>
-    <li>For schools and labs on a budget, a Pi 4 4GB is still capable.</li>
-  </ul>
-</div>
-```
-
-### Comparison / spec table
-```html
-<div class="pm-table-wrap">
-  <table>
-    <thead><tr><th>Feature</th><th>Option A</th><th>Option B</th></tr></thead>
-    <tbody>
-      <tr><td>Interface</td><td>NVMe (PCIe 4.0)</td><td>SATA III</td></tr>
-      <tr><td>Real-world speed</td><td>Up to 7,000 MB/s</td><td>~550 MB/s</td></tr>
-      <tr><td>Best for</td><td>Databases, virtualization</td><td>Bulk / archive</td></tr>
-    </tbody>
-  </table>
-</div>
-```
-*(The editor's built-in Table button also works and is auto-styled.)*
-
-### Procurement / public-sector callout
-```html
-<div class="pm-callout pm-callout--gov">
-  <p class="pm-callout__title">For schools &amp; government buyers</p>
-  Available through OMNIA Partners cooperative purchasing — no separate bid required.
-  Volume pricing, NET-30 terms, and full manufacturer warranty included. Ask about TCO
-  over a 5-year refresh cycle.
-</div>
-```
-
-### Note / callout (general)
-```html
-<div class="pm-callout">
-  <p class="pm-callout__title">Good to know</p>
-  Check your motherboard or server backplane for free M.2 / U.2 slots before buying NVMe.
-</div>
-```
-
-### FAQ (visible accordion)
-```html
-<div class="pm-faq">
-  <details><summary>Is NVMe worth it for a school file server?</summary>
-    <p>Yes if the server runs databases or many users at once; SATA is fine for backups.</p>
-  </details>
-  <details><summary>Will NVMe work in my existing server?</summary>
-    <p>Only if it has M.2 or U.2 bays and free PCIe lanes. Check the spec sheet first.</p>
-  </details>
-</div>
-```
-
-### Pros / cons
-```html
-<div class="pm-proscons">
-  <div class="pm-proscons__col pm-proscons__col--pro">
-    <p class="pm-proscons__title">Pros</p>
-    <ul><li>Much faster</li><li>Lower latency</li></ul>
-  </div>
-  <div class="pm-proscons__col pm-proscons__col--con">
-    <p class="pm-proscons__title">Cons</p>
-    <ul><li>Costs more per TB</li><li>Needs M.2 / U.2 slots</li></ul>
-  </div>
-</div>
-```
-
-### Video (auto-responsive)
-Use the editor's **Insert video** button, or paste a YouTube embed:
-```html
-<div class="pm-video">
-  <iframe src="https://www.youtube.com/embed/VIDEO_ID" title="How to install an NVMe SSD" allowfullscreen></iframe>
-</div>
-```
-
-### Chart / diagram with caption
-Upload the image with the editor's image button, or:
-```html
-<figure>
-  <img src="IMAGE_URL" alt="Describe the chart in plain words for SEO and screen readers">
-  <figcaption>NVMe vs SATA sequential read speeds, 2026 enterprise drives.</figcaption>
-</figure>
-```
-
-### Shop these products (links to product pages)
-```html
-<div class="pm-products">
-  <a href="/products/PRODUCT-HANDLE">WD Blue SN5000 4TB NVMe<span class="price">$199.00</span></a>
-  <a href="/products/PRODUCT-HANDLE">Seagate Nytro SATA SSD<span class="price">$149.00</span></a>
-</div>
-```
-
----
+- Metaobject definition **`blog_block`** (Settings → Custom data) holds the fields:
+  `block_type` (a choice list), `heading`, `body`, `table_data`, `list_items`,
+  `list_items_b`, `image`, `video_url`, `products`.
+- Article metafield **`custom.content_blocks`** is a *list of `blog_block` references*
+  (pinned, Storefront API on).
+- `sections/pm-article.liquid` renders `article.metafields.custom.content_blocks` via
+  `snippets/pm-article-blocks.liquid`. If a post has **no** blocks, it falls back to the
+  classic rich-text **Content** body — so older posts keep working untouched.
+- Styling lives in `assets/pm-blog.css` (`.pm-takeaways`, `.pm-callout`, `.pm-table-wrap`,
+  `.pm-faq`, `.pm-proscons`, `.pm-products`, …).
 
 ## Don't
 - Don't paste unedited AI text or repeat keywords — Google demotes both.

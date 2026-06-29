@@ -1,0 +1,132 @@
+{%- comment -%}
+  PM — Article content blocks (no-code authoring).
+
+  Renders a list of "Blog block" metaobjects (the article metafield
+  custom.content_blocks) into the on-brand styled blocks. The web admin builds a
+  post by ADDING blocks and filling plain-text fields — no HTML. The Block type
+  dropdown decides the format. See docs/blog-content-blocks.md.
+
+  Block type            fields it uses
+  --------------------  --------------------------------------------------------
+  Rich text             body
+  Key takeaways         heading (opt, default "Key takeaways"), list_items
+  Callout               heading (opt), body
+  Procurement note      heading (opt), body
+  Comparison table      table_data (one row per line; cells split by "|"; row 1 = header)
+                        heading (opt caption)
+  Pros and cons         list_items (pros), list_items_b (cons)
+  FAQ item              heading (question), body (answer)
+                        (consecutive FAQ items merge into one accordion)
+  Image                 image, heading (opt caption)
+  Video                 video_url (YouTube link or ID), heading (opt)
+  Shop these products   products, heading (opt)
+
+  Wrapped in .pm-article__body so prose / table / figure styles apply (pm-blog.css).
+{%- endcomment -%}
+{%- # The FAQ accordion and the table tbody open/close across Liquid branches (valid at runtime); the static HTML checker can't match them. -%}
+{%- # theme-check-disable UnclosedHTMLElement -%}
+<div class="pm-article__body rte">
+  {%- assign _faq_open = false -%}
+  {%- for blk in blocks -%}
+    {%- assign _type = blk.block_type.value -%}
+
+    {%- comment -%} Close an open FAQ accordion once the run of FAQ items ends {%- endcomment -%}
+    {%- if _faq_open and _type != 'FAQ item' -%}</div>{%- assign _faq_open = false -%}{%- endif -%}
+
+    {%- case _type -%}
+
+    {%- when 'Rich text' -%}
+      {%- render 'pm-richtext', rt: blk.body.value -%}
+
+    {%- when 'Key takeaways' -%}
+      {%- if blk.list_items.value.size > 0 -%}
+        <div class="pm-takeaways">
+          <p class="pm-takeaways__title">{{ blk.heading.value | default: 'Key takeaways' | escape }}</p>
+          <ul>{%- for _it in blk.list_items.value -%}<li>{{ _it }}</li>{%- endfor -%}</ul>
+        </div>
+      {%- endif -%}
+
+    {%- when 'Callout' -%}
+      <div class="pm-callout">
+        {%- if blk.heading.value != blank -%}<p class="pm-callout__title">{{ blk.heading.value | escape }}</p>{%- endif -%}
+        {%- render 'pm-richtext', rt: blk.body.value -%}
+      </div>
+
+    {%- when 'Procurement note' -%}
+      <div class="pm-callout pm-callout--gov">
+        <p class="pm-callout__title">{{ blk.heading.value | default: 'For schools & government buyers' | escape }}</p>
+        {%- render 'pm-richtext', rt: blk.body.value -%}
+      </div>
+
+    {%- when 'Comparison table' -%}
+      {%- assign _tbl = blk.table_data.value | newline_to_br | split: '<br />' -%}
+      {%- assign _thead_done = false -%}
+      <div class="pm-table-wrap"><table>
+        {%- for _line in _tbl -%}
+          {%- assign _l = _line | strip -%}
+          {%- unless _l == blank -%}
+            {%- assign _cells = _l | split: '|' -%}
+            {%- unless _thead_done -%}
+              <thead><tr>{%- for _c in _cells -%}<th>{{ _c | strip | escape }}</th>{%- endfor -%}</tr></thead><tbody>
+              {%- assign _thead_done = true -%}
+            {%- else -%}
+              <tr>{%- for _c in _cells -%}<td>{{ _c | strip | escape }}</td>{%- endfor -%}</tr>
+            {%- endunless -%}
+          {%- endunless -%}
+        {%- endfor -%}
+        {%- if _thead_done -%}</tbody>{%- endif -%}
+      </table></div>
+      {%- if blk.heading.value != blank -%}<p class="pm-table-caption">{{ blk.heading.value | escape }}</p>{%- endif -%}
+
+    {%- when 'Pros and cons' -%}
+      <div class="pm-proscons">
+        <div class="pm-proscons__col pm-proscons__col--pro">
+          <p class="pm-proscons__title">Pros</p>
+          <ul>{%- for _it in blk.list_items.value -%}<li>{{ _it }}</li>{%- endfor -%}</ul>
+        </div>
+        <div class="pm-proscons__col pm-proscons__col--con">
+          <p class="pm-proscons__title">Cons</p>
+          <ul>{%- for _it in blk.list_items_b.value -%}<li>{{ _it }}</li>{%- endfor -%}</ul>
+        </div>
+      </div>
+
+    {%- when 'FAQ item' -%}
+      {%- unless _faq_open -%}<div class="pm-faq">{%- assign _faq_open = true -%}{%- endunless -%}
+      <details><summary>{{ blk.heading.value | escape }}</summary>{%- render 'pm-richtext', rt: blk.body.value -%}</details>
+
+    {%- when 'Image' -%}
+      {%- if blk.image.value != blank -%}
+        {%- assign _alt = blk.heading.value | default: blk.image.value.alt -%}
+        <figure>
+          {{ blk.image.value | image_url: width: 1200 | image_tag: loading: 'lazy', widths: '480, 760, 1200', sizes: '(min-width: 820px) 820px, 100vw', alt: _alt }}
+          {%- if blk.heading.value != blank -%}<figcaption>{{ blk.heading.value | escape }}</figcaption>{%- endif -%}
+        </figure>
+      {%- endif -%}
+
+    {%- when 'Video' -%}
+      {%- assign _vid = blk.video_url.value | strip -%}
+      {%- if _vid contains 'youtube.com/watch?v=' -%}{%- assign _vid = _vid | split: 'v=' | last | split: '&' | first -%}
+      {%- elsif _vid contains 'youtu.be/' -%}{%- assign _vid = _vid | split: 'youtu.be/' | last | split: '?' | first -%}
+      {%- elsif _vid contains 'youtube.com/embed/' -%}{%- assign _vid = _vid | split: 'embed/' | last | split: '?' | first -%}
+      {%- endif -%}
+      {%- if _vid != blank -%}
+        <div class="pm-video"><iframe src="https://www.youtube.com/embed/{{ _vid }}"
+          title="{{ blk.heading.value | default: 'Video' | escape }}"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowfullscreen loading="lazy"></iframe></div>
+      {%- endif -%}
+
+    {%- when 'Shop these products' -%}
+      {%- if blk.products.value.size > 0 -%}
+        {%- if blk.heading.value != blank -%}<p class="pm-products-title">{{ blk.heading.value | escape }}</p>{%- endif -%}
+        <div class="pm-products">
+          {%- for _p in blk.products.value -%}
+            <a href="{{ _p.url }}">{{ _p.title | escape }}<span class="price">{{ _p.price | money }}</span></a>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+
+    {%- endcase -%}
+  {%- endfor -%}
+  {%- if _faq_open -%}</div>{%- endif -%}
+</div>

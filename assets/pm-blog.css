@@ -263,6 +263,12 @@
 .pm-products a:hover { border-color: var(--pm-terracotta); box-shadow: var(--pm-shadow-md); }
 .pm-products .price { display: block; color: var(--pm-terracotta); font-weight: 700; margin-top: 4px; }
 
+/* No-code blocks (pm-article-blocks.liquid) — minor polish on top of the shared
+   block styles above. Rich-text bodies render <p>, so trim the last one's gap. */
+.pm-callout > p:last-child, .pm-faq details > *:last-child { margin-bottom: 0; }
+.pm-table-caption { font-size: 13px; color: var(--pm-ink-500); text-align: center; margin: -14px 0 24px; }
+.pm-products-title { font-family: var(--pm-font-heading); font-size: 18px; font-weight: 800; color: var(--pm-navy-deep); margin: 8px 0 12px; }
+
 /* List markers — the theme base resets list-style, so re-assert it here.
    Fixes the missing "pointers" (bullets) in key-takeaways and body lists. */
 .pm-article__body ul, .pm-takeaways ul, .pm-proscons ul { list-style: disc; }

@@ -75,8 +75,25 @@
       <div class="pm-plp__main">
 
         <div id="pm-plp-grid-wrap" class="pm-plp__grid-wrap" data-pm-cols="{{ columns_d }}">
-          {%- comment -%} TC-088: in-stock-first is rendered SERVER-SIDE below, so the
-              grid is correct on first paint — no skeleton, no client-side re-order. {%- endcomment -%}
+          {%- comment -%} TC-088: GLOBAL in-stock-first. The server double-loop below emits
+              available-before-quote per page (no-JS fallback + first paint). pm-pagesize.js
+              then stitches the two availability views so ALL in-stock come before ALL quote
+              across the whole collection. Skeleton the grid BEFORE first paint (synchronously)
+              so the per-page order never flashes before the client re-orders globally; no-JS
+              skips it and sees the server order; the 6s failsafe always reveals. {%- endcomment -%}
+          <script>
+            (function () {
+              try {
+                var sp = new URLSearchParams(window.location.search).getAll('filter.v.availability');
+                var split = sp.length === 0 || (sp.indexOf('1') !== -1 && sp.indexOf('0') !== -1);
+                var w = document.currentScript && document.currentScript.parentElement;
+                if (split && w) {
+                  w.classList.add('is-reordering');
+                  setTimeout(function () { w.classList.remove('is-reordering'); }, 6000);
+                }
+              } catch (e) {}
+            })();
+          </script>
           {%- if collection.products.size > 0 -%}
             <ul class="pm-plp__grid" data-pm-view-mode="grid" data-pm-total="{{ paginate.items }}" data-pm-server-size="{{ per_page }}">
               {%- comment -%} TC-088 in-stock-first (server-side): emit available

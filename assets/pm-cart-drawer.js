@@ -179,6 +179,7 @@
         sku:        item.sku,
         lineTotal:  formatMoney(item.line_price || item.price * item.quantity),
         quantity:   item.quantity,
+        properties: item.properties,
       });
       itemsEl.appendChild(node);
     });
@@ -260,6 +261,47 @@
         incBtn.disabled = true;
         incBtn.setAttribute('aria-disabled', 'true');
         incBtn.setAttribute('title', 'No more available in stock');
+      }
+    }
+
+    // ── Configured build: collapsed accordion — summary keeps the total visible,
+    //    expand for the full option breakdown (saves vertical space by default). ──
+    if (opts.properties) {
+      var allKeys = Object.keys(opts.properties).filter(function (k) {
+        var v = opts.properties[k];
+        return k.charAt(0) !== '_' && v != null && String(v).trim() !== '';
+      });
+      var optKeys = allKeys.filter(function (k) { return k !== 'Configured total'; });
+      var totalVal = opts.properties['Configured total'];
+      var main2 = node.querySelector('.pm-cart__item-main');
+      if (main2 && (optKeys.length || totalVal)) {
+        var det = document.createElement('details'); det.className = 'pm-cart__cfg-acc';
+        var sum = document.createElement('summary'); sum.className = 'pm-cart__cfg-summary';
+        var sLab = document.createElement('span'); sLab.className = 'pm-cart__cfg-summary-label';
+        sLab.innerHTML = '<svg class="pm-cart__cfg-chev" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+        var sTxt = document.createElement('span'); sTxt.textContent = 'Configured build' + (optKeys.length ? ' · ' + optKeys.length + ' options' : '');
+        sLab.appendChild(sTxt); sum.appendChild(sLab);
+        if (totalVal) { var sTot = document.createElement('span'); sTot.className = 'pm-cart__cfg-summary-total'; sTot.textContent = totalVal; sum.appendChild(sTot); }
+        det.appendChild(sum);
+        if (optKeys.length) {
+          var wrap = document.createElement('div'); wrap.className = 'pm-cart__cfg';
+          optKeys.forEach(function (k) {
+            var raw = String(opts.properties[k]);
+            var m = raw.match(/^(.*?)\s*\(\+(\$[\d.,]+)\)\s*$/); // "choice (+$X)"
+            var choice = (m ? m[1] : raw).replace(/\s*\(included\)\s*$/i, '').trim();
+            var delta = m ? '+' + m[2] : '';
+            var row = document.createElement('div'); row.className = 'pm-cart__cfg-row';
+            var lab = document.createElement('div'); lab.className = 'pm-cart__cfg-label'; lab.textContent = k;
+            var line = document.createElement('div'); line.className = 'pm-cart__cfg-line';
+            var ch = document.createElement('span'); ch.className = 'pm-cart__cfg-choice'; ch.textContent = choice;
+            var del = document.createElement('span'); del.className = 'pm-cart__cfg-delta' + (delta ? '' : ' is-incl'); del.textContent = delta || 'Included';
+            line.appendChild(ch); line.appendChild(del);
+            row.appendChild(lab); row.appendChild(line);
+            wrap.appendChild(row);
+          });
+          det.appendChild(wrap);
+        }
+        main2.appendChild(det);
       }
     }
 

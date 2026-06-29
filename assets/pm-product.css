@@ -61,9 +61,35 @@
     grid-template-columns: minmax(0, 560px) minmax(0, 1fr);
     gap: 64px;
   }
+  /* ── Config (HPE ProLiant) products ──
+     Top row: gallery | title+price (center) | buy+configure (far-right rail, full height).
+     Below:   Description + Specs span the gallery+center width (WIDE, CDW-style).
+     info-grid uses display:contents so its .details + .buybox become direct grid cells. */
+  .pm-pdp__main-grid--cfg {
+    grid-template-columns: minmax(0, 560px) minmax(0, 1fr) minmax(0, 360px);
+    grid-template-rows: auto auto;
+    align-items: start;
+    column-gap: 44px;
+    row-gap: 0;
+  }
+  .pm-pdp__main-grid--cfg .pm-pdp__info-grid     { display: contents; }
+  .pm-pdp__main-grid--cfg > .pm-pdp__gallery     { grid-column: 1; grid-row: 1; }
+  .pm-pdp__main-grid--cfg .pm-pdp__details       { grid-column: 2; grid-row: 1; }
+  .pm-pdp__main-grid--cfg .pm-pdp__buybox        { grid-column: 3; grid-row: 1 / span 2; }
+  .pm-pdp__main-grid--cfg > .pm-pdp__detailblock { grid-column: 1 / span 2; grid-row: 2; }
 }
 @media (min-width: 1440px) {
   .pm-pdp__main-grid { gap: 80px; }
+  .pm-pdp__main-grid--cfg { column-gap: 52px; }
+}
+
+/* ── Detail block (Description + Specs) in the wide left column (config products) ── */
+.pm-pdp__main-grid--cfg .pm-pdp__detailblock { min-width: 0; }
+.pm-pdp__main-grid--cfg .pm-pdp__detailblock .pm-pdp__specs-col {
+  margin-top: 30px; padding-top: 26px; border-top: 1px solid var(--pm-ink-200);
+}
+@media (min-width: 1024px) {
+  .pm-pdp__main-grid--cfg .pm-pdp__detailblock { margin-top: 34px; padding-top: 30px; border-top: 1px solid var(--pm-ink-200); }
 }
 
 /* ── Gallery ──
@@ -224,6 +250,14 @@
   margin-top: 20px;
   padding-top: 20px;
   border-top: 1px solid var(--pm-ink-200);
+}
+.pm-pdp__price-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--pm-ink-400);
+  margin-bottom: 4px;
 }
 .pm-pdp__price {
   font-size: 28px;

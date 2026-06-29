@@ -161,7 +161,10 @@
     </nav>
 
     {%- comment -%} ── Main grid: Gallery + Info pane ─────────────────────── {%- endcomment -%}
-    <div class="pm-pdp__main-grid">
+    {%- comment -%} Config (HPE ProLiant) products get the CDW-style wide-content layout {%- endcomment -%}
+    {%- assign _cfg = false -%}
+    {%- if product.title contains 'ProLiant' or product.vendor contains 'Hewlett' or product.vendor contains 'HPE' -%}{%- assign _cfg = true -%}{%- endif -%}
+    <div class="pm-pdp__main-grid{% if _cfg %} pm-pdp__main-grid--cfg{% endif %}">
 
       {%- comment -%}
         ── Gallery ──
@@ -256,6 +259,7 @@
             {%- assign _on_sale = false -%}
             {%- if _v.compare_at_price > _v.price -%}{%- assign _on_sale = true -%}{%- endif -%}
             <div class="pm-pdp__price-block">
+              {%- if _cfg -%}<div class="pm-pdp__price-eyebrow">Starting at</div>{%- endif -%}
               <div class="pm-pdp__price{% if _on_sale %} pm-pdp__price--sale{% endif %}" id="pm-pdp-price">{{ _v.price | money }}</div>
               <div class="pm-pdp__price-meta" data-pm-pdp-price-meta{% unless _on_sale %} hidden{% endunless %}>
                 <span class="pm-pdp__price-was">{% if _v.compare_at_price > 0 %}{{ _v.compare_at_price | money }}{% endif %}</span>
@@ -564,6 +568,9 @@
             </button>
           </form>
 
+          {%- comment -%} ── HPE ProLiant configurator (stepped wizard, ProLiant only) ── {%- endcomment -%}
+          {%- render 'pm-hpe-config', product: product -%}
+
           {%- comment -%}
             ── Download datasheet (PDF) ──
             Client-side jsPDF build. Reads the #pm-pdp-pdf-data JSON
@@ -619,10 +626,16 @@
           </label>
         </aside>
       </div>
+
+      {%- comment -%} ── Config products only: Description + Specs flow in the wide left column (CDW-style) ── {%- endcomment -%}
+      {%- if _cfg -%}{%- render 'pm-pdp-detail-block', product: product, features: _features, spec_pairs: _spec_pairs, spec_count: _spec_count -%}{%- endif -%}
+
     </div>
   </div>
 
   {%- comment -%} ── Description ‖ Specifications ─────────────────────────── {%- endcomment -%}
+  {%- comment -%} Non-config products keep the original full-width Description/Specs band here ── {%- endcomment -%}
+  {%- unless _cfg -%}
   <section id="pm-product-description" class="pm-pdp__longblock">
     <div class="pm-container pm-pdp__longblock-inner">
       <div class="pm-pdp__longgrid">
@@ -753,6 +766,7 @@
       </div>
     </div>
   </section>
+  {%- endunless -%}
 
   {%- comment -%}
     ── Recently viewed strip ──
