@@ -15,7 +15,7 @@
 .pm-cfg__head { padding: 14px 16px 12px; border-bottom: 1px solid var(--pm-ink-100); }
 .pm-cfg__eyebrow {
   display: flex; align-items: center; gap: 7px;
-  font-size: 12.5px; font-weight: 700; letter-spacing: .01em; color: var(--pm-navy-deep);
+  font-size: 13px; font-weight: 400; letter-spacing: 0; color: var(--pm-ink-700);
 }
 .pm-cfg__eyebrow svg { color: var(--pm-terracotta); }
 .pm-cfg__headrow { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
