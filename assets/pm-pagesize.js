@@ -98,10 +98,32 @@
     if (sel && sel.value !== String(pageSize)) sel.value = String(pageSize);
     vPage = 1;
     splitMode = detectSplit();
+    window.__pmBooted = true; // tell the inline fast-path we've taken over (avoids a late double-render)
     if (splitMode) {
       cacheIn = {}; cacheOut = {}; inStockTotal = null;
-      // Skeleton the grid while we re-order (covers AJAX swaps; the initial load
-      // is skeletoned before paint by the inline script in pm-collection.liquid).
+      // FAST PATH: the inline script after the grid (pm-collection.liquid) may have already
+      // stitched + revealed the correct first page from the <head> prefetch, BEFORE this
+      // deferred JS ran. If so, skip the skeleton + render entirely (no flash, no double work)
+      // — just prime the page-1 caches from the prefetch so virtual pagination still works,
+      // then bail. (__pmStitchEarly is one-shot; facet/sort re-inits render normally.)
+      if (window.__pmStitchEarly) {
+        window.__pmStitchEarly = false;
+        var preEarly = window.__pmStitch;
+        window.__pmStitch = null;
+        if (preEarly) {
+          Promise.all([preEarly.in1, preEarly.out1]).then(function (res) {
+            if (res[0] != null) {
+              var dI = new DOMParser().parseFromString(res[0], 'text/html');
+              cacheIn[1] = cloneGrid(dI);
+              var gI = dI.querySelector('.pm-plp__grid');
+              inStockTotal = gI ? (parseInt(gI.getAttribute('data-pm-total'), 10) || 0) : 0;
+            }
+            if (res[1] != null) cacheOut[1] = cloneGrid(new DOMParser().parseFromString(res[1], 'text/html'));
+          });
+        }
+        return;
+      }
+      // Fallback (fast path didn't run): shimmer-skeleton until the global order is stitched.
       wrap.classList.add('is-reordering');
     } else {
       cache = {};
@@ -114,7 +136,9 @@
   function fetchServerPage(k) {
     if (cache[k]) return Promise.resolve(cache[k]);
     var b = baseUrl();
-    var url = b + (b.indexOf('?') > -1 ? '&' : '?') + 'page=' + k;
+    // &view=grid → grid-only, layout-less render (templates/collection.grid.liquid):
+    // a fraction of the bytes/server-time vs. a full collection page fetch.
+    var url = b + (b.indexOf('?') > -1 ? '&' : '?') + 'page=' + k + '&view=grid';
     return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
       .then(function (r) { if (!r.ok) throw r.status; return r.text(); })
       .then(function (html) {
@@ -128,24 +152,34 @@
   function fetchSrc(src, page) {
     var store = src === 'in' ? cacheIn : cacheOut;
     if (store[page]) return Promise.resolve(store[page]);
-    var b = availUrl(src === 'in' ? '1' : '0');
-    var url = b + (b.indexOf('?') > -1 ? '&' : '?') + 'page=' + page;
-    return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-      .then(function (r) { if (!r.ok) throw r.status; return r.text(); })
-      .then(function (html) {
-        var dom = new DOMParser().parseFromString(html, 'text/html');
-        store[page] = cloneGrid(dom);
-        if (src === 'in' && page === 1) {
-          var ig = dom.querySelector('.pm-plp__grid');
-          inStockTotal = ig ? (parseInt(ig.getAttribute('data-pm-total'), 10) || 0) : 0;
-        }
-        return store[page];
-      })
-      .catch(function () {
-        store[page] = [];
-        if (src === 'in' && page === 1 && inStockTotal == null) inStockTotal = 0;
-        return store[page];
-      });
+    function parse(html) {
+      var dom = new DOMParser().parseFromString(html, 'text/html');
+      store[page] = cloneGrid(dom);
+      if (src === 'in' && page === 1) {
+        var ig = dom.querySelector('.pm-plp__grid');
+        inStockTotal = ig ? (parseInt(ig.getAttribute('data-pm-total'), 10) || 0) : 0;
+      }
+      return store[page];
+    }
+    function freshFetch() {
+      var b = availUrl(src === 'in' ? '1' : '0');
+      // &view=grid → grid-only, layout-less render (much smaller/faster than a full page).
+      var url = b + (b.indexOf('?') > -1 ? '&' : '?') + 'page=' + page + '&view=grid';
+      return fetch(url, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+        .then(function (r) { if (!r.ok) throw r.status; return r.text(); });
+    }
+    // Reuse the <head> prefetch (window.__pmStitch) for page 1 — already in flight or done —
+    // but ONLY if its base URL still matches the current one. After a facet/sort change
+    // (pm-facets does history.pushState) the URL differs, so we fetch fresh and never serve
+    // stale (pre-filter) products. Falls back to a fresh grid-only fetch if missing/failed.
+    var pre = (page === 1 && window.__pmStitch && window.__pmStitch.base === baseUrl())
+      ? (src === 'in' ? window.__pmStitch.in1 : window.__pmStitch.out1) : null;
+    var textP = pre ? pre.then(function (html) { return html != null ? html : freshFetch(); }) : freshFetch();
+    return textP.then(parse).catch(function () {
+      store[page] = [];
+      if (src === 'in' && page === 1 && inStockTotal == null) inStockTotal = 0;
+      return store[page];
+    });
   }
 
   function ensureInStockTotal() {
@@ -170,7 +204,7 @@
       for (var p = first; p <= last; p++) need.push(p);
       return Promise.all(need.map(fetchServerPage));
     }
-    return ensureInStockTotal().then(function () {
+    function fetchJobs() {
       var jobs = {};
       for (var i = startIdx; i < endIdx; i++) {
         var loc = locate(i);
@@ -180,7 +214,15 @@
         var loc = jobs[key];
         return fetchSrc(loc.src, loc.page);
       }));
-    });
+    }
+    // First virtual page: fetch the in-stock AND quote views IN PARALLEL (the usual
+    // first-page need) instead of in-stock-then-quote sequentially — halves the wait.
+    // fetchSrc('in', 1) sets inStockTotal; fetchJobs then reuses the cached pages and
+    // pulls an extra page only if the window genuinely needs one.
+    if (startIdx === 0 && inStockTotal == null) {
+      return Promise.all([fetchSrc('in', 1), fetchSrc('out', 1)]).then(fetchJobs);
+    }
+    return ensureInStockTotal().then(fetchJobs);
   }
 
   function cardAt(i) {

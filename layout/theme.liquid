@@ -145,12 +145,50 @@
     </style>
   {%- endif -%}
 
-  {%- comment -%}
-    TC-088 in-stock-first is now rendered SERVER-SIDE in sections/pm-collection.liquid
-    (available products first, then "Available for Quote", sort preserved within each
-    group). No more pre-paint redirect → collections load directly, the eager first
-    row keeps its LCP benefit, and no-JS / crawlers get the same in-stock-first order.
-  {%- endcomment -%}
+  {%- if template.name == 'collection' -%}
+    {%- comment -%}
+      TC-088 PERF: kick off the two grid-only availability fetches from the <head> — the
+      earliest possible point — so the in-stock-first data is ready by the time the grid
+      paints. The inline fast-path after the grid (pm-collection.liquid) re-orders the instant
+      this lands, before the deferred pm-pagesize.js runs.
+      SECURITY: these are same-origin GET requests to the store's own collection URLs (the
+      grid-only `view=grid` render). The response is parsed with DOMParser (which does NOT
+      execute scripts) and only product-card <li> nodes are cloned into the page — no eval, no
+      innerHTML of untrusted text, no user data sent anywhere, no cross-origin requests.
+    {%- endcomment -%}
+    <script>
+      (function () {
+        try {
+          var loc = window.location;
+          var sp = new URLSearchParams(loc.search).getAll('filter.v.availability');
+          var split = sp.length === 0 || (sp.indexOf('1') !== -1 && sp.indexOf('0') !== -1);
+          if (!split) return;
+          var bu = new URL(loc.href); bu.searchParams.delete('page');
+          var bq = bu.searchParams.toString();
+          var base = bu.pathname + (bq ? '?' + bq : '');
+          var gv = function (v) {
+            var u = new URL(loc.href);
+            u.searchParams.delete('page');
+            u.searchParams.delete('filter.v.availability');
+            u.searchParams.append('filter.v.availability', v);
+            u.searchParams.set('view', 'grid');
+            u.searchParams.set('page', '1');
+            return u.pathname + '?' + u.searchParams.toString();
+          };
+          // priority:high → the browser fetches these ahead of the page's images/below-fold
+          // resources, so the in-stock-first data lands before DOMContentLoaded (lets the
+          // fast-path re-order early instead of deferring to pm-pagesize.js). Ignored by
+          // browsers that don't support Fetch Priority — harmless.
+          var opt = { headers: { 'X-Requested-With': 'XMLHttpRequest' }, priority: 'high' };
+          window.__pmStitch = {
+            base: base,
+            in1: fetch(gv('1'), opt).then(function (r) { return r.ok ? r.text() : null; }).catch(function () { return null; }),
+            out1: fetch(gv('0'), opt).then(function (r) { return r.ok ? r.text() : null; }).catch(function () { return null; })
+          };
+        } catch (e) {}
+      })();
+    </script>
+  {%- endif -%}
 
   {%- if template.name == 'search' -%}
     {%- comment -%}

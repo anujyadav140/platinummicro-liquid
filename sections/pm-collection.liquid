@@ -76,11 +76,11 @@
 
         <div id="pm-plp-grid-wrap" class="pm-plp__grid-wrap" data-pm-cols="{{ columns_d }}">
           {%- comment -%} TC-088: GLOBAL in-stock-first. The server double-loop below emits
-              available-before-quote per page (no-JS fallback + first paint). pm-pagesize.js
-              then stitches the two availability views so ALL in-stock come before ALL quote
-              across the whole collection. Skeleton the grid BEFORE first paint (synchronously)
-              so the per-page order never flashes before the client re-orders globally; no-JS
-              skips it and sees the server order; the 6s failsafe always reveals. {%- endcomment -%}
+              available-before-quote per page (no-JS / crawler fallback). The <head> prefetch +
+              the fast-path script after the grid stitch the two availability views into the
+              global order. Shimmer-skeleton the grid before first paint so the per-page
+              (quote-heavy) order never flashes before the global order is ready — no reshuffle.
+              No-JS skips this; the 6s failsafe always reveals. {%- endcomment -%}
           <script>
             (function () {
               try {
@@ -122,6 +122,66 @@
                 {%- endunless -%}
               {%- endfor -%}
             </ul>
+
+            {%- comment -%} TC-088 FAST PATH: re-order the grid in-stock-first the INSTANT the
+                <head> prefetch lands — running here (right after the grid parses) means it can
+                happen before the deferred pm-pagesize.js runs at DOMContentLoaded. Only the
+                default first page (page 1, page-size ≤ server page) is fast-pathed; anything
+                else (deep page, larger page size, prefetch missing/failed, or pm-pagesize
+                already booted) is left to pm-pagesize.js. SECURITY: clones only product-card
+                <li> nodes from the same-origin grid-only render (DOMParser does not run
+                scripts); no eval, no untrusted innerHTML. {%- endcomment -%}
+            <script>
+              (function () {
+                try {
+                  if (window.__pmBooted) return;
+                  var st = window.__pmStitch;
+                  if (!st || !st.in1) return;
+                  var wrap = document.getElementById('pm-plp-grid-wrap');
+                  var grid = wrap && wrap.querySelector('.pm-plp__grid');
+                  if (!wrap || !grid) return;
+                  var up = new URLSearchParams(window.location.search).get('page');
+                  if (up && up !== '1') return;
+                  var serverSize = parseInt(grid.getAttribute('data-pm-server-size'), 10) || 24;
+                  var pageSize = serverSize;
+                  try { var sz = parseInt(localStorage.getItem('pm-page-size'), 10); if (sz > 0) pageSize = sz; } catch (e) {}
+                  if (pageSize > serverSize) return;
+                  var handleOf = function (li) {
+                    var h = li.querySelector('[data-product-handle]');
+                    if (h) return h.getAttribute('data-product-handle');
+                    var a = li.querySelector('a[href*="/products/"]');
+                    var m = a && a.getAttribute('href').match(/\/products\/([^/?#]+)/);
+                    return m ? m[1] : null;
+                  };
+                  // Quote cards for page 1 are ALREADY rendered server-side (in the DOM under the
+                  // skeleton). So we only wait on the SMALL in-stock fetch, then prepend it and
+                  // fill the rest from the existing cards (deduped) — no quote fetch on the
+                  // critical path. (pm-pagesize.js still uses the quote view for deeper pages.)
+                  var serverCards = Array.prototype.slice.call(grid.children);
+                  st.in1.then(function (html) {
+                    if (window.__pmBooted || html == null) return;
+                    var ig = new DOMParser().parseFromString(html, 'text/html').querySelector('.pm-plp__grid');
+                    var inTotal = ig ? (parseInt(ig.getAttribute('data-pm-total'), 10) || 0) : 0;
+                    if (inTotal > serverSize) return; // >1 page of in-stock (rare) → let pm-pagesize do the full stitch
+                    var insCards = ig ? Array.prototype.slice.call(ig.children) : [];
+                    var insH = {}; insCards.forEach(function (li) { var h = handleOf(li); if (h) insH[h] = 1; });
+                    var frag = document.createDocumentFragment(), n = 0, i;
+                    for (i = 0; i < insCards.length && n < pageSize; i++, n++) frag.appendChild(insCards[i].cloneNode(true));
+                    for (i = 0; i < serverCards.length && n < pageSize; i++) {
+                      var h = handleOf(serverCards[i]);
+                      if (h && insH[h]) continue; // already shown in the in-stock block
+                      frag.appendChild(serverCards[i].cloneNode(true)); n++;
+                    }
+                    if (!frag.childNodes.length) return;
+                    if (grid.replaceChildren) { grid.replaceChildren(frag); } else { grid.innerHTML = ''; grid.appendChild(frag); }
+                    wrap.classList.remove('is-reordering');
+                    wrap.classList.remove('is-loading');
+                    window.__pmStitchEarly = true;
+                    if (window.PmAddToCart && window.PmAddToCart.syncMaxed) window.PmAddToCart.syncMaxed();
+                  });
+                } catch (e) {}
+              })();
+            </script>
 
             {%- if paginate.pages > 1 -%}
               <nav class="pm-pagination" aria-label="Pagination">

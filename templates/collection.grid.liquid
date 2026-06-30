@@ -1,0 +1,24 @@
+{%- comment -%}
+  Grid-only, LAYOUT-LESS view of a collection.
+
+  Used by assets/pm-pagesize.js (TC-088 in-stock-first stitch + TC-091 virtual
+  pagination) as a fast data source: it fetches
+    /collections/<handle>?<active filters>&view=grid&page=N
+  to grab product cards WITHOUT re-rendering the whole theme (header, mega-menu,
+  facets, footer, every script) the way a full-page fetch does. `{% layout none %}`
+  ships only the <ul> below — a fraction of the bytes and server render time — so
+  the in-stock-first re-order completes much faster.
+
+  Shopify applies the URL's availability filter + sort to collection.products here
+  exactly as on the real page, so the in-stock / quote views come out correct.
+  Must mirror the grid contract pm-pagesize.js reads: ul.pm-plp__grid with
+  data-pm-total (the filtered count) + data-pm-server-size, and one <li> per card.
+{%- endcomment -%}
+{%- layout none -%}
+{%- paginate collection.products by 24 -%}
+<ul class="pm-plp__grid" data-pm-view-mode="grid" data-pm-total="{{ paginate.items }}" data-pm-server-size="24">
+  {%- for product in collection.products -%}
+    <li>{%- render 'pm-product-card', product: product -%}</li>
+  {%- endfor -%}
+</ul>
+{%- endpaginate -%}
