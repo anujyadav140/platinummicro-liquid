@@ -305,6 +305,7 @@
   <script src="{{ 'pm-quote.js'           | asset_url }}" defer></script>
   <script src="{{ 'pm-recently-viewed.js' | asset_url }}" defer></script>
   {%- if template.name == 'product' -%}<script src="{{ 'pm-pdp-pdf.js' | asset_url }}" defer></script>{%- endif -%}
+  {%- if template.name == 'product' -%}<script src="{{ 'pm-recommendations.js' | asset_url }}" defer></script>{%- endif -%}
   {%- comment -%}
     Lists dashboard JS loads on /pages/lists whether admin picked the
     custom `lists` template OR the default `page` template — gating on

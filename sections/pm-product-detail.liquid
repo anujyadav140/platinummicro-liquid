@@ -769,6 +769,28 @@
   {%- endunless -%}
 
   {%- comment -%}
+    ── "You may also like" — Shopify-native product recommendations ──
+    intent=related (powered by the store's own order/behavioral data). The mount is
+    empty until pm-recommendations.js lazy-fetches /recommendations/products.json and
+    renders PM cards below the specs. Empty result → mount stays 0-height (no section).
+  {%- endcomment -%}
+  {%- comment -%} First non-utility collection the product belongs to — used to top up the rail when Shopify's related set is thin (e.g. freshly-imported HPE servers). {%- endcomment -%}
+  {%- assign _rec_fbcol = '' -%}
+  {%- for c in product.collections -%}
+    {%- unless c.handle == 'all' or c.handle == 'frontpage' or c.handle contains 'bundle' -%}
+      {%- if _rec_fbcol == '' -%}{%- assign _rec_fbcol = c.handle -%}{%- endif -%}
+    {%- endunless -%}
+  {%- endfor -%}
+  <div
+    data-pm-recs
+    data-product-id="{{ product.id }}"
+    data-intent="related"
+    data-limit="10"
+    data-heading="You may also like"
+    data-fallback-collection="{{ _rec_fbcol }}"
+  ></div>
+
+  {%- comment -%}
     ── Recently viewed strip ──
     Tracking + render handled by assets/pm-recently-viewed.js. The
     track element stamps the current product's data into data-attrs

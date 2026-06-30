@@ -416,6 +416,7 @@ button.pm-mobile-nav__link {
   margin: 0;
   padding: 0 0 4px;
   display: flex;
+  align-items: flex-start;
   gap: 12px;
   overflow-x: auto;
   scroll-snap-type: x proximity;
@@ -467,6 +468,9 @@ button.pm-mobile-nav__link {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--pm-tan, #8B7355);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .pm-rv__name {
   font-size: 13px;
@@ -480,7 +484,7 @@ button.pm-mobile-nav__link {
   min-height: 36px;
 }
 .pm-rv__price {
-  margin-top: auto;
+  margin-top: 2px;
   font-size: 14px;
   font-weight: 700;
   color: var(--pm-navy-deep, #0D2340);
