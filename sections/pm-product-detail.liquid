@@ -162,8 +162,18 @@
 
     {%- comment -%} ── Main grid: Gallery + Info pane ─────────────────────── {%- endcomment -%}
     {%- comment -%} Config (HPE ProLiant) products get the CDW-style wide-content layout {%- endcomment -%}
+    {%- comment -%}
+      ── HPE ProLiant experience PAUSED for launch (2026-07-01) ──
+      The configurator + live panel ran on MOCK middleware data. All the HPE code is left intact
+      and gated behind ONE flag. TO RE-ENABLE when the real HPE API is wired: set _hpe_enabled = true
+      below. That single flag restores the whole HPE treatment (CDW wide layout, "Starting at"
+      eyebrow, real-data detail block, and the configurator render further down). Nothing else changed.
+    {%- endcomment -%}
+    {%- assign _hpe_enabled = false -%}
     {%- assign _cfg = false -%}
-    {%- if product.title contains 'ProLiant' or product.vendor contains 'Hewlett' or product.vendor contains 'HPE' -%}{%- assign _cfg = true -%}{%- endif -%}
+    {%- if _hpe_enabled -%}
+      {%- if product.title contains 'ProLiant' or product.vendor contains 'Hewlett' or product.vendor contains 'HPE' -%}{%- assign _cfg = true -%}{%- endif -%}
+    {%- endif -%}
     <div class="pm-pdp__main-grid{% if _cfg %} pm-pdp__main-grid--cfg{% endif %}">
 
       {%- comment -%}
@@ -568,8 +578,8 @@
             </button>
           </form>
 
-          {%- comment -%} ── HPE ProLiant configurator (stepped wizard, ProLiant only) ── {%- endcomment -%}
-          {%- render 'pm-hpe-config', product: product -%}
+          {%- comment -%} ── HPE ProLiant configurator (stepped wizard, ProLiant only) — PAUSED for launch; gated by _hpe_enabled (set at top of section). Re-enable there. ── {%- endcomment -%}
+          {%- if _hpe_enabled -%}{%- render 'pm-hpe-config', product: product -%}{%- endif -%}
 
           {%- comment -%}
             ── Download datasheet (PDF) ──
