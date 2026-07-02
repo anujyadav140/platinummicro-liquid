@@ -203,6 +203,8 @@
 
               <input type="hidden" name="contact[name]" value="{{ customer.name | escape }}">
               <input type="hidden" name="contact[email]" value="{{ customer.email | escape }}">
+              {%- comment -%} Honeypot — humans never see or fill this. {%- endcomment -%}
+              <input type="text" name="website" class="pm-msgs__hp" tabindex="-1" autocomplete="off" aria-hidden="true">
 
               <label class="pm-msgs__label" for="pm-msgs-topic">Topic</label>
               <select id="pm-msgs-topic" name="contact[topic]" class="pm-msgs__input" data-pm-msgs-topic>
@@ -250,6 +252,7 @@
             {%- if form.errors -%}
               <div class="pm-msgs__err" role="alert">{{ form.errors | default_errors }}</div>
             {%- endif -%}
+            <input type="text" name="website" class="pm-msgs__hp" tabindex="-1" autocomplete="off" aria-hidden="true">
             <label class="pm-msgs__label" for="pm-msgs-gname">Name</label>
             <input id="pm-msgs-gname" type="text" name="contact[name]" class="pm-msgs__input" required>
             <label class="pm-msgs__label" for="pm-msgs-gmail">Email</label>

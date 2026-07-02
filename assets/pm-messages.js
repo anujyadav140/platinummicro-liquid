@@ -67,25 +67,92 @@
   }
   renderSent();
 
-  /* Log outgoing messages at submit time (the form then posts to Shopify,
-     which emails the store and reloads with the success banner). */
-  var form = root.querySelector('.pm-msgs__form--main');
-  if (form) {
-    form.addEventListener('submit', function () {
-      var topic = form.querySelector('[data-pm-msgs-topic]');
-      var ref   = form.querySelector('[data-pm-msgs-ref]');
-      var body  = form.querySelector('[data-pm-msgs-body]');
-      if (!body || !body.value.trim()) return;
-      var items = readJson(SENT_KEY);
-      items.push({
-        ts: Date.now(),
-        topic: topic ? topic.value : '',
-        ref: ref ? ref.value.trim() : '',
-        body: body.value.trim()
-      });
-      writeSent(items);
+  /* ── Sending ──
+     Messages post to the PM relay (Netlify function → real transactional
+     email with delivery logs) instead of Shopify's native contact-form
+     mail, which silently drops suspected spam with no trace. If the relay
+     is unreachable the form falls back to the native Shopify POST so a
+     message always has a path out. */
+  var RELAY = 'https://preeminent-alpaca-2818e3.netlify.app/.netlify/functions/send-message';
+
+  function showOk(form, msg) {
+    var ok = form.querySelector('.pm-msgs__ok');
+    if (!ok) {
+      ok = document.createElement('div');
+      ok.className = 'pm-msgs__ok';
+      ok.setAttribute('role', 'status');
+      form.insertBefore(ok, form.firstChild);
+    }
+    ok.textContent = msg;
+  }
+
+  function wireComposer(form, getFields, logSent) {
+    if (!form) return;
+    form.addEventListener('submit', function (e) {
+      var f = getFields(form);
+      if (!f || !f.body || f.body.length < 5) return; // native validation handles empties
+      e.preventDefault();
+      var btn = form.querySelector('button[type="submit"]');
+      var orig = btn ? btn.textContent : '';
+      if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+      fetch(RELAY, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(f)
+      })
+        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
+        .then(function (out) {
+          if (out && out.ok) {
+            if (logSent) {
+              var items = readJson(SENT_KEY);
+              items.push({ ts: Date.now(), topic: f.topic || '', ref: f.ref || '', body: f.body });
+              writeSent(items);
+              renderSent();
+            }
+            showOk(form, 'Message sent — our team replies by email, usually within one business day.');
+            form.reset();
+          } else {
+            form.submit(); // native Shopify fallback (bypasses this listener)
+          }
+        })
+        .catch(function () { form.submit(); })
+        .finally(function () { if (btn) { btn.disabled = false; btn.textContent = orig || 'Send message'; } });
     });
   }
+
+  // Signed-in composer
+  wireComposer(root.querySelector('.pm-msgs__form--main'), function (form) {
+    var topic = form.querySelector('[data-pm-msgs-topic]');
+    var ref   = form.querySelector('[data-pm-msgs-ref]');
+    var body  = form.querySelector('[data-pm-msgs-body]');
+    var hp    = form.querySelector('input[name="website"]');
+    var name  = form.querySelector('input[name="contact[name]"]');
+    var email = form.querySelector('input[name="contact[email]"]');
+    return {
+      name:  name ? name.value : '',
+      email: email ? email.value : '',
+      topic: topic ? topic.value : '',
+      ref:   ref ? ref.value.trim() : '',
+      body:  body ? body.value.trim() : '',
+      hp:    hp ? hp.value : ''
+    };
+  }, true);
+
+  // Guest composer
+  wireComposer(root.querySelector('.pm-msgs__guest form'), function (form) {
+    var name  = form.querySelector('#pm-msgs-gname');
+    var email = form.querySelector('#pm-msgs-gmail');
+    var body  = form.querySelector('#pm-msgs-gbody');
+    var hp    = form.querySelector('input[name="website"]');
+    return {
+      name:  name ? name.value.trim() : '',
+      email: email ? email.value.trim() : '',
+      topic: 'Guest message',
+      ref:   '',
+      body:  body ? body.value.trim() : '',
+      hp:    hp ? hp.value : ''
+    };
+  }, false);
 
   /* ── Quote-cart status card ── */
   var quoteSlot = root.querySelector('[data-pm-msgs-quotes]');

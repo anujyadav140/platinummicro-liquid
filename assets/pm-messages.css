@@ -118,6 +118,8 @@
   border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; font-size: 14px; padding: 9px 11px;
 }
 .pm-msgs__textarea { resize: vertical; min-height: 96px; font-family: inherit; }
+/* Honeypot — parked far off-screen; bots fill it, people can't. */
+.pm-msgs__hp { position: absolute !important; left: -9999px !important; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .pm-msgs__send {
   display: inline-flex; align-items: center; justify-content: center; gap: 8px;
   background: var(--pm-terracotta, #b0410f); color: #fff; border: 0; border-radius: 8px;
