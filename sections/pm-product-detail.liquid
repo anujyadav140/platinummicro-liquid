@@ -54,10 +54,27 @@
   {%- assign _has_bundle = true -%}
 {%- endif -%}
 
-{%- comment -%} Display title: admin label > auto label > generic fallback {%- endcomment -%}
+{%- comment -%}
+  BC-migrated bundle products carry a real variant OPTION named
+  "Bundle and get 3% off" whose "(Pack of N)" variants hold the
+  3%-discounted BASE price (that's how BigCommerce charged the deal).
+  When present: the JS maps the card's qty -> that variant so the
+  discount is genuinely charged, and the redundant option dropdown
+  is suppressed below. When absent: no discount is promised or
+  charged (matches the BC PDPs, which have no pick list there).
+{%- endcomment -%}
+{%- assign _has_bundle_variants = false -%}
+{%- for _opt in product.options -%}
+  {%- assign _optdn = _opt | downcase -%}
+  {%- if _optdn contains 'bundle' -%}{%- assign _has_bundle_variants = true -%}{%- endif -%}
+{%- endfor -%}
+
+{%- comment -%} Display title: admin label > auto label > generic fallback.
+    The "% OFF" claim only renders when bundle variants exist to actually
+    charge it — otherwise the honest generic heading. {%- endcomment -%}
 {%- assign _bundle_title = _bundle_label -%}
 {%- if _bundle_title == blank -%}
-  {%- if _bundle_discount > 0 -%}
+  {%- if _bundle_discount > 0 and _has_bundle_variants -%}
     {%- assign _bundle_title = 'BUNDLE AND GET ' | append: _bundle_discount | append: '% OFF' -%}
   {%- else -%}
     {%- assign _bundle_title = 'BUNDLE WITH ADD-ONS' -%}
@@ -464,8 +481,23 @@
           {%- endif -%}
 
           {%- if product.has_only_default_variant == false -%}
+            {%- comment -%}
+              Bundle-named options are NOT rendered as dropdowns — the bundle
+              card above owns that choice (the migrated "Bundle and get 3% off"
+              option would otherwise render a duplicate, confusing select).
+              The variants JSON island still renders so the bundle JS can map
+              qty -> "(Pack of N)" variant for BC-parity pricing.
+            {%- endcomment -%}
+            {%- assign _visible_opt_count = 0 -%}
+            {%- for option in product.options_with_values -%}
+              {%- assign _odn = option.name | downcase -%}
+              {%- unless _odn contains 'bundle' -%}{%- assign _visible_opt_count = _visible_opt_count | plus: 1 -%}{%- endunless -%}
+            {%- endfor -%}
+            {%- if _visible_opt_count > 0 -%}
             <div class="pm-pdp__options" id="pm-pdp-options">
               {%- for option in product.options_with_values -%}
+                {%- assign _odn = option.name | downcase -%}
+                {%- unless _odn contains 'bundle' -%}
                 <div class="pm-pdp__option">
                   <label class="pm-pdp__option-label">{{ option.name }}</label>
                   <select data-pm-pdp-option="{{ forloop.index0 }}">
@@ -474,11 +506,13 @@
                     {%- endfor -%}
                   </select>
                 </div>
+                {%- endunless -%}
               {%- endfor -%}
-              <script type="application/json" id="pm-pdp-variants">
-                {{ product.variants | json }}
-              </script>
             </div>
+            {%- endif -%}
+            <script type="application/json" id="pm-pdp-variants">
+              {{ product.variants | json }}
+            </script>
           {%- endif -%}
 
           <div class="pm-pdp__avail-label">Availability</div>
@@ -1031,10 +1065,6 @@
     if (!bundleRoot) return null;
     return parseInt(bundleRoot.getAttribute('data-base-price-cents'), 10) || 0;
   }
-  function discountPct() {
-    if (!bundleRoot) return 0;
-    return parseFloat(bundleRoot.getAttribute('data-discount-pct')) || 0;
-  }
   function bundleMaxQty() {
     if (!bundleRoot) return null;
     var m = parseInt(bundleRoot.getAttribute('data-max-qty'), 10);
@@ -1050,32 +1080,137 @@
     return parseInt(row.getAttribute('data-add-on-price-cents'), 10) || 0;
   }
 
-  // Picked add-on as { variantId, sku, name, qty, lineCents } or null
+  // Picked add-on as { variantId, sku, name, qty, lineQty, lineCents } or null.
+  // qty = drives the buyer chose (drives the base-variant mapping);
+  // lineQty/variantId = the actual cart line: qty 1 -> the single drive,
+  // qty N>=2 -> ONE unit of the "Pack of N" product (BC parity pricing).
   function currentBundlePick() {
     if (!bundleRoot || !bundleState.row) return null;
     var row = bundleState.row;
     if (row.getAttribute('data-value-id') === 'none') return null;
     var qty = getRowQty(row);
+    var tier = (qty >= 2 && bundleTiers[qty]) ? bundleTiers[qty] : null;
+    if (tier) {
+      return {
+        variantId: tier.variantId,
+        sku:       tier.sku,
+        name:      tier.title || (row.getAttribute('data-add-on-name') + ' (Pack of ' + qty + ')'),
+        qty:       qty,
+        lineQty:   1,
+        unitCents: tier.price,
+        lineCents: tier.price
+      };
+    }
     var unitCents = getRowAddOnCents(row);
     return {
       variantId: row.getAttribute('data-add-on-variant-id'),
       sku:       row.getAttribute('data-add-on-sku'),
       name:      row.getAttribute('data-add-on-name'),
       qty:       qty,
+      lineQty:   qty,
       unitCents: unitCents,
       lineCents: unitCents * qty
     };
   }
 
+  // ── BC-parity variant map ──
+  // Migrated bundle products carry variants titled "(Pack of N)" whose
+  // price IS the base at the bundle discount (that's how BigCommerce
+  // charged it). Map add-on qty -> variant so the discount is genuinely
+  // charged at checkout — no synthetic % math on the client.
+  var bundleBaseVariant = null; // plain variant = full base price ("None")
+  var bundlePackMap = null;     // { n: "(Pack of N)" variant } = 3%-off base
+  (function buildBundleVariantMap() {
+    if (!bundleRoot) return;
+    var el = document.getElementById('pm-pdp-variants');
+    if (!el) return;
+    var vs = [];
+    try { vs = JSON.parse(el.textContent); } catch (e) {}
+    if (!vs.length) return;
+    var map = {}, sawPack = false, single = null;
+    vs.forEach(function (v) {
+      var t = [v.option1, v.option2, v.option3, v.title].filter(Boolean).join(' ');
+      var m = t.match(/pack of (\d+)/i);
+      if (m) { sawPack = true; map[parseInt(m[1], 10)] = v; }
+      else if (!single) single = v;
+    });
+    if (!sawPack) return; // not a migrated bundle-variant product
+    bundleBaseVariant = single || null;
+    bundlePackMap = map;
+  })();
+  // The variant whose price is what BigCommerce charges for the base:
+  // no pick -> full base; ANY pick -> the 3%-off base (BC discounts the
+  // base on single-drive picks too — verified against BC's own pricing
+  // endpoint). Exact pack match wins; otherwise the cheapest pack
+  // variant carries the same discounted base price.
+  function bundleChargeVariant(hasPick, qtyWanted) {
+    if (!bundlePackMap) return null;
+    if (!hasPick) return bundleBaseVariant;
+    if (bundlePackMap[qtyWanted]) return bundlePackMap[qtyWanted];
+    var cheapest = null;
+    Object.keys(bundlePackMap).forEach(function (k) {
+      var v = bundlePackMap[k];
+      if (!cheapest || v.price < cheapest.price) cheapest = v;
+    });
+    return cheapest || bundleBaseVariant;
+  }
+  // Point the form + add button at the charged variant.
+  function syncBundleVariant(v) {
+    if (!v) return;
+    if (addBtn) {
+      addBtn.setAttribute('data-variant-id', v.id);
+      addBtn.setAttribute('data-variant-sku', v.sku || '');
+    }
+    var idInput = document.querySelector('.pm-pdp__cart-form input[name="id"], form input[name="id"]');
+    if (idInput) idInput.value = v.id;
+  }
+
+  // ── BC-parity add-on tiers ──
+  // BigCommerce's pick lists sell the multi-drive choices as their own
+  // "Pack of N" PRODUCTS at their own (higher) prices — migrated into
+  // Shopify as real products (SKUs CCWDS400T4B0EX2..X6). qty 1 adds the
+  // single drive; qty N>=2 adds the Pack-of-N product, so the charged
+  // total matches BC exactly. Resolved at runtime from the storefront
+  // (products must be published); until a pack resolves, qty N falls
+  // back to N x single drive.
+  var BUNDLE_TIER_HANDLES = {
+    2: 'wd-4tb-wd-blue-sn5000-nvme-internal-solid-state-drive-ssd-pcie-gen-4-0-m-2-2280-up-to-5-500-mb-s-pack-of-2',
+    3: 'wd-4tb-wd-blue-sn5000-nvme-internal-solid-state-drive-ssd-pcie-gen-4-0-m-2-2280-up-to-5-500-mb-s-pack-of-3',
+    4: 'wd-4tb-wd-blue-sn5000-nvme-internal-solid-state-drive-ssd-pcie-gen-4-0-m-2-2280-up-to-5-500-mb-s-pack-of-4',
+    5: 'wd-4tb-wd-blue-sn5000-nvme-internal-solid-state-drive-ssd-pcie-gen-4-0-m-2-2280-up-to-5-500-mb-s-pack-of-5',
+    6: 'wd-4tb-wd-blue-sn5000-nvme-internal-solid-state-drive-ssd-pcie-gen-4-0-m-2-2280-up-to-5-500-mb-s-pack-of-6'
+  };
+  var bundleTiers = {}; // n -> { variantId, price, sku, title }
+  (function loadBundleTiers() {
+    if (!bundlePackMap) return; // only migrated bundle products use tiers
+    Object.keys(BUNDLE_TIER_HANDLES).forEach(function (n) {
+      fetch('/products/' + BUNDLE_TIER_HANDLES[n] + '.js')
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (p) {
+          if (!p || !p.variants || !p.variants.length) return;
+          bundleTiers[n] = {
+            variantId: p.variants[0].id,
+            price: p.variants[0].price,
+            sku: p.variants[0].sku || '',
+            title: p.title || ''
+          };
+          recomputeBundlePrice(); // refresh totals once the tier resolves
+        })
+        .catch(function () {});
+    });
+  })();
+
   function recomputeBundlePrice() {
     if (!bundleRoot || !priceEl) return;
-    var base = basePriceCents();
-    var d    = discountPct();
     var pick = currentBundlePick();
     var hasPick = !!pick;
-    // Discount applies to the BASE product only, and only when an
-    // add-on is actually selected (matches Hydrogen semantics).
-    var baseAfter = hasPick ? Math.round(base * (1 - d / 100)) : base;
+    // Charged base = the mapped variant's price (BC parity: "(Pack of N)"
+    // variants already hold the discounted base; the plain variant holds
+    // full base for "None"). Without a map, base + add-ons at full price —
+    // exactly what checkout charges. No client-side % discounting.
+    var mv = bundleChargeVariant(hasPick, hasPick ? pick.qty : 1);
+    if (mv) syncBundleVariant(mv);
+    var baseAfter = mv ? mv.price : basePriceCents();
     var addOn     = hasPick ? pick.lineCents : 0;
     priceEl.textContent = moneyFmt(baseAfter + addOn);
     if (bundleNote) {
@@ -1108,6 +1243,10 @@
   if (bundleRoot) {
     // Default selection = "None" row, already marked .is-selected server-side.
     bundleState.row = bundleRoot.querySelector('[data-pm-bundle-row].is-selected');
+
+    // Normalize price + charged variant to the mapped base ("None" = the
+    // full-price variant) in case the server-rendered default differs.
+    recomputeBundlePrice();
 
     // a11y: roving tabindex — only the checked radio is in the tab order.
     bundleRoot.querySelectorAll('[data-pm-bundle-select]').forEach(function (b) {
@@ -1205,11 +1344,11 @@
       if (pick) {
         items.push({
           id: parseInt(pick.variantId, 10),
-          // Each base unit gets `pick.qty` of the add-on (matches
-          // Hydrogen behavior — bundles 2 base products with a
-          // 3-pack add-on → 6 add-on units total).
-          quantity: pick.qty * n,
-          properties: { '_bundle': 'addon', '_bundle_base_sku': (addBtn.getAttribute('data-variant-sku') || '') }
+          // Each base unit gets one add-on LINE unit: the single drive
+          // (lineQty = chosen qty) or ONE Pack-of-N product (lineQty = 1),
+          // matching how BigCommerce charges the pick.
+          quantity: pick.lineQty * n,
+          properties: { '_bundle': 'addon', '_bundle_base_sku': (addBtn.getAttribute('data-variant-sku') || ''), '_bundle_drives': String(pick.qty * n) }
         });
       }
 
@@ -1221,21 +1360,6 @@
 
       fetch('/cart/add.js', fetchOpts)
         .then(function (r) { if (!r.ok) throw new Error('fail'); return r.json(); })
-        .then(function () {
-          // If a bundle pick was added, record a cart note so sales
-          // sees the discount intent at order review. Shopify carts
-          // can't natively apply a per-line discount without a
-          // Function/Script; this leaves a clear paper trail.
-          if (pick && discountPct() > 0) {
-            return fetch('/cart/update.js', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-              body: JSON.stringify({
-                note: 'Bundle: apply ' + discountPct() + '% discount on base SKU. Add-on ' + pick.sku + ' × ' + (pick.qty * n) + '.'
-              })
-            });
-          }
-        })
         .then(function () {
           if (label) label.textContent = 'Added';
           document.dispatchEvent(new CustomEvent('pm:cart-changed', { detail: { source: 'pdp', addedCount: n } }));
