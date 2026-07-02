@@ -48,8 +48,10 @@
             <button type="button" class="pm-msgs__tab" data-pm-msgs-tab="team" role="tab" aria-selected="false">From Platinum Micro</button>
           </div>
 
-          {%- comment -%} ── Team: per-customer thread (staff-written metafield) ── {%- endcomment -%}
-          {%- assign _thread = customer.metafields.pm_msgs.thread.value -%}
+          {%- comment -%} ── Team: per-customer thread (staff-written metafield) ──
+              Definition "Thread" lives at custom.thread (JSON, created in admin);
+              staff post replies via Admin → Customers → [customer] → Metafields. {%- endcomment -%}
+          {%- assign _thread = customer.metafields.custom.thread.value -%}
           {%- if _thread and _thread.size > 0 -%}
             {%- for m in _thread -%}
               <article class="pm-msgs__item pm-msgs__item--team" data-kind="team">
