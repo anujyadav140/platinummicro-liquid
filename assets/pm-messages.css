@@ -65,6 +65,8 @@
   border-left: 3px solid var(--pm-terracotta, #b0410f);
   position: relative;
 }
+/* Customer's own follow-ups (email replies) nest too, but keep the navy spine. */
+.pm-msgs__item--mine.pm-msgs__item--reply { border-left-color: var(--pm-navy-deep, #0d2340); }
 @media (max-width: 640px) { .pm-msgs__item--reply { margin-left: 18px; } }
 .pm-msgs__item-body { min-width: 0; flex: 1; }
 .pm-msgs__item-head {

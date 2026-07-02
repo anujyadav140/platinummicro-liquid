@@ -64,9 +64,14 @@
             {%- for m in _thread -%}
               {%- assign _mine = false -%}
               {%- if m.from == 'You' -%}{%- assign _mine = true -%}{%- endif -%}
-              <article class="pm-msgs__item {% if _mine %}pm-msgs__item--mine{% else %}pm-msgs__item--team pm-msgs__item--reply{% endif %}" data-kind="team">
+              {%- comment -%} Conversation starters carry a topic (set by the
+                  composer); follow-ups (team replies AND the customer's own
+                  email replies) don't — those nest underneath. {%- endcomment -%}
+              {%- assign _root = false -%}
+              {%- if _mine and m.topic and m.topic != blank -%}{%- assign _root = true -%}{%- endif -%}
+              <article class="pm-msgs__item {% if _mine %}pm-msgs__item--mine{% else %}pm-msgs__item--team{% endif %}{% unless _root %} pm-msgs__item--reply{% endunless %}" data-kind="team">
                 <div class="pm-msgs__item-ico" aria-hidden="true">
-                  {%- if _mine -%}
+                  {%- if _root -%}
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                   {%- else -%}
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
@@ -77,7 +82,8 @@
                     <span class="pm-msgs__item-title">
                       {%- if _mine -%}
                         You
-                        {%- if m.topic and m.topic != blank %} <span class="pm-msgs__pill pm-msgs__pill--pay">{{ m.topic | escape }}</span>{% endif -%}
+                        {%- if _root %} <span class="pm-msgs__pill pm-msgs__pill--pay">{{ m.topic | escape }}</span>
+                        {%- else %} <span class="pm-msgs__pill pm-msgs__pill--ful">replied</span>{% endif -%}
                       {%- else -%}
                         {{ m.from | default: 'Platinum Micro team' | escape }} <span class="pm-msgs__pill pm-msgs__pill--ful">replied</span>
                       {%- endif -%}
