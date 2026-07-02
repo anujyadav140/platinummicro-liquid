@@ -23,7 +23,7 @@
 
 {{ 'pm-messages.css' | asset_url | stylesheet_tag }}
 
-<section class="pm-static pm-msgs" data-pm-msgs>
+<section class="pm-static pm-msgs{% unless customer %} pm-msgs--guest{% endunless %}" data-pm-msgs>
   <div class="pm-static__body">
     <div class="pm-static__body__inner pm-static__body__inner--wide pm-msgs__inner">
 
