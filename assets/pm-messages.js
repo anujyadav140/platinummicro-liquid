@@ -87,7 +87,7 @@
     if (!form) return;
     form.addEventListener('submit', function (e) {
       var f = getFields(form);
-      if (!f || !f.body || f.body.length < 5) return; // native validation handles empties
+      if (!f || !f.body) return; // empty -> native required-field validation
       if (f.hp) { e.preventDefault(); form.reset(); return; } // honeypot: swallow silently
       e.preventDefault();
       var btn = form.querySelector('button[type="submit"]');
