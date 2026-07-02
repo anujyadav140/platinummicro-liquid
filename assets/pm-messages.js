@@ -69,19 +69,24 @@
      email that must be clicked; after that, delivery is automatic. On a
      network failure it falls back to the native Shopify contact POST so
      a message always has a path out. */
-  var FORM_ENDPOINT = 'https://formsubmit.co/ajax/anuj@platinummicro.com';
-  var FORM_CC = 'anujyadav160@gmail.com'; // backup inbox + lets delivery be verified
+  /* Recipient + CC are theme settings (Customize > Messages page > PM
+     Message Center) so staff can re-point the inbox without code. A new
+     address must click FormSubmit's one-time Activate email. */
+  var RELAY_TO = root.getAttribute('data-relay-to') || 'anuj@platinummicro.com';
+  var FORM_ENDPOINT = 'https://formsubmit.co/ajax/' + RELAY_TO;
+  var FORM_CC = root.getAttribute('data-relay-cc') || '';
 
-  function showOk(form, msg) {
-    var ok = form.querySelector('.pm-msgs__ok');
-    if (!ok) {
-      ok = document.createElement('div');
-      ok.className = 'pm-msgs__ok';
-      ok.setAttribute('role', 'status');
-      form.insertBefore(ok, form.firstChild);
-    }
-    ok.textContent = msg;
+  function showBanner(form, cls, msg) {
+    var el = form.querySelector('.pm-msgs__ok, .pm-msgs__err');
+    if (el) el.remove();
+    el = document.createElement('div');
+    el.className = cls;
+    el.setAttribute('role', 'status');
+    el.textContent = msg;
+    form.insertBefore(el, form.firstChild);
   }
+  function showOk(form, msg) { showBanner(form, 'pm-msgs__ok', msg); }
+  function showNote(form, msg) { showBanner(form, 'pm-msgs__err', msg); }
 
   function wireComposer(form, getFields, logSent) {
     if (!form) return;
@@ -101,10 +106,10 @@
         reference: f.ref || '(none)',
         message: f.body,
         _subject: '[Message Center] ' + (f.topic || 'Message') + (f.ref ? ' · ' + f.ref : '') + ' — ' + (f.name || f.email || 'customer'),
-        _cc: FORM_CC,
         _template: 'table',
         _captcha: 'false'
       };
+      if (FORM_CC) payload._cc = FORM_CC;
 
       function finish() { if (btn) { btn.disabled = false; btn.textContent = orig || 'Send message'; } }
 
@@ -113,13 +118,23 @@
         headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify(payload)
       })
-        .then(function (r) { return r.json().catch(function () { return {}; }); })
-        .then(function () {
-          // Any 200 = FormSubmit accepted it (delivery is automatic once activated).
-          if (logSent) showJustSent(f);
-          showOk(form, 'Message sent — our team replies by email, and this message will appear in your thread here shortly.');
-          form.reset();
-          finish();
+        .then(function (r) { return r.json().catch(function () { return null; }); })
+        .then(function (out) {
+          var ok = out && (out.success === 'true' || out.success === true);
+          if (ok) {
+            if (logSent) showJustSent(f);
+            showOk(form, 'Message sent — our team replies by email, and this message will appear in your thread here shortly.');
+            form.reset();
+            finish();
+          } else if (out && /activation/i.test(out.message || '')) {
+            // A newly configured inbox hasn't clicked FormSubmit's one-time
+            // Activate link yet — say so instead of pretending it sent.
+            showNote(form, 'One-time setup needed: the store inbox just received an "Activate Form" email from FormSubmit. After it\'s activated, please send your message again.');
+            finish();
+          } else {
+            finish();
+            form.submit(); // unexpected response -> native Shopify fallback
+          }
         })
         .catch(function () { finish(); form.submit(); }); // relay unreachable -> native Shopify POST
     });

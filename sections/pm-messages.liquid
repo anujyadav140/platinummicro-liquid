@@ -23,7 +23,9 @@
 
 {{ 'pm-messages.css' | asset_url | stylesheet_tag }}
 
-<section class="pm-static pm-msgs{% unless customer %} pm-msgs--guest{% endunless %}" data-pm-msgs>
+<section class="pm-static pm-msgs{% unless customer %} pm-msgs--guest{% endunless %}" data-pm-msgs
+  data-relay-to="{{ section.settings.relay_email | default: 'anuj@platinummicro.com' | strip | escape }}"
+  data-relay-cc="{{ section.settings.relay_cc | strip | escape }}">
   <div class="pm-static__body">
     <div class="pm-static__body__inner pm-static__body__inner--wide pm-msgs__inner">
 
@@ -302,7 +304,21 @@
 {% schema %}
 {
   "name": "PM — Message Center",
-  "settings": [],
+  "settings": [
+    {
+      "type": "text",
+      "id": "relay_email",
+      "label": "Team inbox (receives customer messages)",
+      "default": "anuj@platinummicro.com",
+      "info": "After changing this, the FIRST message triggers a one-time 'Activate Form' email from FormSubmit to the new address. Someone must click it before messages deliver. Replies sent from this inbox reach customers by email; showing replies on the website too needs the sync script set up in that inbox's Google account."
+    },
+    {
+      "type": "text",
+      "id": "relay_cc",
+      "label": "CC copy to (optional)",
+      "default": "anujyadav160@gmail.com"
+    }
+  ],
   "presets": [{ "name": "PM — Message Center" }]
 }
 {% endschema %}

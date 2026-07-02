@@ -57,6 +57,22 @@ You need a customer account on the store. If you do not have one, sign up first 
 - Each conversation keeps the newest 50 entries on the page. Full history stays in email.
 - The topic label on a message comes from the Topic dropdown. Put the message text in the Message box, not the Order reference box.
 
+## Bonus test - change the team inbox (no code needed)
+
+The address that receives customer messages is a theme setting, and you can change it yourself:
+
+1. Shopify admin > Online Store > Themes > Customize
+2. Open the Messages page (top bar page picker > Pages > Messages)
+3. Click the "PM - Message Center" section > change "Team inbox (receives customer messages)" to your email > Save
+4. Send a test message from /pages/messages.
+   - Expected: the page shows a notice that your new inbox got an "Activate Form" email from FormSubmit. Open your inbox, click Activate Form once.
+5. Send another test message.
+   - Expected: it now arrives in YOUR inbox from submissions@formsubmit.co.
+
+Two notes:
+- Until the Activate link is clicked, messages do not deliver. The page will tell you.
+- Replies you send from your inbox reach the customer by email right away, but they will not appear on the website thread. That part is tied to the anuj@platinummicro.com account. So when you are done testing, please set the Team inbox back to anuj@platinummicro.com.
+
 ## What to report
 
 For anything odd: what you did, what you expected, what actually happened, plus a screenshot and the time. Send it to Anuj.
