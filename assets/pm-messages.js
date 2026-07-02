@@ -68,12 +68,26 @@
   renderSent();
 
   /* ── Sending ──
-     Messages post to the PM relay (Netlify function → real transactional
-     email with delivery logs) instead of Shopify's native contact-form
-     mail, which silently drops suspected spam with no trace. If the relay
-     is unreachable the form falls back to the native Shopify POST so a
-     message always has a path out. */
-  var RELAY = 'https://preeminent-alpaca-2818e3.netlify.app/.netlify/functions/send-message';
+     Messages are handed to TIDIO (already installed + staffed): the
+     composer identifies the visitor and injects the message as a chat
+     conversation, so it lands in the Tidio panel with the team's email
+     and mobile notifications — and Lyro can answer instantly. No custom
+     backend. If the Tidio API isn't available the form falls back to
+     Shopify's native contact POST so a message always has a path out. */
+  function sendViaTidio(f) {
+    var api = window.tidioChatApi;
+    if (!api || typeof api.messageFromVisitor !== 'function') return false;
+    try {
+      if (typeof api.setVisitorData === 'function') {
+        api.setVisitorData({ email: f.email || '', name: f.name || '' });
+      }
+      var prefix = '[' + (f.topic || 'Message') + (f.ref ? ' · ' + f.ref : '') + '] ';
+      var fromLine = (f.name || f.email) ? '\n— ' + (f.name || '') + (f.email ? ' <' + f.email + '>' : '') : '';
+      api.messageFromVisitor(prefix + f.body + fromLine);
+      if (typeof api.open === 'function') api.open();
+      return true;
+    } catch (e) { return false; }
+  }
 
   function showOk(form, msg) {
     var ok = form.querySelector('.pm-msgs__ok');
@@ -91,32 +105,21 @@
     form.addEventListener('submit', function (e) {
       var f = getFields(form);
       if (!f || !f.body || f.body.length < 5) return; // native validation handles empties
+      if (f.hp) { e.preventDefault(); form.reset(); return; } // honeypot: swallow silently
+      if (!window.tidioChatApi) return; // Tidio absent -> let the native POST proceed
       e.preventDefault();
-      var btn = form.querySelector('button[type="submit"]');
-      var orig = btn ? btn.textContent : '';
-      if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
-      fetch(RELAY, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(f)
-      })
-        .then(function (r) { return r.json().catch(function () { return { ok: false }; }); })
-        .then(function (out) {
-          if (out && out.ok) {
-            if (logSent) {
-              var items = readJson(SENT_KEY);
-              items.push({ ts: Date.now(), topic: f.topic || '', ref: f.ref || '', body: f.body });
-              writeSent(items);
-              renderSent();
-            }
-            showOk(form, 'Message sent — our team replies by email, usually within one business day.');
-            form.reset();
-          } else {
-            form.submit(); // native Shopify fallback (bypasses this listener)
-          }
-        })
-        .catch(function () { form.submit(); })
-        .finally(function () { if (btn) { btn.disabled = false; btn.textContent = orig || 'Send message'; } });
+      if (sendViaTidio(f)) {
+        if (logSent) {
+          var items = readJson(SENT_KEY);
+          items.push({ ts: Date.now(), topic: f.topic || '', ref: f.ref || '', body: f.body });
+          writeSent(items);
+          renderSent();
+        }
+        showOk(form, 'Message sent to our team — reply lands right here in the chat, or by email.');
+        form.reset();
+      } else {
+        form.submit(); // native Shopify fallback (bypasses this listener)
+      }
     });
   }
 
