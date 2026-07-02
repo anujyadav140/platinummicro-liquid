@@ -28,18 +28,10 @@
     <div class="pm-static__body__inner pm-static__body__inner--wide pm-msgs__inner">
 
       <header class="pm-msgs__header">
-        <div>
-          <h1 class="pm-msgs__title">Messages <span class="pm-msgs__beta">Beta</span></h1>
-          <p class="pm-msgs__lede">
-            Order updates, shipping, quotes, and a direct line to the Platinum Micro team — in one place.
-          </p>
-        </div>
-        {%- if customer -%}
-          <div class="pm-msgs__who">
-            <span class="pm-msgs__who-name">{{ customer.name | escape }}</span>
-            <span class="pm-msgs__who-mail">{{ customer.email | escape }}</span>
-          </div>
-        {%- endif -%}
+        <h1 class="pm-msgs__title">Messages <span class="pm-msgs__beta">Beta</span></h1>
+        <p class="pm-msgs__lede">
+          Order updates, shipping, quotes, and a direct line to the Platinum Micro team — in one place.
+        </p>
       </header>
       <hr class="pm-msgs__rule">
 
@@ -167,7 +159,11 @@
             </article>
           {%- endif -%}
 
-          <p class="pm-msgs__empty" data-pm-msgs-empty hidden>Nothing here yet.</p>
+          <p class="pm-msgs__empty" data-pm-msgs-empty hidden
+             data-empty-all="Nothing here yet — your order, quote, and team updates will land here."
+             data-empty-orders="No orders yet. When you place one, payment and shipping updates appear here automatically."
+             data-empty-quotes="No quote activity yet. Add products with &quot;Request a Quote&quot; and submit from the cart."
+             data-empty-team="No messages from our team yet. Replies to anything you send arrive by email and get posted here.">Nothing here yet.</p>
 
           <p class="pm-msgs__betanote">
             Message Center is in beta. Messages you send reach our team instantly; replies arrive by
@@ -179,6 +175,10 @@
         <aside class="pm-msgs__side">
           <div class="pm-msgs__composer">
             <h2 class="pm-msgs__composer-title">Message Platinum Micro</h2>
+            <p class="pm-msgs__composer-as">
+              <span class="pm-msgs__composer-avatar" aria-hidden="true">{{ customer.first_name | default: customer.email | slice: 0 | upcase }}</span>
+              Sending as <strong>{{ customer.name | escape }}</strong> · {{ customer.email | escape }}
+            </p>
 
             {%- form 'contact', class: 'pm-msgs__form pm-msgs__form--main' -%}
               {%- if form.posted_successfully? -%}

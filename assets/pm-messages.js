@@ -134,7 +134,12 @@
     });
     if (emptyNote) {
       if (any) emptyNote.setAttribute('hidden', '');
-      else emptyNote.removeAttribute('hidden');
+      else {
+        // Tab-specific empty copy (data-empty-<kind> on the note element).
+        var msg = emptyNote.getAttribute('data-empty-' + kind);
+        if (msg) emptyNote.textContent = msg;
+        emptyNote.removeAttribute('hidden');
+      }
     }
   }
   tabs.forEach(function (t) {

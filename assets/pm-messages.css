@@ -2,15 +2,15 @@
    Scoped entirely to .pm-msgs* — safe to load anywhere. Uses the shared
    PM tokens (pm-tokens.css): navy ink, terracotta accent, paper band. */
 
-.pm-msgs__inner { padding-top: 8px; }
+/* The shared static-page band ships 56px/96px padding (built for pages
+   with a navy hero above). The inbox has no hero, so tighten the band. */
+.pm-msgs .pm-static__body { padding: 30px 16px 64px; }
+.pm-msgs__inner { padding-top: 0; }
 
-.pm-msgs__header {
-  display: flex; align-items: flex-end; justify-content: space-between;
-  gap: 16px; flex-wrap: wrap;
-}
+.pm-msgs__header { max-width: 640px; }
 .pm-msgs__title {
-  font-size: 30px; font-weight: 800; letter-spacing: -0.01em;
-  color: var(--pm-navy-deep, #0d2340); margin: 0 0 4px;
+  font-size: 28px; font-weight: 800; letter-spacing: -0.01em;
+  color: var(--pm-navy-deep, #0d2340); margin: 0 0 6px;
   display: flex; align-items: center; gap: 10px;
 }
 .pm-msgs__beta {
@@ -18,18 +18,16 @@
   color: var(--pm-terracotta, #b0410f); border: 1px solid currentColor;
   border-radius: 999px; padding: 2px 9px; transform: translateY(-2px);
 }
-.pm-msgs__lede { color: rgba(13,35,64,0.66); margin: 0; max-width: 60ch; }
-.pm-msgs__who { text-align: right; font-size: 13px; color: rgba(13,35,64,0.6); }
-.pm-msgs__who-name { display: block; font-weight: 700; color: var(--pm-navy-deep, #0d2340); }
-.pm-msgs__rule { border: 0; border-top: 1px solid rgba(13,35,64,0.12); margin: 18px 0 22px; }
+.pm-msgs__lede { color: rgba(13,35,64,0.66); margin: 0; font-size: 14.5px; line-height: 1.55; }
+.pm-msgs__rule { border: 0; border-top: 1px solid rgba(13,35,64,0.12); margin: 16px 0 20px; }
 
 .pm-msgs__grid {
-  display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 28px; align-items: start;
+  display: grid; grid-template-columns: minmax(0, 1fr) 350px; gap: 32px; align-items: start;
 }
 @media (max-width: 900px) { .pm-msgs__grid { grid-template-columns: 1fr; } }
 
 /* ── Tabs ── */
-.pm-msgs__tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+.pm-msgs__tabs { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
 .pm-msgs__tab {
   appearance: none; border: 1px solid rgba(13,35,64,0.18); background: #fff;
   color: var(--pm-navy-deep, #0d2340); font-size: 13px; font-weight: 600;
@@ -43,7 +41,7 @@
 /* ── Feed items ── */
 .pm-msgs__item {
   display: flex; gap: 12px; background: #fff; border: 1px solid rgba(13,35,64,0.1);
-  border-radius: 10px; padding: 14px 16px; margin-bottom: 12px;
+  border-radius: 10px; padding: 13px 15px; margin-bottom: 10px;
 }
 .pm-msgs__item[hidden] { display: none; }
 .pm-msgs__item-ico {
@@ -80,19 +78,35 @@
 }
 .pm-msgs__ship a { color: var(--pm-terracotta, #b0410f); font-weight: 600; }
 
-.pm-msgs__empty { color: rgba(13,35,64,0.55); font-size: 14px; padding: 18px 4px; }
+.pm-msgs__empty {
+  color: rgba(13,35,64,0.55); font-size: 13.5px; line-height: 1.55;
+  border: 1px dashed rgba(13,35,64,0.2); border-radius: 10px;
+  background: rgba(13,35,64,0.02); padding: 18px 16px; margin: 0 0 10px;
+}
 .pm-msgs__betanote {
-  font-size: 12.5px; color: rgba(13,35,64,0.5); border-top: 1px dashed rgba(13,35,64,0.15);
-  margin-top: 18px; padding-top: 12px;
+  font-size: 12px; color: rgba(13,35,64,0.45); line-height: 1.55;
+  border-top: 1px dashed rgba(13,35,64,0.15); margin-top: 14px; padding-top: 10px;
 }
 
 /* ── Composer ── */
-.pm-msgs__side { position: sticky; top: 88px; display: grid; gap: 14px; }
+.pm-msgs__side { position: sticky; top: 84px; display: grid; gap: 12px; }
 @media (max-width: 900px) { .pm-msgs__side { position: static; } }
 .pm-msgs__composer {
   background: var(--pm-navy-deep, #0d2340); border-radius: 12px; padding: 20px;
 }
-.pm-msgs__composer-title { color: #fff; font-size: 17px; font-weight: 800; margin: 0 0 14px; }
+.pm-msgs__composer-title { color: #fff; font-size: 17px; font-weight: 800; margin: 0 0 10px; }
+.pm-msgs__composer-as {
+  display: flex; align-items: center; gap: 8px;
+  color: rgba(255,255,255,0.72); font-size: 12.5px; margin: 0 0 4px;
+  padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.12);
+  overflow-wrap: anywhere;
+}
+.pm-msgs__composer-as strong { color: #fff; font-weight: 700; }
+.pm-msgs__composer-avatar {
+  flex: 0 0 auto; width: 24px; height: 24px; border-radius: 50%;
+  display: grid; place-items: center; font-size: 12px; font-weight: 800;
+  background: var(--pm-terracotta, #b0410f); color: #fff;
+}
 .pm-msgs__label {
   display: block; color: rgba(255,255,255,0.75); font-size: 12px; font-weight: 600;
   letter-spacing: 0.04em; text-transform: uppercase; margin: 12px 0 5px;
@@ -128,7 +142,10 @@
 .pm-msgs__contactcard p { margin: 0; line-height: 1.6; }
 
 /* ── Guest state ── */
-.pm-msgs__guest { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr); gap: 24px; align-items: start; }
+.pm-msgs__guest {
+  display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1fr);
+  gap: 24px; align-items: start; max-width: 920px;
+}
 @media (max-width: 820px) { .pm-msgs__guest { grid-template-columns: 1fr; } }
 .pm-msgs__guest-card {
   background: #fff; border: 1px solid rgba(13,35,64,0.1); border-radius: 12px; padding: 24px;
