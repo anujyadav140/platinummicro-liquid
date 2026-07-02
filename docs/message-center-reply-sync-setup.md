@@ -4,8 +4,8 @@ This guide is for an admin whose replies should show up on the customer's
 Messages page on the website. Without this, your replies still reach the
 customer by email right away. This only adds the website mirror.
 
-How it works in one line: a small Google script runs inside YOUR Gmail every
-10 minutes, finds the replies you sent to [Message Center] emails, and posts
+How it works in one line: a small Google script runs inside YOUR Gmail every minute or
+few minutes, finds the replies you sent to [Message Center] emails, and posts
 them to that customer's thread on the site.
 
 ## Before you start, you need 3 things
@@ -68,7 +68,7 @@ If any line says FAILED, stop and see Troubleshooting below.
    - Interval: **Every minute** (or every 5 minutes if this is a free @gmail.com account, Google gives those less daily runtime)
 4. Click **Save**.
 
-That is it. The script now runs on its own every 10 minutes, forever.
+That is it. The script now runs on its own at that interval, forever.
 
 ## Prove it works
 
@@ -77,7 +77,7 @@ That is it. The script now runs on its own every 10 minutes, forever.
 2. The email arrives in your inbox from **submissions@formsubmit.co**.
 3. Hit **Reply** in Gmail. Check the To: field shows the customer's email,
    not formsubmit. Write a short answer and send.
-4. Wait about 10 minutes (or go to the script editor, pick **syncReplies**
+4. Wait a minute or two (or go to the script editor, pick **syncReplies**
    in the dropdown and click Run to skip the wait).
 5. Refresh the customer's /pages/messages. Your reply should appear
    indented under their message with a "replied" label.
@@ -86,7 +86,7 @@ That is it. The script now runs on its own every 10 minutes, forever.
 
 - Only replies sent FROM this Gmail account appear on the website.
 - The customer always gets your reply by email instantly. The website
-  catches up within 10 minutes.
+  catches up within a minute or two.
 - Two extra rows will appear in Script Properties on their own:
   `ADMIN_TOKEN` and `ADMIN_TOKEN_EXP`. The script manages these itself.
   Leave them alone. Same for `PROCESSED_IDS`.

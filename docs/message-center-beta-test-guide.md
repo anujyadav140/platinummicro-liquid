@@ -21,7 +21,7 @@ You need a customer account on the store. If you do not have one, sign up first 
    - The dark "Message Platinum Micro" box on the right with your name and email shown under "Sending as"
 3. **Send a message:** pick a topic, type a real sentence, press Send message.
    - Expected: a green "Message sent" banner appears WITHOUT the page reloading, and a "You - just now" card pops into the feed.
-4. **Wait about 10 minutes**, then refresh the page.
+4. **Wait a minute or two**, then refresh the page.
    - Expected: your message now appears in the feed as "You" with a topic label. This is the permanent copy, it will show on any device you sign in from.
 5. **Privacy check (important):** sign out, sign in as a DIFFERENT customer account (or ask someone else to). Their page must NOT show your messages. Each account only sees its own conversation.
 
@@ -33,13 +33,13 @@ You need a customer account on the store. If you do not have one, sign up first 
 2. **Reply to that email** normally in Gmail. Write a short answer and send.
    - Check the To: field first, it should be the customer's email address, not formsubmit.
    - Expected: the customer receives your reply in their email inbox right away.
-3. **Wait about 10 minutes**, then refresh the customer's /pages/messages.
+3. **Wait a minute or two**, then refresh the customer's /pages/messages.
    - Expected: your reply appears indented under the customer's message with a "replied" label.
 
 ## Part 3 - Customer replies by email (5 min)
 
 1. As the customer, reply to the admin's email reply from your own inbox (just answer the email like normal).
-2. Wait about 10 minutes and refresh /pages/messages.
+2. Wait a minute or two and refresh /pages/messages.
    - Expected: your email reply also shows on the page, indented in the same conversation.
 
 ## Part 4 - Quick checks around the page
@@ -51,7 +51,7 @@ You need a customer account on the store. If you do not have one, sign up first 
 
 ## Known beta behavior (not bugs)
 
-- The on-page thread updates about every 10 minutes. Email is instant, the page catches up.
+- The on-page thread updates within a minute or two. Email is instant, the page catches up.
 - Replies must be sent from the anuj@platinummicro.com mailbox to appear on the site.
 - Guests without a store account get email replies only, they have no thread page.
 - Each conversation keeps the newest 50 entries on the page. Full history stays in email.
