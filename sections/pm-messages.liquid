@@ -48,19 +48,37 @@
             <button type="button" class="pm-msgs__tab" data-pm-msgs-tab="team" role="tab" aria-selected="false">From Platinum Micro</button>
           </div>
 
-          {%- comment -%} ── Team: per-customer thread (staff-written metafield) ──
-              Definition "Thread" lives at custom.thread (JSON, created in admin);
-              staff post replies via Admin → Customers → [customer] → Metafields. {%- endcomment -%}
+          {%- comment -%} ── Conversation thread (custom.thread JSON metafield) ──
+              The single source of truth for this customer's conversation.
+              PRIVATE + cross-device: stored on the customer record, rendered
+              server-side only for the signed-in owner. Both directions live
+              here — the Apps Script sync writes the customer's sent messages
+              (from: "You") and the team's email replies (from: "Platinum
+              Micro"); staff can also post manually via Admin → Customers →
+              [customer] → Metafields → Thread. {%- endcomment -%}
           {%- assign _thread = customer.metafields.custom.thread.value -%}
           {%- if _thread and _thread.size > 0 -%}
-            {%- for m in _thread -%}
-              <article class="pm-msgs__item pm-msgs__item--team" data-kind="team">
+            {%- for m in _thread reversed -%}
+              {%- assign _mine = false -%}
+              {%- if m.from == 'You' -%}{%- assign _mine = true -%}{%- endif -%}
+              <article class="pm-msgs__item{% unless _mine %} pm-msgs__item--team{% endunless %}" data-kind="team">
                 <div class="pm-msgs__item-ico" aria-hidden="true">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  {%- if _mine -%}
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                  {%- else -%}
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  {%- endif -%}
                 </div>
                 <div class="pm-msgs__item-body">
                   <div class="pm-msgs__item-head">
-                    <span class="pm-msgs__item-title">{{ m.from | default: 'Platinum Micro team' | escape }}</span>
+                    <span class="pm-msgs__item-title">
+                      {%- if _mine -%}
+                        You &rarr; Platinum Micro
+                        {%- if m.topic and m.topic != blank %} <span class="pm-msgs__pill pm-msgs__pill--pay">{{ m.topic | escape }}</span>{% endif -%}
+                      {%- else -%}
+                        {{ m.from | default: 'Platinum Micro team' | escape }}
+                      {%- endif -%}
+                    </span>
                     {%- if m.date -%}<time class="pm-msgs__item-date">{{ m.date }}</time>{%- endif -%}
                   </div>
                   <p class="pm-msgs__item-text">{{ m.body | escape | newline_to_br }}</p>
@@ -88,7 +106,8 @@
             {%- endfor -%}
           {%- endif -%}
 
-          {%- comment -%} ── This device's sent messages (JS fills) ── {%- endcomment -%}
+          {%- comment -%} ── Transient "just sent" card (JS, never persisted —
+              the real record lands in the thread above via the sync) ── {%- endcomment -%}
           <div data-pm-msgs-sent></div>
 
           {%- comment -%} ── Quote-cart status (JS fills from pm:quote:v1) ── {%- endcomment -%}

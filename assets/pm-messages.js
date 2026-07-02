@@ -14,9 +14,13 @@
   var root = document.querySelector('[data-pm-msgs]');
   if (!root) return;
 
-  var SENT_KEY = 'pm:msgs:v1';
   var QUOTE_KEY = 'pm:quote:v1';
-  var MAX_SENT = 30;
+
+  /* The old device-local sent log leaked messages across accounts on a
+     shared browser (localStorage doesn't know who's signed in). The thread
+     metafield is the private, per-customer record now — purge the old key
+     everywhere. */
+  try { window.localStorage.removeItem('pm:msgs:v1'); } catch (e) {}
 
   function readJson(key) {
     try {
@@ -25,47 +29,35 @@
       return Array.isArray(arr) ? arr : [];
     } catch (e) { return []; }
   }
-  function writeSent(items) {
-    try { window.localStorage.setItem(SENT_KEY, JSON.stringify(items.slice(-MAX_SENT))); }
-    catch (e) { /* quota/private mode — the send itself still went through */ }
-  }
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
       return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
     });
   }
-  function fmtDate(ts) {
-    try {
-      return new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
-    } catch (e) { return ''; }
-  }
 
-  /* ── Sent-message log (this device) ── */
+  /* ── Transient "just sent" card (this page view only, never stored) ──
+     The permanent copy is written into the customer's thread metafield by
+     the sync and renders server-side on the next visit. */
   var sentSlot = root.querySelector('[data-pm-msgs-sent]');
-  function renderSent() {
+  function showJustSent(f) {
     if (!sentSlot) return;
-    var items = readJson(SENT_KEY).slice().reverse();
-    sentSlot.innerHTML = items.map(function (m) {
-      return (
-        '<article class="pm-msgs__item" data-kind="team">' +
-          '<div class="pm-msgs__item-ico" aria-hidden="true">' +
-            '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>' +
+    sentSlot.insertAdjacentHTML('afterbegin',
+      '<article class="pm-msgs__item" data-kind="team">' +
+        '<div class="pm-msgs__item-ico" aria-hidden="true">' +
+          '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>' +
+        '</div>' +
+        '<div class="pm-msgs__item-body">' +
+          '<div class="pm-msgs__item-head">' +
+            '<span class="pm-msgs__item-title">You → Platinum Micro' +
+              (f.topic ? ' <span class="pm-msgs__pill pm-msgs__pill--pay">' + esc(f.topic) + '</span>' : '') +
+              (f.ref ? ' <span class="pm-msgs__pill pm-msgs__pill--ful">' + esc(f.ref) + '</span>' : '') +
+            '</span>' +
+            '<time class="pm-msgs__item-date">just now</time>' +
           '</div>' +
-          '<div class="pm-msgs__item-body">' +
-            '<div class="pm-msgs__item-head">' +
-              '<span class="pm-msgs__item-title">You → Platinum Micro' +
-                (m.topic ? ' <span class="pm-msgs__pill pm-msgs__pill--pay">' + esc(m.topic) + '</span>' : '') +
-                (m.ref ? ' <span class="pm-msgs__pill pm-msgs__pill--ful">' + esc(m.ref) + '</span>' : '') +
-              '</span>' +
-              '<time class="pm-msgs__item-date">' + esc(fmtDate(m.ts)) + '</time>' +
-            '</div>' +
-            '<p class="pm-msgs__item-text">' + esc(m.body).replace(/\n/g, '<br>') + '</p>' +
-          '</div>' +
-        '</article>'
-      );
-    }).join('');
+          '<p class="pm-msgs__item-text">' + esc(f.body).replace(/\n/g, '<br>') + '</p>' +
+        '</div>' +
+      '</article>');
   }
-  renderSent();
 
   /* ── Sending ──
      Messages POST to FormSubmit (formsubmit.co) — a hosted, no-account,
@@ -124,13 +116,8 @@
         .then(function (r) { return r.json().catch(function () { return {}; }); })
         .then(function () {
           // Any 200 = FormSubmit accepted it (delivery is automatic once activated).
-          if (logSent) {
-            var items = readJson(SENT_KEY);
-            items.push({ ts: Date.now(), topic: f.topic || '', ref: f.ref || '', body: f.body });
-            writeSent(items);
-            renderSent();
-          }
-          showOk(form, 'Message sent — our team will reply to your email, usually within one business day.');
+          if (logSent) showJustSent(f);
+          showOk(form, 'Message sent — our team replies by email, and this message will appear in your thread here shortly.');
           form.reset();
           finish();
         })
