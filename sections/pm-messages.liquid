@@ -1,0 +1,267 @@
+{%- comment -%}
+  PM — Message Center (BETA)
+  One inbox for the signed-in customer: order + shipping updates (native
+  customer.orders), quote-cart activity (local quote store), notes from the
+  Platinum Micro team (shop metaobject broadcasts + a per-customer JSON
+  metafield thread), and a "message us" composer built on Shopify's native
+  {% raw %}{% form 'contact' %}{% endraw %} (emails the store — zero apps).
+
+  Data sources (ALL optional — every block renders nothing when absent, so
+  this page can never break another surface):
+    · customer.orders                       — order/payment/shipping events
+    · line_item.fulfillment                 — tracking number/company/url
+    · shop.metaobjects['pm_broadcast']      — announcements to all customers
+        fields: title (single line), body (multi line), date (date)
+    · customer.metafields.pm_msgs.thread    — JSON list of {date, from, body}
+        written by staff from Admin → Customers → [customer] → Metafields
+    · localStorage pm:quote:v1              — quote cart (read-only here)
+    · localStorage pm:msgs:v1               — this device's sent messages
+
+  Guests see a sign-in prompt + the plain contact composer.
+  Interactivity lives in assets/pm-messages.js; styles in pm-messages.css.
+{%- endcomment -%}
+
+{{ 'pm-messages.css' | asset_url | stylesheet_tag }}
+
+<section class="pm-static pm-msgs" data-pm-msgs>
+  <div class="pm-static__body">
+    <div class="pm-static__body__inner pm-static__body__inner--wide pm-msgs__inner">
+
+      <header class="pm-msgs__header">
+        <div>
+          <h1 class="pm-msgs__title">Messages <span class="pm-msgs__beta">Beta</span></h1>
+          <p class="pm-msgs__lede">
+            Order updates, shipping, quotes, and a direct line to the Platinum Micro team — in one place.
+          </p>
+        </div>
+        {%- if customer -%}
+          <div class="pm-msgs__who">
+            <span class="pm-msgs__who-name">{{ customer.name | escape }}</span>
+            <span class="pm-msgs__who-mail">{{ customer.email | escape }}</span>
+          </div>
+        {%- endif -%}
+      </header>
+      <hr class="pm-msgs__rule">
+
+      {%- if customer -%}
+      <div class="pm-msgs__grid">
+
+        {%- comment -%} ───────────── Feed column ───────────── {%- endcomment -%}
+        <div class="pm-msgs__feed">
+
+          <div class="pm-msgs__tabs" role="tablist" aria-label="Message filters">
+            <button type="button" class="pm-msgs__tab is-active" data-pm-msgs-tab="all" role="tab" aria-selected="true">All</button>
+            <button type="button" class="pm-msgs__tab" data-pm-msgs-tab="orders" role="tab" aria-selected="false">Orders &amp; shipping</button>
+            <button type="button" class="pm-msgs__tab" data-pm-msgs-tab="quotes" role="tab" aria-selected="false">Quotes</button>
+            <button type="button" class="pm-msgs__tab" data-pm-msgs-tab="team" role="tab" aria-selected="false">From Platinum Micro</button>
+          </div>
+
+          {%- comment -%} ── Team: per-customer thread (staff-written metafield) ── {%- endcomment -%}
+          {%- assign _thread = customer.metafields.pm_msgs.thread.value -%}
+          {%- if _thread and _thread.size > 0 -%}
+            {%- for m in _thread -%}
+              <article class="pm-msgs__item pm-msgs__item--team" data-kind="team">
+                <div class="pm-msgs__item-ico" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                </div>
+                <div class="pm-msgs__item-body">
+                  <div class="pm-msgs__item-head">
+                    <span class="pm-msgs__item-title">{{ m.from | default: 'Platinum Micro team' | escape }}</span>
+                    {%- if m.date -%}<time class="pm-msgs__item-date">{{ m.date }}</time>{%- endif -%}
+                  </div>
+                  <p class="pm-msgs__item-text">{{ m.body | escape | newline_to_br }}</p>
+                </div>
+              </article>
+            {%- endfor -%}
+          {%- endif -%}
+
+          {%- comment -%} ── Team: store-wide broadcasts (metaobject) ── {%- endcomment -%}
+          {%- assign _bcasts = shop.metaobjects['pm_broadcast'].values -%}
+          {%- if _bcasts and _bcasts.size > 0 -%}
+            {%- for b in _bcasts -%}
+              <article class="pm-msgs__item pm-msgs__item--team" data-kind="team">
+                <div class="pm-msgs__item-ico" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="m3 11 18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg>
+                </div>
+                <div class="pm-msgs__item-body">
+                  <div class="pm-msgs__item-head">
+                    <span class="pm-msgs__item-title">{{ b.title | default: 'Announcement' }}</span>
+                    {%- if b.date -%}<time class="pm-msgs__item-date">{{ b.date }}</time>{%- endif -%}
+                  </div>
+                  <p class="pm-msgs__item-text">{{ b.body }}</p>
+                </div>
+              </article>
+            {%- endfor -%}
+          {%- endif -%}
+
+          {%- comment -%} ── This device's sent messages (JS fills) ── {%- endcomment -%}
+          <div data-pm-msgs-sent></div>
+
+          {%- comment -%} ── Quote-cart status (JS fills from pm:quote:v1) ── {%- endcomment -%}
+          <div data-pm-msgs-quotes></div>
+
+          {%- comment -%} ── Orders & shipping (native) ── {%- endcomment -%}
+          {%- assign _orders = customer.orders -%}
+          {%- if _orders and _orders.size > 0 -%}
+            {%- for order in _orders limit: 12 -%}
+              <article class="pm-msgs__item pm-msgs__item--order" data-kind="orders">
+                <div class="pm-msgs__item-ico" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.29 7 12 12 20.71 7"/><line x1="12" y1="22" x2="12" y2="12"/></svg>
+                </div>
+                <div class="pm-msgs__item-body">
+                  <div class="pm-msgs__item-head">
+                    <span class="pm-msgs__item-title">
+                      Order {{ order.name }}
+                      <span class="pm-msgs__pill pm-msgs__pill--pay">{{ order.financial_status_label | default: order.financial_status }}</span>
+                      {%- if order.cancelled -%}
+                        <span class="pm-msgs__pill pm-msgs__pill--cancel">Cancelled</span>
+                      {%- else -%}
+                        <span class="pm-msgs__pill pm-msgs__pill--ful">{{ order.fulfillment_status_label | default: 'Unfulfilled' }}</span>
+                      {%- endif -%}
+                    </span>
+                    <time class="pm-msgs__item-date">{{ order.created_at | date: '%b %-d, %Y' }}</time>
+                  </div>
+                  <p class="pm-msgs__item-text">
+                    {{ order.line_items.size }} item{% if order.line_items.size != 1 %}s{% endif %} · {{ order.total_price | money }}
+                  </p>
+
+                  {%- comment -%} Shipping rows — dedupe per-line fulfillments by tracking number {%- endcomment -%}
+                  {%- assign _seen = '' -%}
+                  {%- for li in order.line_items -%}
+                    {%- if li.fulfillment -%}
+                      {%- assign _key = li.fulfillment.tracking_number | default: li.fulfillment.created_at | append: '' -%}
+                      {%- unless _seen contains _key -%}
+                        {%- assign _seen = _seen | append: '|' | append: _key -%}
+                        <div class="pm-msgs__ship">
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="1" y="3" width="15" height="13" rx="1"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+                          <span>
+                            Shipped {{ li.fulfillment.created_at | date: '%b %-d, %Y' }}
+                            {%- if li.fulfillment.tracking_company %} · {{ li.fulfillment.tracking_company }}{% endif -%}
+                            {%- if li.fulfillment.tracking_number -%}
+                              &nbsp;·&nbsp;
+                              {%- if li.fulfillment.tracking_url -%}
+                                <a href="{{ li.fulfillment.tracking_url }}" target="_blank" rel="noopener">Track {{ li.fulfillment.tracking_number }}</a>
+                              {%- else -%}
+                                {{ li.fulfillment.tracking_number }}
+                              {%- endif -%}
+                            {%- endif -%}
+                          </span>
+                        </div>
+                      {%- endunless -%}
+                    {%- endif -%}
+                  {%- endfor -%}
+
+                  <a class="pm-msgs__item-link" href="{{ order.order_status_url }}" target="_blank" rel="noopener">View order status</a>
+                </div>
+              </article>
+            {%- endfor -%}
+          {%- else -%}
+            <article class="pm-msgs__item" data-kind="orders">
+              <div class="pm-msgs__item-ico" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+              </div>
+              <div class="pm-msgs__item-body">
+                <div class="pm-msgs__item-head"><span class="pm-msgs__item-title">No orders yet</span></div>
+                <p class="pm-msgs__item-text">When you place an order, payment and shipping updates land here automatically.</p>
+              </div>
+            </article>
+          {%- endif -%}
+
+          <p class="pm-msgs__empty" data-pm-msgs-empty hidden>Nothing here yet.</p>
+
+          <p class="pm-msgs__betanote">
+            Message Center is in beta. Messages you send reach our team instantly; replies arrive by
+            email and appear above when our team posts them to your account.
+          </p>
+        </div>
+
+        {%- comment -%} ───────────── Composer column ───────────── {%- endcomment -%}
+        <aside class="pm-msgs__side">
+          <div class="pm-msgs__composer">
+            <h2 class="pm-msgs__composer-title">Message Platinum Micro</h2>
+
+            {%- form 'contact', class: 'pm-msgs__form pm-msgs__form--main' -%}
+              {%- if form.posted_successfully? -%}
+                <div class="pm-msgs__ok" role="status" data-pm-msgs-ok>
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+                  Message sent — our team replies by email, usually within one business day.
+                </div>
+              {%- endif -%}
+              {%- if form.errors -%}
+                <div class="pm-msgs__err" role="alert">{{ form.errors | default_errors }}</div>
+              {%- endif -%}
+
+              <input type="hidden" name="contact[name]" value="{{ customer.name | escape }}">
+              <input type="hidden" name="contact[email]" value="{{ customer.email | escape }}">
+
+              <label class="pm-msgs__label" for="pm-msgs-topic">Topic</label>
+              <select id="pm-msgs-topic" name="contact[topic]" class="pm-msgs__input" data-pm-msgs-topic>
+                <option>Order question</option>
+                <option>Shipping / tracking</option>
+                <option>Quote follow-up</option>
+                <option>Returns / RMA</option>
+                <option>Something else</option>
+              </select>
+
+              <label class="pm-msgs__label" for="pm-msgs-order">Order or quote reference <span class="pm-msgs__opt">(optional)</span></label>
+              <input id="pm-msgs-order" type="text" name="contact[order_reference]" class="pm-msgs__input" placeholder="e.g. #1024" data-pm-msgs-ref>
+
+              <label class="pm-msgs__label" for="pm-msgs-body">Message</label>
+              <textarea id="pm-msgs-body" name="contact[body]" class="pm-msgs__input pm-msgs__textarea" rows="5" required placeholder="How can we help?" data-pm-msgs-body></textarea>
+
+              <button type="submit" class="pm-msgs__send">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+                Send message
+              </button>
+            {%- endform -%}
+          </div>
+
+          <div class="pm-msgs__contactcard">
+            <h3 class="pm-msgs__contactcard-title">Prefer to talk?</h3>
+            <p>(877) PMG-4YOU · Mon–Fri, 7am–5pm PT<br>admin@platinummicro.com</p>
+          </div>
+        </aside>
+      </div>
+
+      {%- else -%}
+      {%- comment -%} ───────────── Signed-out state ───────────── {%- endcomment -%}
+      <div class="pm-msgs__guest">
+        <div class="pm-msgs__guest-card">
+          <h2>Sign in to see your messages</h2>
+          <p>Order updates, shipping tracking, quote activity, and notes from our team live in your Message Center.</p>
+          <a class="pm-msgs__send pm-msgs__send--link" href="{{ routes.account_login_url }}">Sign in</a>
+        </div>
+        <div class="pm-msgs__composer">
+          <h2 class="pm-msgs__composer-title">Or message us as a guest</h2>
+          {%- form 'contact', class: 'pm-msgs__form' -%}
+            {%- if form.posted_successfully? -%}
+              <div class="pm-msgs__ok" role="status">Message sent — we reply by email, usually within one business day.</div>
+            {%- endif -%}
+            {%- if form.errors -%}
+              <div class="pm-msgs__err" role="alert">{{ form.errors | default_errors }}</div>
+            {%- endif -%}
+            <label class="pm-msgs__label" for="pm-msgs-gname">Name</label>
+            <input id="pm-msgs-gname" type="text" name="contact[name]" class="pm-msgs__input" required>
+            <label class="pm-msgs__label" for="pm-msgs-gmail">Email</label>
+            <input id="pm-msgs-gmail" type="email" name="contact[email]" class="pm-msgs__input" required>
+            <label class="pm-msgs__label" for="pm-msgs-gbody">Message</label>
+            <textarea id="pm-msgs-gbody" name="contact[body]" class="pm-msgs__input pm-msgs__textarea" rows="5" required></textarea>
+            <button type="submit" class="pm-msgs__send">Send message</button>
+          {%- endform -%}
+        </div>
+      </div>
+      {%- endif -%}
+
+    </div>
+  </div>
+</section>
+
+<script src="{{ 'pm-messages.js' | asset_url }}" defer></script>
+
+{% schema %}
+{
+  "name": "PM — Message Center",
+  "settings": [],
+  "presets": [{ "name": "PM — Message Center" }]
+}
+{% endschema %}

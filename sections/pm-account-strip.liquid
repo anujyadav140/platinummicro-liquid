@@ -23,7 +23,7 @@
   {%- if _parts.size > 1 -%}{%- assign _aqs = '?' | append: _parts.last -%}{%- endif -%}
   {%- assign _phone = section.settings.phone | default: '818 505 6853' -%}
   {%- assign _tel = _phone | remove: ' ' | remove: '-' | remove: '(' | remove: ')' | remove: '+' -%}
-  {%- assign _messages = section.settings.messages_url | default: '/pages/contact' -%}
+  {%- assign _messages = section.settings.messages_url | default: '/pages/messages' -%}
   {%- assign _returns = section.settings.returns_url | default: '/pages/shipping-returns' -%}
 
   <section class="pm-acctstrip" aria-label="Your account shortcuts">

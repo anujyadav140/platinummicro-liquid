@@ -1,0 +1,9 @@
+{
+  "sections": {
+    "pm-messages": {
+      "type": "pm-messages",
+      "settings": {}
+    }
+  },
+  "order": ["pm-messages"]
+}
