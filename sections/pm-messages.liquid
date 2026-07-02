@@ -175,9 +175,17 @@
         <aside class="pm-msgs__side">
           <div class="pm-msgs__composer">
             <h2 class="pm-msgs__composer-title">Message Platinum Micro</h2>
+            {%- comment -%} Accounts without a stored name fall back to the email
+                (avoids "Sending as  · email" with a dangling separator). {%- endcomment -%}
+            {%- assign _cust_name = customer.name | strip -%}
             <p class="pm-msgs__composer-as">
               <span class="pm-msgs__composer-avatar" aria-hidden="true">{{ customer.first_name | default: customer.email | slice: 0 | upcase }}</span>
-              Sending as <strong>{{ customer.name | escape }}</strong> · {{ customer.email | escape }}
+              <span>
+                Sending as
+                {%- if _cust_name != blank %} <strong>{{ _cust_name | escape }}</strong> <span class="pm-msgs__composer-sep">·</span> {{ customer.email | escape }}
+                {%- else %} <strong>{{ customer.email | escape }}</strong>
+                {%- endif -%}
+              </span>
             </p>
 
             {%- form 'contact', class: 'pm-msgs__form pm-msgs__form--main' -%}
