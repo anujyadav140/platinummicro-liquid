@@ -58,25 +58,28 @@
               [customer] → Metafields → Thread. {%- endcomment -%}
           {%- assign _thread = customer.metafields.custom.thread.value -%}
           {%- if _thread and _thread.size > 0 -%}
-            {%- for m in _thread reversed -%}
+            {%- comment -%} Chat-style: chronological (oldest first), the
+                customer's messages as primary cards, team replies indented
+                underneath with a reply connector — Slack-thread reading. {%- endcomment -%}
+            {%- for m in _thread -%}
               {%- assign _mine = false -%}
               {%- if m.from == 'You' -%}{%- assign _mine = true -%}{%- endif -%}
-              <article class="pm-msgs__item{% unless _mine %} pm-msgs__item--team{% endunless %}" data-kind="team">
+              <article class="pm-msgs__item {% if _mine %}pm-msgs__item--mine{% else %}pm-msgs__item--team pm-msgs__item--reply{% endif %}" data-kind="team">
                 <div class="pm-msgs__item-ico" aria-hidden="true">
                   {%- if _mine -%}
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                   {%- else -%}
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
                   {%- endif -%}
                 </div>
                 <div class="pm-msgs__item-body">
                   <div class="pm-msgs__item-head">
                     <span class="pm-msgs__item-title">
                       {%- if _mine -%}
-                        You &rarr; Platinum Micro
+                        You
                         {%- if m.topic and m.topic != blank %} <span class="pm-msgs__pill pm-msgs__pill--pay">{{ m.topic | escape }}</span>{% endif -%}
                       {%- else -%}
-                        {{ m.from | default: 'Platinum Micro team' | escape }}
+                        {{ m.from | default: 'Platinum Micro team' | escape }} <span class="pm-msgs__pill pm-msgs__pill--ful">replied</span>
                       {%- endif -%}
                     </span>
                     {%- if m.date -%}<time class="pm-msgs__item-date">{{ m.date }}</time>{%- endif -%}

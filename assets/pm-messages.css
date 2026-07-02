@@ -51,6 +51,21 @@
   background: rgba(13,35,64,0.06);
 }
 .pm-msgs__item--team .pm-msgs__item-ico { color: var(--pm-terracotta, #b0410f); background: rgba(176,65,15,0.08); }
+
+/* Chat-style conversation: customer's messages are primary cards with a
+   navy spine; team replies indent underneath like a Slack thread. */
+.pm-msgs__item--mine {
+  border-left: 3px solid var(--pm-navy-deep, #0d2340);
+  background: #f7f9fc;
+  margin-bottom: 6px;
+}
+.pm-msgs__item--mine .pm-msgs__item-ico { color: #fff; background: var(--pm-navy-deep, #0d2340); }
+.pm-msgs__item--reply {
+  margin-left: 34px;
+  border-left: 3px solid var(--pm-terracotta, #b0410f);
+  position: relative;
+}
+@media (max-width: 640px) { .pm-msgs__item--reply { margin-left: 18px; } }
 .pm-msgs__item-body { min-width: 0; flex: 1; }
 .pm-msgs__item-head {
   display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap;
