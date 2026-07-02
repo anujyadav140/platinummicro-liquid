@@ -68,26 +68,17 @@
   renderSent();
 
   /* ── Sending ──
-     Messages are handed to TIDIO (already installed + staffed): the
-     composer identifies the visitor and injects the message as a chat
-     conversation, so it lands in the Tidio panel with the team's email
-     and mobile notifications — and Lyro can answer instantly. No custom
-     backend. If the Tidio API isn't available the form falls back to
-     Shopify's native contact POST so a message always has a path out. */
-  function sendViaTidio(f) {
-    var api = window.tidioChatApi;
-    if (!api || typeof api.messageFromVisitor !== 'function') return false;
-    try {
-      if (typeof api.setVisitorData === 'function') {
-        api.setVisitorData({ email: f.email || '', name: f.name || '' });
-      }
-      var prefix = '[' + (f.topic || 'Message') + (f.ref ? ' · ' + f.ref : '') + '] ';
-      var fromLine = (f.name || f.email) ? '\n— ' + (f.name || '') + (f.email ? ' <' + f.email + '>' : '') : '';
-      api.messageFromVisitor(prefix + f.body + fromLine);
-      if (typeof api.open === 'function') api.open();
-      return true;
-    } catch (e) { return false; }
-  }
+     Messages POST to FormSubmit (formsubmit.co) — a hosted, no-account,
+     no-server form-to-email relay. It emails the team on EVERY message,
+     unconditionally: no online/offline or bot gating (Tidio), no silent
+     spam-drop (Shopify's native form). The customer's email is the
+     reply-to, so the team answers them directly from the inbox. First
+     submission to a new address triggers a one-time "Activate Form"
+     email that must be clicked; after that, delivery is automatic. On a
+     network failure it falls back to the native Shopify contact POST so
+     a message always has a path out. */
+  var FORM_ENDPOINT = 'https://formsubmit.co/ajax/anuj@platinummicro.com';
+  var FORM_CC = 'anujyadav160@gmail.com'; // backup inbox + lets delivery be verified
 
   function showOk(form, msg) {
     var ok = form.querySelector('.pm-msgs__ok');
@@ -106,20 +97,44 @@
       var f = getFields(form);
       if (!f || !f.body || f.body.length < 5) return; // native validation handles empties
       if (f.hp) { e.preventDefault(); form.reset(); return; } // honeypot: swallow silently
-      if (!window.tidioChatApi) return; // Tidio absent -> let the native POST proceed
       e.preventDefault();
-      if (sendViaTidio(f)) {
-        if (logSent) {
-          var items = readJson(SENT_KEY);
-          items.push({ ts: Date.now(), topic: f.topic || '', ref: f.ref || '', body: f.body });
-          writeSent(items);
-          renderSent();
-        }
-        showOk(form, 'Message sent to our team — reply lands right here in the chat, or by email.');
-        form.reset();
-      } else {
-        form.submit(); // native Shopify fallback (bypasses this listener)
-      }
+      var btn = form.querySelector('button[type="submit"]');
+      var orig = btn ? btn.textContent : '';
+      if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+
+      var payload = {
+        name: f.name || '(no name)',
+        email: f.email || '',
+        topic: f.topic || 'Message',
+        reference: f.ref || '(none)',
+        message: f.body,
+        _subject: '[Message Center] ' + (f.topic || 'Message') + (f.ref ? ' · ' + f.ref : '') + ' — ' + (f.name || f.email || 'customer'),
+        _cc: FORM_CC,
+        _template: 'table',
+        _captcha: 'false'
+      };
+
+      function finish() { if (btn) { btn.disabled = false; btn.textContent = orig || 'Send message'; } }
+
+      fetch(FORM_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+        .then(function (r) { return r.json().catch(function () { return {}; }); })
+        .then(function () {
+          // Any 200 = FormSubmit accepted it (delivery is automatic once activated).
+          if (logSent) {
+            var items = readJson(SENT_KEY);
+            items.push({ ts: Date.now(), topic: f.topic || '', ref: f.ref || '', body: f.body });
+            writeSent(items);
+            renderSent();
+          }
+          showOk(form, 'Message sent — our team will reply to your email, usually within one business day.');
+          form.reset();
+          finish();
+        })
+        .catch(function () { finish(); form.submit(); }); // relay unreachable -> native Shopify POST
     });
   }
 
