@@ -65,7 +65,7 @@ If any line says FAILED, stop and see Troubleshooting below.
    - Deployment: **Head**
    - Event source: **Time-driven**
    - Type of time based trigger: **Minutes timer**
-   - Interval: **Every 10 minutes**
+   - Interval: **Every minute** (or every 5 minutes if this is a free @gmail.com account, Google gives those less daily runtime)
 4. Click **Save**.
 
 That is it. The script now runs on its own every 10 minutes, forever.
