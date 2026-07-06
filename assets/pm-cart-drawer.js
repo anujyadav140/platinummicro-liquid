@@ -107,6 +107,11 @@
     // a11y: move focus into the drawer + trap Tab within it (recomputes the
     // focusable set each Tab, so client-rendered cart lines are included).
     if (window.PmFocusTrap) PmFocusTrap.trap(drawer);
+    // Always re-sync from the authoritative cart on open — background
+    // mutations (bundle guard repairs, other tabs) can land while the
+    // drawer sits closed or mid-render, and open() must never show stale
+    // prices. Current DOM stays visible; the refresh ripples in.
+    refresh();
   }
 
   function close() {
@@ -511,6 +516,9 @@
     // Update header immediately too (don't wait for the animation)
     if (li) li.querySelector('.pm-cart__qty-input').value = 0;
     optimisticHeader();
+    // Announce the removal BEFORE the request so listeners (bundle guard)
+    // can repaint dependent prices at click time, not after the round-trip.
+    document.dispatchEvent(new CustomEvent('pm:cart-line-removing', { detail: { key: key } }));
     // Fire delete request — no debounce, no waiting
     fetch('/cart/change.js', {
       method: 'POST',
