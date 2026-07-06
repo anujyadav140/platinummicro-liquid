@@ -716,6 +716,15 @@
           if (!rates.length) {
             if (!auto) result.innerHTML = '<span class="pm-ship__none">No rates for this address — shipping will be calculated at checkout.</span>';
             clearEstimate();
+            // Auto path with a known address but no rate: say so plainly
+            // instead of a dead "Estimate" affordance (there is no rate to
+            // show until one exists in Settings > Shipping and delivery).
+            if (auto && toggle) {
+              toggle.textContent = 'Calculated at checkout';
+              toggle.style.pointerEvents = 'none';
+              toggle.style.textDecoration = 'none';
+              toggle.style.color = 'var(--pm-ink-500, #64748b)';
+            }
             return;
           }
           rates.sort(function (a, b) { return parseFloat(a.price) - parseFloat(b.price); });
