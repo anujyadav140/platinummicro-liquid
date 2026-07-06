@@ -82,35 +82,60 @@
 
 
       {%- comment -%}
-        Account button — Shopify's <shopify-account> web component handles both
-        states: the signed-out sign-in card (Shop Pay + email, in-page) and the
-        signed-in name + account menu. Sign out lives inside that menu
-        (customer-account-main-menu) rather than as a separate header button.
-
-        The `menu` attribute (Profile / Orders / Lists / Sign out) is only emitted when
-        signed IN. Signed-out guests then get the component's default shortcuts
-        (Profile / Orders) with no custom "Lists" link in the sign-in card.
+        Account button.
+        · Signed IN  → our OWN light-DOM dropdown (Profile / Orders / Lists /
+          Messages / Sign out). We replaced Shopify's <shopify-account> menu here
+          so we can surface a "Messages" link AND an unread-message badge — the
+          shadow-DOM menu can't be augmented. Links + logout mirror the proven
+          mobile account accordion (theme.liquid) and pm-account-strip.
+        · Signed OUT → keep <shopify-account> for its in-page Sign-in card
+          (Shop Pay + email). pm-auth-anchor.js / pm-add-to-list.js only reach
+          for the element in the signed-out state and both no-op when it's absent.
       {%- endcomment -%}
-      <shopify-account class="pm-header__shopify-account"{% if customer %} menu="customer-account-main-menu"{% endif %}>
-        {%- comment -%}
-          Emit ONLY the slot that matches the server-known auth state. Providing
-          both slots makes the component flash the signed-out "Sign in" trigger
-          before it resolves to signed-in on every navigation. Gating on
-          `customer` (reliable server-side) renders the correct trigger from the
-          first paint — no flash of wrong state.
-        {%- endcomment -%}
-        {%- if customer -%}
-          <span slot="signed-in-avatar" class="pm-header__action-btn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-            <span>{{ customer.first_name | default: 'Account' | escape }}</span>
-          </span>
-        {%- else -%}
+      {%- if customer -%}
+        {%- comment -%} New-Customer-Accounts sub-routes off routes.account_url. {%- endcomment -%}
+        {%- assign _parts = routes.account_url | split: '?' -%}
+        {%- assign _abase = _parts | first -%}
+        {%- assign _aqs = '' -%}
+        {%- if _parts.size > 1 -%}{%- assign _aqs = '?' | append: _parts.last -%}{%- endif -%}
+        <details class="pm-acct" data-pm-acct>
+          <summary class="pm-acct__trigger" aria-haspopup="menu" aria-label="Account menu">
+            <span class="pm-acct__avatar">
+              {{ customer.first_name | default: 'A' | slice: 0 | upcase }}
+              {%- comment -%} Unread-message signifier — toggled by pm-account-menu.js. {%- endcomment -%}
+              <span class="pm-acct__badge" data-msg-badge hidden aria-hidden="true"></span>
+            </span>
+          </summary>
+          <div class="pm-acct__menu" role="menu">
+            <div class="pm-acct__head">
+              <div class="pm-acct__head-txt">
+                <span class="pm-acct__hi">Hi, {{ customer.first_name | default: 'there' | escape }}</span>
+                <span class="pm-acct__email">{{ customer.email | escape }}</span>
+              </div>
+              <button type="button" class="pm-acct__close" data-pm-acct-close aria-label="Close account menu">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
+              </button>
+            </div>
+            <nav class="pm-acct__links">
+              <a class="pm-acct__link" href="{{ _abase }}/profile{{ _aqs }}" role="menuitem">Profile</a>
+              <a class="pm-acct__link" href="{{ _abase }}/orders{{ _aqs }}" role="menuitem">Orders</a>
+              <a class="pm-acct__link" href="/pages/lists" role="menuitem">Lists</a>
+              <a class="pm-acct__link" href="/pages/messages" role="menuitem" data-msg-link>
+                <span>Messages</span>
+                <span class="pm-acct__linkbadge" data-msg-linkbadge hidden aria-hidden="true"></span>
+              </a>
+              <a class="pm-acct__link pm-acct__link--signout" href="{{ routes.account_logout_url }}" rel="nofollow" role="menuitem">Sign out</a>
+            </nav>
+          </div>
+        </details>
+      {%- else -%}
+        <shopify-account class="pm-header__shopify-account">
           <span slot="signed-out-avatar" class="pm-header__action-btn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
             <span>Sign in</span>
           </span>
-        {%- endif -%}
-      </shopify-account>
+        </shopify-account>
+      {%- endif -%}
 
       <button type="button" class="pm-header__action-btn pm-header__cart-btn" data-cart-open aria-haspopup="dialog" aria-label="Cart ({{ cart.item_count }} items)">
         <span class="pm-header__cart-icon">

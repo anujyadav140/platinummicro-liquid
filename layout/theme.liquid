@@ -222,7 +222,18 @@
   {%- endif -%}
 </head>
 
-<body class="pm-body" data-pm-customer="{{ customer.id | default: '' }}" data-pm-customer-name="{{ customer.first_name | default: '' | escape }}">
+{%- comment -%}
+  Unread-message signifier source of truth. Count the customer's THREAD entries
+  authored by the team (from != 'You') — the same custom.thread metafield the
+  Message Center renders. pm-account-menu.js compares this total to a per-device
+  localStorage "read" marker to decide whether to light the account badge.
+{%- endcomment -%}
+{%- assign _pm_teamcount = 0 -%}
+{%- if customer -%}
+  {%- assign _pm_thread = customer.metafields.custom.thread.value -%}
+  {%- if _pm_thread -%}{%- for _m in _pm_thread -%}{%- unless _m.from == 'You' -%}{%- assign _pm_teamcount = _pm_teamcount | plus: 1 -%}{%- endunless -%}{%- endfor -%}{%- endif -%}
+{%- endif -%}
+<body class="pm-body" data-pm-customer="{{ customer.id | default: '' }}" data-pm-customer-name="{{ customer.first_name | default: '' | escape }}" data-pm-msg-teamcount="{{ _pm_teamcount }}">
 
   {%- comment -%}
     Skip-to-main link — first focusable element on every page so keyboard
@@ -293,7 +304,7 @@
           {%- if _parts.size > 1 -%}{%- assign _aqs = '?' | append: _parts.last -%}{%- endif -%}
           <details class="pm-mobile-acct">
             <summary class="pm-mobile-nav__link pm-mobile-acct__summary">
-              <span class="pm-mobile-acct__avatar" aria-hidden="true">{{ customer.first_name | default: 'A' | slice: 0 | upcase }}</span>
+              <span class="pm-mobile-acct__avatar" aria-hidden="true">{{ customer.first_name | default: 'A' | slice: 0 | upcase }}<span class="pm-acct__badge" data-msg-badge hidden></span></span>
               <span class="pm-mobile-acct__name">Hi, {{ customer.first_name | default: 'Account' | escape }}</span>
               <svg class="pm-mobile-acct__chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
             </summary>
@@ -301,6 +312,7 @@
               <a class="pm-mobile-acct__sub" href="{{ _abase }}/profile{{ _aqs }}">Profile</a>
               <a class="pm-mobile-acct__sub" href="{{ _abase }}/orders{{ _aqs }}">Orders</a>
               <a class="pm-mobile-acct__sub" href="/pages/lists">Lists</a>
+              <a class="pm-mobile-acct__sub pm-mobile-acct__sub--msg" href="/pages/messages" data-msg-link>Messages <span class="pm-acct__linkbadge" data-msg-linkbadge hidden></span></a>
               <a class="pm-mobile-acct__sub" href="{{ routes.account_logout_url }}" rel="nofollow">Sign out</a>
             </div>
           </details>
@@ -331,6 +343,7 @@
   {%- comment -%} Shared focus-trap helper — load first so window.PmFocusTrap exists before any dialog opens {%- endcomment -%}
   <script src="{{ 'pm-focus-trap.js'      | asset_url }}" defer></script>
   <script src="{{ 'pm-header.js'          | asset_url }}" defer></script>
+  <script src="{{ 'pm-account-menu.js'    | asset_url }}" defer></script>
   <script src="{{ 'pm-predictive-search.js' | asset_url }}" defer></script>
   <script src="{{ 'pm-quick-order.js'     | asset_url }}" defer></script>
   <script src="{{ 'pm-cart-drawer.js'     | asset_url }}" defer></script>
