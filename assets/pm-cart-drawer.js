@@ -180,6 +180,13 @@
     footEl.removeAttribute('hidden');
 
     shopifyItems.forEach(function (item) {
+      // If the user has a qty edit in flight for this line, the server cart
+      // is momentarily stale — render the OPTIMISTIC pending value (and a
+      // line total computed from it) so a concurrent render (e.g. the bundle
+      // guard's) can't bounce the stepper back to the old number.
+      var pend = qPending[item.key];
+      var q = (pend != null) ? pend : item.quantity;
+      var lineCents = (pend != null) ? (item.price * q) : (item.line_price || item.price * item.quantity);
       var node = buildLineNode({
         key:        item.key,
         kind:       'shopify',
@@ -188,8 +195,8 @@
         title:      item.product_title || item.title,
         imageUrl:   item.image,
         sku:        item.sku,
-        lineTotal:  formatMoney(item.line_price || item.price * item.quantity),
-        quantity:   item.quantity,
+        lineTotal:  formatMoney(lineCents),
+        quantity:   q,
         properties: item.properties,
       });
       itemsEl.appendChild(node);

@@ -37,8 +37,8 @@
 (function () {
   'use strict';
 
-  var QUIET_MS = 350;     // reconcile only after the cart is quiet this long
-  var FAILSAFE_MS = 2500; // hard ceiling on how long renders stay suspended
+  var QUIET_MS = 450;     // reconcile only after the cart is quiet this long
+  var FAILSAFE_MS = 3500; // hard ceiling on how long renders stay suspended
 
   var plainCache = {};    // handle -> { id, price } of the full-price variant
   var lastCart = null;    // most recent cart snapshot (for click-time prediction)
@@ -106,6 +106,70 @@
   // ── Quiescence-gated reconciliation ──
   function schedule() { clearTimeout(quietTimer); quietTimer = setTimeout(reconcile, QUIET_MS); }
 
+  // Find every discounted base whose drives are gone (and the customer didn't
+  // delete themselves). Returns an array — a cart can hold several bundles.
+  function findOrphans(items) {
+    var covered = {};
+    items.forEach(function (l) {
+      var p = l.properties || {};
+      if (p._bundle === 'addon' && p._bundle_base_sku) covered[p._bundle_base_sku] = true;
+    });
+    return items.filter(function (l) {
+      return lineIsDiscountedBase(l) && !covered[l.sku] && !recentlyUserRemoved(l.key);
+    });
+  }
+
+  function finishReconcile() {
+    running = false;
+    release();
+    if (location.pathname === '/cart') { location.reload(); return; } // server-rendered page
+    renderNow();
+  }
+
+  // Swap ONE orphan base (remove discounted line by key → add plain variant),
+  // then recurse to the next. All swaps run inside a single suspended window
+  // so the drawer never repaints from a half-finished multi-bundle state.
+  function swapNext(list, i) {
+    if (i >= list.length) {
+      // All done — sweep ONCE more (still suspended) for any straggler a
+      // concurrent removal created, then finish with a single render.
+      fetch('/cart.js', { headers: { Accept: 'application/json' } })
+        .then(function (r) { return r.json(); })
+        .then(function (cart) {
+          lastCart = cart;
+          var more = findOrphans(cart.items || []);
+          if (more.length) { swapNext(more, 0); } else { finishReconcile(); }
+        })
+        .catch(finishReconcile);
+      return;
+    }
+    var o = list[i];
+    var plain = plainCache[o.handle];
+    if (!plain || plain.id === o.variant_id || recentlyUserRemoved(o.key)) { swapNext(list, i + 1); return; }
+    fetch('/cart/change.js', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: o.key, quantity: 0 })
+    }).then(function (r1) {
+      if (!r1.ok) throw new Error('remove ' + r1.status);
+      if (recentlyUserRemoved(o.key)) throw new Error('user removed base');
+      return fetch('/cart/add.js', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: [{ id: plain.id, quantity: o.quantity }] })
+      });
+    }).then(function (r2) {
+      if (!r2 || !r2.ok) {
+        if (!recentlyUserRemoved(o.key)) {
+          fetch('/cart/add.js', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ items: [{ id: o.variant_id, quantity: o.quantity, properties: o.properties || {} }] })
+          }).catch(function () {});
+        }
+        throw new Error('re-add fail');
+      }
+      swapNext(list, i + 1);
+    }).catch(function () { swapNext(list, i + 1); }); // one bad swap doesn't strand the rest
+  }
+
   function reconcile() {
     if (running) { schedule(); return; } // a swap is in flight — retry after quiet
     running = true;
@@ -114,58 +178,17 @@
       .then(function (cart) {
         lastCart = cart;
         var items = cart.items || [];
-
-        // Warm the plain-variant cache for any bundle base present.
         items.forEach(function (l) { if ((l.properties || {})._bundle === 'base') prefetchPlain(l.handle); });
 
-        var covered = {};
-        items.forEach(function (l) {
-          var p = l.properties || {};
-          if (p._bundle === 'addon' && p._bundle_base_sku) covered[p._bundle_base_sku] = true;
-        });
+        var orphans = findOrphans(items);
+        if (!orphans.length) { finishReconcile(); return; } // covers rapid-empty: cart is as left
 
-        var orphan = null;
-        items.forEach(function (l) {
-          if (orphan) return;
-          if (lineIsDiscountedBase(l) && !covered[l.sku] && !recentlyUserRemoved(l.key)) orphan = l;
-        });
-
-        // Nothing to repair — release the suspension and show the truth
-        // (covers the rapid-empty case: cart is already how the user left it).
-        if (!orphan) { running = false; release(); renderNow(); return; }
-
-        prefetchPlain(orphan.handle).then(function (plain) {
-          if (!plain || plain.id === orphan.variant_id) { running = false; release(); renderNow(); return; }
-
-          fetch('/cart/change.js', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: orphan.key, quantity: 0 })
-          }).then(function (r1) {
-            if (!r1.ok) throw new Error('remove ' + r1.status);
-            if (recentlyUserRemoved(orphan.key)) throw new Error('user removed base');
-            return fetch('/cart/add.js', {
-              method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ items: [{ id: plain.id, quantity: orphan.quantity }] })
-            });
-          }).then(function (r2) {
-            if (!r2.ok) {
-              if (!recentlyUserRemoved(orphan.key)) {
-                fetch('/cart/add.js', {
-                  method: 'POST', headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ items: [{ id: orphan.variant_id, quantity: orphan.quantity, properties: orphan.properties || {} }] })
-                }).catch(function () {});
-              }
-              throw new Error('re-add ' + r2.status);
-            }
-            running = false;
-            release();
-            renderNow();
-            if (location.pathname === '/cart') { location.reload(); return; }
-            schedule(); // sweep again for multi-bundle carts
-          }).catch(function () { running = false; release(); renderNow(); });
-        });
+        // Freeze the drawer, resolve all plain variants, swap them ALL, render once.
+        suspend();
+        Promise.all(orphans.map(function (o) { return prefetchPlain(o.handle); }))
+          .then(function () { swapNext(orphans, 0); });
       })
-      .catch(function () { running = false; release(); renderNow(); });
+      .catch(finishReconcile);
   }
 
   // ── Click-time prediction: paint + suspend the instant drives are trashed ──
