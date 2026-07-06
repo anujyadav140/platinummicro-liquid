@@ -172,16 +172,29 @@
     // committed yet — counts, totals, and rows all work off this filtered set
     // so a stale snapshot can't resurrect a removed row.
     var rawItems = ((cart && cart.items) ? cart.items : []).filter(function (it) { return !isRecentlyRemoved(it.key); });
-    // Assign/lookup a stable order index per line (SKU + occurrence in cart
-    // order) so rows never reshuffle on an edit or a bundle variant swap.
+    // Stable, BUNDLE-AWARE order. Each line gets a group key + role:
+    //   · a bundle base and its drive share the group "S:<base SKU>" (the
+    //     drive carries _bundle_base_sku), base role 0, drive role 1 — so the
+    //     two lines of one bundle always render adjacent, base above drive;
+    //   · a plain base that the guard swapped from the discounted variant
+    //     reuses the SAME group (matched by SKU) so it keeps the bundle's slot;
+    //   · every other line is its own group (SKU + occurrence).
+    // Groups sort by first-seen index (persisted), so nothing ever reshuffles.
     var occ = {};
     rawItems.forEach(function (it) {
+      var p = it.properties || {};
       var sku = it.sku || String(it.variant_id);
-      occ[sku] = (occ[sku] || 0) + 1;
-      it.__ord = sku + '#' + occ[sku];
-      if (orderIndex[it.__ord] === undefined) orderIndex[it.__ord] = orderNext++;
+      var gkey, role;
+      if (p._bundle === 'base') { gkey = 'S:' + sku; role = 0; }
+      else if (p._bundle === 'addon' && p._bundle_base_sku) { gkey = 'S:' + p._bundle_base_sku; role = 1; }
+      else if (orderIndex['S:' + sku] !== undefined) { gkey = 'S:' + sku; role = 0; } // swapped-to-plain base keeps its bundle slot
+      else { occ[sku] = (occ[sku] || 0) + 1; gkey = 'R:' + sku + '#' + occ[sku]; role = 0; }
+      it.__gkey = gkey; it.__role = role;
+      if (orderIndex[gkey] === undefined) orderIndex[gkey] = orderNext++;
     });
-    var shopifyItems = rawItems.slice().sort(function (a, b) { return orderIndex[a.__ord] - orderIndex[b.__ord]; });
+    var shopifyItems = rawItems.slice().sort(function (a, b) {
+      return (orderIndex[a.__gkey] - orderIndex[b.__gkey]) || (a.__role - b.__role);
+    });
     var quoteItems   = (window.PmQuote && window.PmQuote.list) ? window.PmQuote.list() : [];
 
     var shopifyLines = shopifyItems.length;
