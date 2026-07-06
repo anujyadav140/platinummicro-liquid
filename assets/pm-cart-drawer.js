@@ -13,6 +13,18 @@
   var maxedCap = {};
   // Per-line qty stepper state — robust against rapid-click races.
   var qPending = {}, qInflight = {}, qTimers = {};
+  // Lines the user optimistically removed. A render can fire (e.g. the bundle
+  // guard's) BEFORE Shopify has committed the removal, and would rebuild the
+  // row from a cart that still contains it — making the row reappear. Any
+  // render skips these keys until they're gone for good.
+  var removedKeys = {};
+  function markRemoved(key) { if (key) removedKeys[key] = Date.now(); }
+  function isRecentlyRemoved(key) {
+    var t = removedKeys[key];
+    if (!t) return false;
+    if (Date.now() - t > 30000) { delete removedKeys[key]; return false; } // line keys never recur; expire for hygiene
+    return true;
+  }
   // TC-085: dedupe the "max stock reached" toast — rapid +/- spam can fire the
   // cap branch many times; show at most one toast per STOCK_TOAST_GAP ms.
   var lastStockToastAt = 0;
@@ -149,7 +161,10 @@
   }
 
   function render(cart) {
-    var shopifyItems = (cart && cart.items) ? cart.items : [];
+    // Drop any line the user optimistically removed but the server hasn't
+    // committed yet — counts, totals, and rows all work off this filtered set
+    // so a stale snapshot can't resurrect a removed row.
+    var shopifyItems = ((cart && cart.items) ? cart.items : []).filter(function (it) { return !isRecentlyRemoved(it.key); });
     var quoteItems   = (window.PmQuote && window.PmQuote.list) ? window.PmQuote.list() : [];
 
     var shopifyLines = shopifyItems.length;
@@ -510,6 +525,7 @@
   function removeLine(key) {
     // Pure optimistic: pull the row out of the DOM right now, update
     // header/badge from what's left, fire delete in the background.
+    markRemoved(key); // any render before the server commits must not resurrect it
     var li = itemsEl.querySelector('[data-cart-item][data-cart-key="' + key + '"]');
     if (li) {
       li.style.transition = 'opacity 120ms, max-height 180ms 60ms, padding 180ms 60ms, margin 180ms 60ms';
@@ -552,7 +568,12 @@
         // (source is not in the auto-open list, so the drawer stays as-is.)
         document.dispatchEvent(new CustomEvent('pm:cart-changed', { detail: { source: 'drawer-line' } }));
       })
-      .catch(function () {});
+      .catch(function () {
+        // Removal failed server-side — un-hide the line and resync so it
+        // isn't wrongly suppressed.
+        delete removedKeys[key];
+        refresh();
+      });
   }
 
   function formatMoney(cents) {
