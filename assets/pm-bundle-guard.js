@@ -30,6 +30,20 @@
   var plainCache = {}; // product handle -> { id, price } of the full-price variant
   var lastCart = null; // snapshot from the most recent check() — powers click-time prediction
 
+  /* Lines the CUSTOMER explicitly trashed, key -> timestamp. If they delete
+     the bundle base themselves (e.g. rapid-fire emptying the cart), the
+     guard must NOT resurrect it as the plain variant — they want it gone.
+     Entries expire: cart line keys can repeat for identical variant+props,
+     and a stale entry must not disarm the guard forever. */
+  var userRemoved = {};
+  function noteUserRemoved(key) { if (key) userRemoved[key] = Date.now(); }
+  function recentlyUserRemoved(key) {
+    var ts = userRemoved[key];
+    if (!ts) return false;
+    if (Date.now() - ts > 15000) { delete userRemoved[key]; return false; }
+    return true;
+  }
+
   function isPackVariant(text) {
     return /pack of \d+/i.test(String(text || ''));
   }
@@ -97,7 +111,9 @@
         var orphan = null;
         items.forEach(function (l) {
           if (orphan) return;
-          if (lineIsDiscountedBase(l) && !coveredBaseSkus[l.sku]) orphan = l;
+          // A base the customer is deleting themselves is not an orphan to
+          // repair — their removal is in flight; let it complete.
+          if (lineIsDiscountedBase(l) && !coveredBaseSkus[l.sku] && !recentlyUserRemoved(l.key)) orphan = l;
         });
 
         if (!orphan) { busy = false; return; }
@@ -114,6 +130,10 @@
             body: JSON.stringify({ id: orphan.key, quantity: 0 })
           }).then(function (r1) {
             if (!r1.ok) throw new Error('remove failed ' + r1.status);
+            // Last-moment intent check: if the customer trashed this base
+            // line themselves while the swap was in flight, do NOT bring it
+            // back — they're emptying the cart, not splitting a bundle.
+            if (recentlyUserRemoved(orphan.key)) throw new Error('user removed the base — no re-add');
             return fetch('/cart/add.js', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -122,7 +142,9 @@
           }).then(function (r2) {
             if (!r2.ok) {
               // Removal succeeded but the re-add bounced: put the original
-              // line back (best effort) so the customer's item isn't lost.
+              // line back (best effort) so the customer's item isn't lost —
+              // unless they deleted it themselves.
+              if (recentlyUserRemoved(orphan.key)) throw new Error('re-add failed, user removed — leave gone');
               fetch('/cart/add.js', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -154,6 +176,7 @@
      and land on the same number. */
   document.addEventListener('pm:cart-line-removing', function (e) {
     var key = e && e.detail && e.detail.key;
+    noteUserRemoved(key);
     if (!key || !lastCart) return;
     var items = lastCart.items || [];
     var removed = null;
