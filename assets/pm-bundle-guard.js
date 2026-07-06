@@ -42,10 +42,10 @@
           if (p._bundle === 'addon' && p._bundle_base_sku) coveredBaseSkus[p._bundle_base_sku] = true;
         });
 
-        var orphan = null, orphanLine = -1;
-        items.forEach(function (l, i) {
+        var orphan = null;
+        items.forEach(function (l) {
           if (orphan) return;
-          if (lineIsDiscountedBase(l) && !coveredBaseSkus[l.sku]) { orphan = l; orphanLine = i + 1; }
+          if (lineIsDiscountedBase(l) && !coveredBaseSkus[l.sku]) orphan = l;
         });
 
         if (!orphan) { busy = false; return; }
@@ -61,20 +61,43 @@
             });
             if (!plain || plain.id === orphan.variant_id) { busy = false; return; }
 
-            // Swap: drop the discounted line, re-add the plain variant.
+            // Swap: drop the discounted line (by its stable KEY, immune to
+            // index shifts from concurrent mutations), then re-add the plain
+            // variant. Each step must SUCCEED before the next runs — a failed
+            // removal must never be followed by the add, or the cart ends up
+            // with both lines. On any failure: change nothing, retry on the
+            // next cart event / page load.
             return fetch('/cart/change.js', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ line: orphanLine, quantity: 0 })
-            }).then(function () {
+              body: JSON.stringify({ id: orphan.key, quantity: 0 })
+            }).then(function (r1) {
+              if (!r1.ok) throw new Error('remove failed ' + r1.status);
               return fetch('/cart/add.js', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ items: [{ id: plain.id, quantity: orphan.quantity }] })
               });
-            }).then(function () {
+            }).then(function (r2) {
+              if (!r2.ok) {
+                // Removal succeeded but the re-add bounced: put the original
+                // line back (best effort) so the customer's item isn't lost.
+                fetch('/cart/add.js', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ items: [{ id: orphan.variant_id, quantity: orphan.quantity, properties: orphan.properties || {} }] })
+                }).catch(function () {});
+                throw new Error('re-add failed ' + r2.status);
+              }
               busy = false;
               document.dispatchEvent(new CustomEvent('pm:cart-changed', { detail: { source: 'bundle-guard' } }));
+              // Second, delayed notification: if the drawer was mid-render
+              // when the first one fired (race with its own optimistic
+              // remove), this one lands after the dust settles so an OPEN
+              // drawer repaints with the repaired price.
+              setTimeout(function () {
+                document.dispatchEvent(new CustomEvent('pm:cart-changed', { detail: { source: 'bundle-guard' } }));
+              }, 1100);
               // The /cart page is server-rendered — reload so prices shown match.
               if (location.pathname === '/cart') { location.reload(); return; }
               check(); // sweep any further orphans (multiple bundles)
