@@ -3,59 +3,63 @@
  * Migrated BigCommerce bundles add TWO cart lines: the base unit on a
  * discounted "(Pack of N)" variant (properties._bundle = "base") plus the
  * drive pack product (properties._bundle = "addon"). BigCommerce sold the
- * same thing as ONE line with a pick-list modifier, so it could never be
- * split; on Shopify a customer can delete the drives line and keep the
- * discounted base (e.g. the AS6706T at $874.93 instead of $901.99).
+ * same thing as ONE unsplittable line; on Shopify a customer can delete the
+ * drives and keep the discounted base ($874.93 instead of $901.99). This
+ * guard puts the base back to full price when its drives are gone.
  *
- * This guard watches the cart and, whenever a discounted base line has no
- * matching addon line left, swaps it back to the product's full-price
- * plain variant at the same quantity.
+ * ── Why the earlier versions glitched ──
+ * They reacted to every cart event immediately, mutating the cart (remove
+ * discounted line, add plain line) while the customer was still clicking.
+ * The drawer, meanwhile, repainted from those half-finished states — SKUs
+ * flashed in and out, and rapid "delete everything" resurrected the last
+ * line. Whack-a-mole intent checks couldn't win a fundamentally racy design.
  *
- * Speed: the plain-variant lookup is PREFETCHED whenever a bundle base is
- * seen in the cart, drawer mutations trigger an immediate (undebounced)
- * check, and the drawer row's price is repainted optimistically the moment
- * the split is detected — the server swap settles in the background and
- * the final re-render confirms it.
- *
- * Safety: the swap is atomic-ish — removal targets the line's stable key,
- * every step must return ok before the next runs, and if the re-add
- * bounces after a successful removal the original line is restored, so a
- * transient failure (rate limit, network) can never duplicate or lose a
- * line. On any failure nothing changes and the next cart event retries.
+ * ── This version: quiescence + suspension ──
+ * 1. QUIESCENCE — the guard never touches the cart mid-interaction. Every
+ *    cart event (re)starts a short quiet timer; only after the customer
+ *    STOPS for QUIET_MS does it reconcile the ONE final cart state. Rapid
+ *    deletes/edits collapse into a single reconciliation of the end state,
+ *    so nothing races.
+ * 2. SUSPENSION — from the moment a bundle's drives are removed until the
+ *    swap lands, the drawer's repaints are suspended (window.__pmSuspend-
+ *    CartRender). The optimistic DOM (drive row gone, base price shown at
+ *    full price) stays put; the guard does one authoritative render at the
+ *    end. No flashing.
+ * 3. OPTIMISTIC PAINT — the base line's price flips to full price the
+ *    instant the drives are trashed (cosmetic), so it FEELS immediate while
+ *    the real swap settles quietly behind the suspension.
+ * 4. INTENT — if the customer deletes the base themselves, the guard stands
+ *    down (no resurrection).
+ * Safety: the swap is atomic (remove by stable key, verify each step, and
+ * restore the original on a half-failure); suspension self-releases via a
+ * failsafe so a bug can never freeze the drawer.
  */
 (function () {
   'use strict';
 
-  var busy = false;
-  var plainCache = {}; // product handle -> { id, price } of the full-price variant
-  var lastCart = null; // snapshot from the most recent check() — powers click-time prediction
+  var QUIET_MS = 350;     // reconcile only after the cart is quiet this long
+  var FAILSAFE_MS = 2500; // hard ceiling on how long renders stay suspended
 
-  /* Lines the CUSTOMER explicitly trashed, key -> timestamp. If they delete
-     the bundle base themselves (e.g. rapid-fire emptying the cart), the
-     guard must NOT resurrect it as the plain variant — they want it gone.
-     Entries expire: cart line keys can repeat for identical variant+props,
-     and a stale entry must not disarm the guard forever. */
-  var userRemoved = {};
+  var plainCache = {};    // handle -> { id, price } of the full-price variant
+  var lastCart = null;    // most recent cart snapshot (for click-time prediction)
+  var userRemoved = {};   // line key -> ts of a customer-initiated removal
+  var quietTimer = null;
+  var failsafeTimer = null;
+  var running = false;
+
+  function isPackVariant(text) { return /pack of \d+/i.test(String(text || '')); }
+  function lineIsDiscountedBase(l) {
+    var p = l.properties || {};
+    return p._bundle === 'base' && isPackVariant((l.variant_title || '') + ' ' + (l.title || ''));
+  }
+  function fmtMoney(c) { return '$' + (c / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
   function noteUserRemoved(key) { if (key) userRemoved[key] = Date.now(); }
   function recentlyUserRemoved(key) {
     var ts = userRemoved[key];
     if (!ts) return false;
     if (Date.now() - ts > 15000) { delete userRemoved[key]; return false; }
     return true;
-  }
-
-  function isPackVariant(text) {
-    return /pack of \d+/i.test(String(text || ''));
-  }
-
-  function lineIsDiscountedBase(line) {
-    var p = line.properties || {};
-    if (p._bundle !== 'base') return false;
-    return isPackVariant((line.variant_title || '') + ' ' + (line.title || ''));
-  }
-
-  function fmtMoney(cents) {
-    return '$' + (cents / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
   function prefetchPlain(handle) {
@@ -74,135 +78,125 @@
       .catch(function () { return null; });
   }
 
-  /* Instant feedback: flip the drawer row's price to the full price right
-     away; the authoritative re-render lands moments later with the same
-     number. */
-  function paintOptimistic(orphan, plain) {
+  // Cosmetic: flip a base row's price to full price right away.
+  function paintOptimistic(base, plain) {
     try {
-      var row = document.querySelector('[data-cart-item][data-cart-key="' + orphan.key + '"]');
-      if (!row) return;
-      var priceEl = row.querySelector('.pm-cart__item-price');
-      if (priceEl) priceEl.textContent = fmtMoney(plain.price * orphan.quantity);
+      var row = document.querySelector('[data-cart-item][data-cart-key="' + base.key + '"]');
+      var el = row && row.querySelector('.pm-cart__item-price');
+      if (el) el.textContent = fmtMoney(plain.price * base.quantity);
     } catch (e) { /* cosmetic only */ }
   }
 
-  function check() {
-    if (busy) return;
-    busy = true;
+  // ── Render suspension (drawer cooperates via the shared flag) ──
+  function suspend() {
+    window.__pmSuspendCartRender = true;
+    clearTimeout(failsafeTimer);
+    failsafeTimer = setTimeout(release, FAILSAFE_MS); // never freeze forever
+  }
+  function release() {
+    if (!window.__pmSuspendCartRender) return;
+    window.__pmSuspendCartRender = false;
+    clearTimeout(failsafeTimer);
+  }
+  function renderNow() {
+    // One authoritative render past the suspension.
+    if (window.PmCart && window.PmCart.refresh) window.PmCart.refresh(true);
+  }
+
+  // ── Quiescence-gated reconciliation ──
+  function schedule() { clearTimeout(quietTimer); quietTimer = setTimeout(reconcile, QUIET_MS); }
+
+  function reconcile() {
+    if (running) { schedule(); return; } // a swap is in flight — retry after quiet
+    running = true;
     fetch('/cart.js', { headers: { Accept: 'application/json' } })
       .then(function (r) { return r.json(); })
       .then(function (cart) {
-        var items = (cart && cart.items) || [];
         lastCart = cart;
+        var items = cart.items || [];
 
-        // SKUs of base lines that still have their drives in the cart.
-        var coveredBaseSkus = {};
+        // Warm the plain-variant cache for any bundle base present.
+        items.forEach(function (l) { if ((l.properties || {})._bundle === 'base') prefetchPlain(l.handle); });
+
+        var covered = {};
         items.forEach(function (l) {
           var p = l.properties || {};
-          if (p._bundle === 'addon' && p._bundle_base_sku) coveredBaseSkus[p._bundle_base_sku] = true;
-        });
-
-        // Warm the plain-variant cache for every bundle base present, so a
-        // future split repaints with zero lookups on the hot path.
-        items.forEach(function (l) {
-          if ((l.properties || {})._bundle === 'base') prefetchPlain(l.handle);
+          if (p._bundle === 'addon' && p._bundle_base_sku) covered[p._bundle_base_sku] = true;
         });
 
         var orphan = null;
         items.forEach(function (l) {
           if (orphan) return;
-          // A base the customer is deleting themselves is not an orphan to
-          // repair — their removal is in flight; let it complete.
-          if (lineIsDiscountedBase(l) && !coveredBaseSkus[l.sku] && !recentlyUserRemoved(l.key)) orphan = l;
+          if (lineIsDiscountedBase(l) && !covered[l.sku] && !recentlyUserRemoved(l.key)) orphan = l;
         });
 
-        if (!orphan) { busy = false; return; }
+        // Nothing to repair — release the suspension and show the truth
+        // (covers the rapid-empty case: cart is already how the user left it).
+        if (!orphan) { running = false; release(); renderNow(); return; }
 
         prefetchPlain(orphan.handle).then(function (plain) {
-          if (!plain || plain.id === orphan.variant_id) { busy = false; return; }
+          if (!plain || plain.id === orphan.variant_id) { running = false; release(); renderNow(); return; }
 
-          paintOptimistic(orphan, plain);
-
-          // Atomic swap: remove by stable key, verify, re-add, verify.
           fetch('/cart/change.js', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id: orphan.key, quantity: 0 })
           }).then(function (r1) {
-            if (!r1.ok) throw new Error('remove failed ' + r1.status);
-            // Last-moment intent check: if the customer trashed this base
-            // line themselves while the swap was in flight, do NOT bring it
-            // back — they're emptying the cart, not splitting a bundle.
-            if (recentlyUserRemoved(orphan.key)) throw new Error('user removed the base — no re-add');
+            if (!r1.ok) throw new Error('remove ' + r1.status);
+            if (recentlyUserRemoved(orphan.key)) throw new Error('user removed base');
             return fetch('/cart/add.js', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ items: [{ id: plain.id, quantity: orphan.quantity }] })
             });
           }).then(function (r2) {
             if (!r2.ok) {
-              // Removal succeeded but the re-add bounced: put the original
-              // line back (best effort) so the customer's item isn't lost —
-              // unless they deleted it themselves.
-              if (recentlyUserRemoved(orphan.key)) throw new Error('re-add failed, user removed — leave gone');
-              fetch('/cart/add.js', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ items: [{ id: orphan.variant_id, quantity: orphan.quantity, properties: orphan.properties || {} }] })
-              }).catch(function () {});
-              throw new Error('re-add failed ' + r2.status);
+              if (!recentlyUserRemoved(orphan.key)) {
+                fetch('/cart/add.js', {
+                  method: 'POST', headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ items: [{ id: orphan.variant_id, quantity: orphan.quantity, properties: orphan.properties || {} }] })
+                }).catch(function () {});
+              }
+              throw new Error('re-add ' + r2.status);
             }
-            busy = false;
-            document.dispatchEvent(new CustomEvent('pm:cart-changed', { detail: { source: 'bundle-guard' } }));
-            // Second, delayed notification: if the drawer was mid-render
-            // when the first one fired, this one lands after the dust
-            // settles so an OPEN drawer repaints with the repaired price.
-            setTimeout(function () {
-              document.dispatchEvent(new CustomEvent('pm:cart-changed', { detail: { source: 'bundle-guard' } }));
-            }, 1100);
-            // The /cart page is server-rendered — reload so prices match.
+            running = false;
+            release();
+            renderNow();
             if (location.pathname === '/cart') { location.reload(); return; }
-            check(); // sweep any further orphans (multiple bundles)
-          }).catch(function () { busy = false; });
+            schedule(); // sweep again for multi-bundle carts
+          }).catch(function () { running = false; release(); renderNow(); });
         });
       })
-      .catch(function () { busy = false; });
+      .catch(function () { running = false; release(); renderNow(); });
   }
 
-  /* Click-time prediction: the drawer announces a removal BEFORE its API
-     call. If the line being removed is a bundle addon whose base sits in
-     the cart at the discounted price, repaint that base to full price
-     immediately — zero waiting. The authoritative swap + re-render follow
-     and land on the same number. */
+  // ── Click-time prediction: paint + suspend the instant drives are trashed ──
   document.addEventListener('pm:cart-line-removing', function (e) {
     var key = e && e.detail && e.detail.key;
     noteUserRemoved(key);
     if (!key || !lastCart) return;
-    var items = lastCart.items || [];
     var removed = null;
-    items.forEach(function (l) { if (!removed && l.key === key) removed = l; });
+    (lastCart.items || []).forEach(function (l) { if (!removed && l.key === key) removed = l; });
     if (!removed || (removed.properties || {})._bundle !== 'addon') return;
-    var baseSku = (removed.properties || {})._bundle_base_sku;
-    var base = null;
-    items.forEach(function (l) {
-      if (!base && lineIsDiscountedBase(l) && l.sku === baseSku) base = l;
-    });
+    var baseSku = (removed.properties || {})._bundle_base_sku, base = null;
+    (lastCart.items || []).forEach(function (l) { if (!base && lineIsDiscountedBase(l) && l.sku === baseSku) base = l; });
     if (!base) return;
+    // A split is coming: freeze the drawer's repaints and show full price now.
+    suspend();
     var plain = plainCache[base.handle];
     if (plain) paintOptimistic(base, plain);
     else prefetchPlain(base.handle).then(function (p) { if (p) paintOptimistic(base, p); });
+    schedule();
   });
-
-  var t = null;
-  function debouncedCheck() { clearTimeout(t); t = setTimeout(check, 600); }
 
   document.addEventListener('pm:cart-changed', function (e) {
     var src = (e && e.detail && e.detail.source) || '';
-    // Drawer mutations are the hot path (a customer just split a bundle in
-    // front of their own eyes) — check immediately, no debounce.
-    if (src === 'drawer-line') { clearTimeout(t); check(); }
-    else debouncedCheck();
+    if (src === 'bundle-guard') return; // our own final render — don't loop
+    schedule();
   });
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', debouncedCheck);
-  else debouncedCheck();
+
+  // Seed the snapshot and do an initial reconcile (repairs a cart that was
+  // left split in a previous session / another tab).
+  fetch('/cart.js', { headers: { Accept: 'application/json' } })
+    .then(function (r) { return r.json(); })
+    .then(function (c) { lastCart = c; schedule(); })
+    .catch(function () {});
 })();

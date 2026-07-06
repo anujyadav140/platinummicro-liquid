@@ -97,7 +97,7 @@
     inited = true;
 
     // Initial fetch (don't open)
-    refresh();
+    refresh(true);
   }
 
   function open() {
@@ -110,8 +110,8 @@
     // Always re-sync from the authoritative cart on open — background
     // mutations (bundle guard repairs, other tabs) can land while the
     // drawer sits closed or mid-render, and open() must never show stale
-    // prices. Current DOM stays visible; the refresh ripples in.
-    refresh();
+    // prices. Force past any guard suspension — an explicit open shows truth.
+    refresh(true);
   }
 
   function close() {
@@ -121,10 +121,16 @@
     if (window.PmFocusTrap) PmFocusTrap.release(); // restore focus to the opener
   }
 
-  function refresh() {
+  // While the bundle guard is mid-swap (remove a discounted line, add the
+  // plain one) it sets window.__pmSuspendCartRender so the drawer does NOT
+  // repaint from the half-finished cart — that's what caused SKUs to flash
+  // in and out. The guard clears the flag and forces one render at the end.
+  // `force` bypasses the suspension for the guard's own final render and for
+  // deliberate opens.
+  function refresh(force) {
     return fetch('/cart.js', { headers: { Accept: 'application/json' } })
       .then(function (r) { return r.json(); })
-      .then(function (cart) { render(cart); return cart; })
+      .then(function (cart) { if (force || !window.__pmSuspendCartRender) render(cart); return cart; })
       .catch(function () {});
   }
 
@@ -435,7 +441,7 @@
           // User kept clicking while this was in flight → send the newest value.
           if (qPending[key] !== sent && qPending[key] != null) { flushLine(key); return; }
           qPending[key] = got;            // settle on the server's (capped) value
-          applyDrawerCart(cart);
+          if (!window.__pmSuspendCartRender) applyDrawerCart(cart);
           // Notify outside listeners (bundle guard etc.) that the cart mutated.
           document.dispatchEvent(new CustomEvent('pm:cart-changed', { detail: { source: 'drawer-line' } }));
         }
@@ -527,9 +533,10 @@
     })
       .then(function (r) { return r.json(); })
       .then(function (cart) {
-        // Sync silently in case another tab modified the cart concurrently
+        // Sync silently in case another tab modified the cart concurrently.
+        // Skip the repaint while the guard is mid-swap (it renders at the end).
         var stillThere = itemsEl.querySelector('[data-cart-item][data-cart-key="' + key + '"]');
-        if (cart.items && stillThere) render(cart);
+        if (cart.items && stillThere && !window.__pmSuspendCartRender) render(cart);
         // Re-evaluate add buttons (e.g. re-enable a PDP "Already in cart" button
         // once its product is removed from the cart).
         if (window.PmAddToCart && window.PmAddToCart.syncMaxed) window.PmAddToCart.syncMaxed();
