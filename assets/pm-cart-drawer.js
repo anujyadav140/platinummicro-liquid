@@ -18,6 +18,13 @@
   // row from a cart that still contains it — making the row reappear. Any
   // render skips these keys until they're gone for good.
   var removedKeys = {};
+  // Stable render order: Shopify reorders cart lines when the guard swaps a
+  // bundle variant (remove+add) or when items are added, so rendering in raw
+  // cart order makes rows jump. We assign each line a persistent order index
+  // on first sight — keyed by SKU + occurrence so a base keeps its slot even
+  // when its variant changes (discounted <-> full price share a SKU).
+  var orderIndex = {};
+  var orderNext = 0;
   function markRemoved(key) { if (key) removedKeys[key] = Date.now(); }
   function isRecentlyRemoved(key) {
     var t = removedKeys[key];
@@ -164,7 +171,17 @@
     // Drop any line the user optimistically removed but the server hasn't
     // committed yet — counts, totals, and rows all work off this filtered set
     // so a stale snapshot can't resurrect a removed row.
-    var shopifyItems = ((cart && cart.items) ? cart.items : []).filter(function (it) { return !isRecentlyRemoved(it.key); });
+    var rawItems = ((cart && cart.items) ? cart.items : []).filter(function (it) { return !isRecentlyRemoved(it.key); });
+    // Assign/lookup a stable order index per line (SKU + occurrence in cart
+    // order) so rows never reshuffle on an edit or a bundle variant swap.
+    var occ = {};
+    rawItems.forEach(function (it) {
+      var sku = it.sku || String(it.variant_id);
+      occ[sku] = (occ[sku] || 0) + 1;
+      it.__ord = sku + '#' + occ[sku];
+      if (orderIndex[it.__ord] === undefined) orderIndex[it.__ord] = orderNext++;
+    });
+    var shopifyItems = rawItems.slice().sort(function (a, b) { return orderIndex[a.__ord] - orderIndex[b.__ord]; });
     var quoteItems   = (window.PmQuote && window.PmQuote.list) ? window.PmQuote.list() : [];
 
     var shopifyLines = shopifyItems.length;
