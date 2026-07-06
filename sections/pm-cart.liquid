@@ -127,9 +127,36 @@
                 <span>−{{ cart.total_discounts | money }}</span>
               </div>
             {%- endif -%}
-            <div class="pm-cart-card__row pm-cart-card__row--muted">
+            <div class="pm-cart-card__row" data-pm-ship
+              {%- if customer.default_address and customer.default_address.country != blank -%}
+                data-ship-country="{{ customer.default_address.country | escape }}"
+                data-ship-province="{{ customer.default_address.province | escape }}"
+                data-ship-zip="{{ customer.default_address.zip | escape }}"
+              {%- endif -%}>
               <span>Shipping</span>
-              <span>Calculated at checkout</span>
+              <span class="pm-cart-card__row-val" data-pm-ship-summary>
+                <span data-pm-ship-amount></span>
+                <button type="button" class="pm-ship__toggle" data-pm-ship-toggle aria-expanded="false" aria-controls="pm-ship-panel">Estimate</button>
+              </span>
+            </div>
+            <div class="pm-ship__panel" id="pm-ship-panel" data-pm-ship-panel hidden>
+              <div class="pm-ship__fields">
+                <label class="pm-ship__field">
+                  <span>Country</span>
+                  <select data-pm-ship-country autocomplete="country">{{ country_option_tags }}</select>
+                </label>
+                <label class="pm-ship__field" data-pm-ship-prov-wrap hidden>
+                  <span>State / Province</span>
+                  <select data-pm-ship-province autocomplete="address-level1"></select>
+                </label>
+                <label class="pm-ship__field">
+                  <span>ZIP / Postal code</span>
+                  <input type="text" inputmode="text" autocomplete="postal-code" data-pm-ship-zip placeholder="e.g. 90001">
+                </label>
+              </div>
+              <button type="button" class="pm-ship__btn" data-pm-ship-go>Get rates</button>
+              <div class="pm-ship__result" data-pm-ship-result aria-live="polite"></div>
+              <p class="pm-ship__note">Estimate only. Final shipping is confirmed at checkout.</p>
             </div>
           </div>
 
@@ -341,6 +368,43 @@
 .pm-cart-card__row--savings { color: var(--pm-terracotta); }
 .pm-cart-card__row--savings span:last-child { font-weight: 600; }
 .pm-cart-card__row--muted { font-size: 13px; color: var(--pm-ink-500); }
+/* ── Shipping estimator ── */
+.pm-ship__toggle {
+  appearance: none; background: none; border: 0; padding: 0; cursor: pointer;
+  font: inherit; font-weight: 600; color: var(--pm-terracotta);
+  text-decoration: underline; text-underline-offset: 2px;
+}
+.pm-ship__toggle:hover { color: var(--pm-terracotta-dark, #8f340c); }
+.pm-ship__panel {
+  margin: 4px 0 2px; padding: 14px; border: 1px solid var(--pm-line, rgba(13,35,64,0.12));
+  border-radius: 10px; background: rgba(13,35,64,0.02);
+}
+.pm-ship__fields { display: grid; gap: 10px; }
+@media (min-width: 480px) { .pm-ship__fields { grid-template-columns: 1fr 1fr; } .pm-ship__field--zip { grid-column: 1 / -1; } }
+.pm-ship__field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--pm-ink-600); }
+.pm-ship__field span { font-weight: 600; }
+.pm-ship__field select, .pm-ship__field input {
+  width: 100%; box-sizing: border-box; padding: 8px 10px; font-size: 14px;
+  border: 1px solid var(--pm-line, rgba(13,35,64,0.18)); border-radius: 8px;
+  background: #fff; color: var(--pm-ink-900);
+}
+.pm-ship__btn {
+  margin-top: 12px; width: 100%; appearance: none; cursor: pointer;
+  background: var(--pm-navy, #0d2340); color: #fff; border: 0; border-radius: 8px;
+  padding: 10px 14px; font-size: 14px; font-weight: 700;
+}
+.pm-ship__btn:hover { filter: brightness(1.08); }
+.pm-ship__btn:disabled { opacity: 0.6; cursor: default; }
+.pm-ship__result { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+.pm-ship__rate {
+  display: flex; justify-content: space-between; font-size: 14px; color: var(--pm-ink-900);
+  padding: 8px 10px; border-radius: 8px; background: #fff; border: 1px solid var(--pm-line, rgba(13,35,64,0.1));
+}
+.pm-ship__rate--cheapest { border-color: var(--pm-terracotta); box-shadow: inset 0 0 0 1px var(--pm-terracotta); }
+.pm-ship__rate span:last-child { font-weight: 700; }
+.pm-ship__loading, .pm-ship__none { font-size: 13px; color: var(--pm-ink-500); }
+.pm-ship__note { margin: 10px 0 0; font-size: 11.5px; color: var(--pm-ink-500); }
+
 .pm-cart-card__total {
   border-top: 1.5px solid var(--pm-ink-200);
   padding-top: 14px;
@@ -460,7 +524,11 @@
       itemCount += q;
     });
     var sub = document.querySelector('[data-cart-subtotal]');   if (sub)   sub.textContent   = formatMoney(subtotalCents);
-    var total = document.querySelector('[data-cart-total]');    if (total) total.textContent = formatMoney(subtotalCents);
+    // Include the shipping estimate in the Total when one has been fetched,
+    // so it survives quantity edits (it's cleared if the cart contents change
+    // enough that the estimate is stale — see the estimator below).
+    var shipCents = window.__pmShipEstimateCents || 0;
+    var total = document.querySelector('[data-cart-total]');    if (total) total.textContent = formatMoney(subtotalCents + shipCents);
     var lbl = document.querySelector('[data-cart-itemcount-label]');
     if (lbl) lbl.textContent = 'Subtotal (' + itemCount + ' ' + (itemCount === 1 ? 'item' : 'items') + ')';
     // Header + mobile badges show stocked cart lines PLUS pending quote lines,
@@ -551,6 +619,7 @@
       var line = qBtn.dataset.line;
       var qty  = Math.max(0, parseInt(qBtn.dataset.qty, 10) || 0);
       pendingQty[line] = qty;
+      if (window.__pmClearShipEstimate) window.__pmClearShipEstimate(); // weight changed → estimate stale
       refreshRowDisplay(line);
       scheduleChange(line);
       return;
@@ -560,12 +629,130 @@
       e.preventDefault();
       var line2 = rmLink.dataset.cartRemove;
       pendingQty[line2] = 0;
+      if (window.__pmClearShipEstimate) window.__pmClearShipEstimate(); // contents changed → estimate stale
       var row2 = getRow(line2);
       if (row2) { row2.style.transition = 'opacity 160ms ease'; row2.style.opacity = '0.4'; }
       refreshTotals();
       scheduleChange(line2);
     }
   });
+
+  /* ── Shipping estimator ──
+     Uses Shopify's storefront shipping-rates AJAX API against the CURRENT
+     cart: the customer picks country / state / ZIP and we show the real
+     rates configured in Settings > Shipping and delivery. The cheapest is
+     added to the order Total as an estimate (final total is confirmed at
+     checkout). Any cart change clears the estimate so it can't go stale. */
+  (function () {
+    var root = document.querySelector('[data-pm-ship]');
+    if (!root) return;
+    var panel   = document.querySelector('[data-pm-ship-panel]');
+    var toggle  = document.querySelector('[data-pm-ship-toggle]');
+    var country = document.querySelector('[data-pm-ship-country]');
+    var provWrap= document.querySelector('[data-pm-ship-prov-wrap]');
+    var prov    = document.querySelector('[data-pm-ship-province]');
+    var zip     = document.querySelector('[data-pm-ship-zip]');
+    var go      = document.querySelector('[data-pm-ship-go]');
+    var result  = document.querySelector('[data-pm-ship-result]');
+    var amount  = document.querySelector('[data-pm-ship-amount]');
+
+    function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
+    function money(cents){ return cents === 0 ? 'FREE' : '$' + (cents/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+    // Prefill the form: the signed-in customer's saved address if present,
+    // otherwise default to the store's primary market (United States).
+    var savedCountry  = root.getAttribute('data-ship-country')  || 'United States';
+    var savedProvince = root.getAttribute('data-ship-province') || '';
+    var savedZip      = root.getAttribute('data-ship-zip')      || '';
+    if (country) {
+      for (var i = 0; i < country.options.length; i++) {
+        if (country.options[i].value === savedCountry) { country.selectedIndex = i; break; }
+      }
+      syncProvinces();
+      if (savedProvince && prov) prov.value = savedProvince;
+      if (savedZip && zip) zip.value = savedZip;
+    }
+
+    if (toggle) toggle.addEventListener('click', function () {
+      var hidden = panel.hasAttribute('hidden');
+      if (hidden) { panel.removeAttribute('hidden'); toggle.setAttribute('aria-expanded','true'); }
+      else { panel.setAttribute('hidden',''); toggle.setAttribute('aria-expanded','false'); }
+    });
+
+    // ── Auto-estimate on load ──
+    // A signed-in customer with a saved address gets shipping calculated
+    // automatically, no clicks. Guests (no saved address) keep the manual
+    // "Estimate" flow. Any failure/throttle falls back silently to manual.
+    if (root.getAttribute('data-ship-country') && savedZip) {
+      if (amount) amount.textContent = '';
+      if (toggle) toggle.textContent = 'Calculating…';
+      fetchRates(true);
+    }
+
+    if (country) country.addEventListener('change', syncProvinces);
+    function syncProvinces() {
+      var opt = country.options[country.selectedIndex];
+      var provs = [];
+      try { provs = JSON.parse(opt.getAttribute('data-provinces') || '[]'); } catch (e) {}
+      if (!provs.length) { provWrap.setAttribute('hidden',''); prov.innerHTML = ''; return; }
+      prov.innerHTML = provs.map(function (p) { return '<option value="' + esc(p[0]) + '">' + esc(p[0]) + '</option>'; }).join('');
+      provWrap.removeAttribute('hidden');
+    }
+
+    function fetchRates(auto) {
+      var c = country.value;
+      var p = provWrap.hasAttribute('hidden') ? '' : prov.value;
+      var z = (zip.value || '').trim();
+      if (!c) { if (!auto) result.innerHTML = '<span class="pm-ship__none">Choose a country.</span>'; return; }
+      if (go) go.disabled = true;
+      if (!auto) result.innerHTML = '<span class="pm-ship__loading">Getting rates…</span>';
+      var qs = '?shipping_address[country]=' + encodeURIComponent(c) +
+               '&shipping_address[province]=' + encodeURIComponent(p) +
+               '&shipping_address[zip]=' + encodeURIComponent(z);
+      fetch('/cart/shipping_rates.json' + qs, { headers: { Accept: 'application/json' } })
+        .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(function (data) {
+          var rates = (data && data.shipping_rates) || [];
+          if (!rates.length) {
+            if (!auto) result.innerHTML = '<span class="pm-ship__none">No rates for this address — shipping will be calculated at checkout.</span>';
+            clearEstimate();
+            return;
+          }
+          rates.sort(function (a, b) { return parseFloat(a.price) - parseFloat(b.price); });
+          result.innerHTML = rates.map(function (rt, idx) {
+            var cents = Math.round(parseFloat(rt.price) * 100);
+            return '<div class="pm-ship__rate' + (idx === 0 ? ' pm-ship__rate--cheapest' : '') + '">' +
+                     '<span>' + esc(rt.name) + '</span><span>' + money(cents) + '</span></div>';
+          }).join('');
+          // Apply the cheapest as the running estimate + reflect it in the row.
+          var cheapest = Math.round(parseFloat(rates[0].price) * 100);
+          window.__pmShipEstimateCents = cheapest;
+          if (amount) amount.textContent = money(cheapest) + ' ';
+          if (toggle) toggle.textContent = 'change';
+          if (typeof refreshTotals === 'function') refreshTotals();
+        })
+        .catch(function () {
+          // Silent on auto (fall back to the manual "Estimate" affordance);
+          // explicit note when the customer clicked the button.
+          if (!auto) result.innerHTML = '<span class="pm-ship__none">Couldn’t fetch rates right now — shipping will be calculated at checkout.</span>';
+          clearEstimate();
+        })
+        .finally(function () { if (go) go.disabled = false; });
+    }
+    if (go) go.addEventListener('click', function () { fetchRates(false); });
+
+    function clearEstimate() {
+      window.__pmShipEstimateCents = 0;
+      if (amount) amount.textContent = '';
+      if (toggle) toggle.textContent = 'Estimate';
+      if (result) result.innerHTML = '';
+    }
+    // A cart mutation (qty change / removal) invalidates the estimate:
+    // rates depend on weight/contents, so drop it and let them re-estimate.
+    // Exposed so the cart's own qty/remove handlers (outer IIFE) can call it.
+    window.__pmClearShipEstimate = clearEstimate;
+    document.addEventListener('pm:cart-changed', clearEstimate);
+  })();
 })();
 </script>
 
