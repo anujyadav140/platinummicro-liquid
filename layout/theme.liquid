@@ -339,6 +339,8 @@
   <script src="{{ 'pm-plp.js'             | asset_url }}" defer></script>
   {%- if template.name == 'collection' -%}<script src="{{ 'pm-pagesize.js' | asset_url }}" defer></script>{%- endif -%}
   <script src="{{ 'pm-add-to-cart.js'     | asset_url }}" defer></script>
+  {%- comment -%} Reverts the bundle discount if a customer splits a migrated BC bundle in the cart {%- endcomment -%}
+  <script src="{{ 'pm-bundle-guard.js'    | asset_url }}" defer></script>
   <script src="{{ 'pm-add-to-list.js'     | asset_url }}" defer></script>
   <script src="{{ 'pm-quote.js'           | asset_url }}" defer></script>
   <script src="{{ 'pm-recently-viewed.js' | asset_url }}" defer></script>
