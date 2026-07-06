@@ -98,33 +98,33 @@
         {%- assign _abase = _parts | first -%}
         {%- assign _aqs = '' -%}
         {%- if _parts.size > 1 -%}{%- assign _aqs = '?' | append: _parts.last -%}{%- endif -%}
-        <details class="pm-acct" data-pm-acct>
-          <summary class="pm-acct__trigger" aria-haspopup="menu" aria-label="Account menu">
-            <span class="pm-acct__avatar">
+        <details class="pm-amenu" data-pm-amenu>
+          <summary class="pm-amenu__trigger" aria-haspopup="menu" aria-label="Account menu">
+            <span class="pm-amenu__avatar">
               {{ customer.first_name | default: 'A' | slice: 0 | upcase }}
               {%- comment -%} Unread-message signifier — toggled by pm-account-menu.js. {%- endcomment -%}
-              <span class="pm-acct__badge" data-msg-badge hidden aria-hidden="true"></span>
+              <span class="pm-amenu__badge" data-msg-badge hidden aria-hidden="true"></span>
             </span>
           </summary>
-          <div class="pm-acct__menu" role="menu">
-            <div class="pm-acct__head">
-              <div class="pm-acct__head-txt">
-                <span class="pm-acct__hi">Hi, {{ customer.first_name | default: 'there' | escape }}</span>
-                <span class="pm-acct__email">{{ customer.email | escape }}</span>
+          <div class="pm-amenu__menu" role="menu">
+            <div class="pm-amenu__head">
+              <div class="pm-amenu__head-txt">
+                <span class="pm-amenu__hi">Hi, {{ customer.first_name | default: 'there' | escape }}</span>
+                <span class="pm-amenu__email">{{ customer.email | escape }}</span>
               </div>
-              <button type="button" class="pm-acct__close" data-pm-acct-close aria-label="Close account menu">
+              <button type="button" class="pm-amenu__close" data-pm-amenu-close aria-label="Close account menu">
                 <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg>
               </button>
             </div>
-            <nav class="pm-acct__links">
-              <a class="pm-acct__link" href="{{ _abase }}/profile{{ _aqs }}" role="menuitem">Profile</a>
-              <a class="pm-acct__link" href="{{ _abase }}/orders{{ _aqs }}" role="menuitem">Orders</a>
-              <a class="pm-acct__link" href="/pages/lists" role="menuitem">Lists</a>
-              <a class="pm-acct__link" href="/pages/messages" role="menuitem" data-msg-link>
+            <nav class="pm-amenu__links">
+              <a class="pm-amenu__link" href="{{ _abase }}/profile{{ _aqs }}" role="menuitem">Profile</a>
+              <a class="pm-amenu__link" href="{{ _abase }}/orders{{ _aqs }}" role="menuitem">Orders</a>
+              <a class="pm-amenu__link" href="/pages/lists" role="menuitem">Lists</a>
+              <a class="pm-amenu__link" href="/pages/messages" role="menuitem" data-msg-link>
                 <span>Messages</span>
-                <span class="pm-acct__linkbadge" data-msg-linkbadge hidden aria-hidden="true"></span>
+                <span class="pm-amenu__linkbadge" data-msg-linkbadge hidden aria-hidden="true"></span>
               </a>
-              <a class="pm-acct__link pm-acct__link--signout" href="{{ routes.account_logout_url }}" rel="nofollow" role="menuitem">Sign out</a>
+              <a class="pm-amenu__link pm-amenu__link--signout" href="{{ routes.account_logout_url }}" rel="nofollow" role="menuitem">Sign out</a>
             </nav>
           </div>
         </details>

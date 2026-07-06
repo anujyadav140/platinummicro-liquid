@@ -304,7 +304,7 @@
           {%- if _parts.size > 1 -%}{%- assign _aqs = '?' | append: _parts.last -%}{%- endif -%}
           <details class="pm-mobile-acct">
             <summary class="pm-mobile-nav__link pm-mobile-acct__summary">
-              <span class="pm-mobile-acct__avatar" aria-hidden="true">{{ customer.first_name | default: 'A' | slice: 0 | upcase }}<span class="pm-acct__badge" data-msg-badge hidden></span></span>
+              <span class="pm-mobile-acct__avatar" aria-hidden="true">{{ customer.first_name | default: 'A' | slice: 0 | upcase }}<span class="pm-amenu__badge" data-msg-badge hidden></span></span>
               <span class="pm-mobile-acct__name">Hi, {{ customer.first_name | default: 'Account' | escape }}</span>
               <svg class="pm-mobile-acct__chev" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
             </summary>
@@ -312,7 +312,7 @@
               <a class="pm-mobile-acct__sub" href="{{ _abase }}/profile{{ _aqs }}">Profile</a>
               <a class="pm-mobile-acct__sub" href="{{ _abase }}/orders{{ _aqs }}">Orders</a>
               <a class="pm-mobile-acct__sub" href="/pages/lists">Lists</a>
-              <a class="pm-mobile-acct__sub pm-mobile-acct__sub--msg" href="/pages/messages" data-msg-link>Messages <span class="pm-acct__linkbadge" data-msg-linkbadge hidden></span></a>
+              <a class="pm-mobile-acct__sub pm-mobile-acct__sub--msg" href="/pages/messages" data-msg-link>Messages <span class="pm-amenu__linkbadge" data-msg-linkbadge hidden></span></a>
               <a class="pm-mobile-acct__sub" href="{{ routes.account_logout_url }}" rel="nofollow">Sign out</a>
             </div>
           </details>

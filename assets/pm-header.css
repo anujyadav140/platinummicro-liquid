@@ -379,28 +379,28 @@ shopify-account:not(:defined) { visibility: hidden; }
 /* ── Signed-in account dropdown (our own; replaces <shopify-account>'s
    shadow-DOM menu so we can carry a Messages link + an unread-message badge).
    Behaviour in pm-account-menu.js; a native <details> so it works without JS. ── */
-.pm-acct { position: relative; display: inline-flex; align-items: center; }
-.pm-acct__trigger {
+.pm-amenu { position: relative; display: inline-flex; align-items: center; }
+.pm-amenu__trigger {
   display: inline-flex; align-items: center; justify-content: center;
   cursor: pointer; padding: 4px; border-radius: 999px; list-style: none;
   -webkit-tap-highlight-color: transparent;
 }
-.pm-acct__trigger::-webkit-details-marker { display: none; }
-.pm-acct__trigger::marker { content: ''; }
-.pm-acct__avatar {
+.pm-amenu__trigger::-webkit-details-marker { display: none; }
+.pm-amenu__trigger::marker { content: ''; }
+.pm-amenu__avatar {
   position: relative; display: inline-flex; align-items: center; justify-content: center;
   width: 32px; height: 32px; border-radius: 999px;
   background: var(--pm-navy-deep); color: #fff;
   font-family: var(--pm-font-body); font-size: 13px; font-weight: 700; line-height: 1;
   user-select: none; transition: box-shadow var(--pm-dur-fast);
 }
-.pm-acct__trigger:hover .pm-acct__avatar,
-.pm-acct[open] .pm-acct__avatar { box-shadow: 0 0 0 3px var(--pm-ink-100); }
-.pm-acct__trigger:focus-visible { outline: none; }
-.pm-acct__trigger:focus-visible .pm-acct__avatar { box-shadow: 0 0 0 3px var(--pm-navy-light); }
+.pm-amenu__trigger:hover .pm-amenu__avatar,
+.pm-amenu[open] .pm-amenu__avatar { box-shadow: 0 0 0 3px var(--pm-ink-100); }
+.pm-amenu__trigger:focus-visible { outline: none; }
+.pm-amenu__trigger:focus-visible .pm-amenu__avatar { box-shadow: 0 0 0 3px var(--pm-navy-light); }
 
 /* Unread signifier on the avatar — mirrors the cart badge. */
-.pm-acct__badge {
+.pm-amenu__badge {
   position: absolute; top: -5px; right: -5px;
   min-width: 17px; height: 17px; padding: 0 4px;
   background: var(--pm-terracotta); color: #fff;
@@ -408,53 +408,53 @@ shopify-account:not(:defined) { visibility: hidden; }
   border-radius: 999px; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(13, 35, 64, 0.22);
   display: inline-flex; align-items: center; justify-content: center; pointer-events: none;
 }
-.pm-acct__badge[hidden] { display: none; }
+.pm-amenu__badge[hidden] { display: none; }
 
 /* Dropdown card */
-.pm-acct__menu {
+.pm-amenu__menu {
   position: absolute; top: calc(100% + 10px); right: 0; width: 268px;
   background: #fff; border: 1px solid var(--pm-ink-200); border-radius: 14px;
   box-shadow: 0 12px 32px rgba(13, 35, 64, 0.16); padding: 6px; z-index: 620;
-  animation: pm-acct-in var(--pm-dur-fast) ease;
+  animation: pm-amenu-in var(--pm-dur-fast) ease;
 }
-@keyframes pm-acct-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
-.pm-acct__head { display: flex; align-items: flex-start; gap: 10px; padding: 10px 10px 12px; }
-.pm-acct__head-txt { display: flex; flex-direction: column; min-width: 0; }
-.pm-acct__hi { font-weight: 700; font-size: 14px; color: var(--pm-ink-900); line-height: 1.2; }
-.pm-acct__email {
+@keyframes pm-amenu-in { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+.pm-amenu__head { display: flex; align-items: flex-start; gap: 10px; padding: 10px 10px 12px; }
+.pm-amenu__head-txt { display: flex; flex-direction: column; min-width: 0; }
+.pm-amenu__hi { font-weight: 700; font-size: 14px; color: var(--pm-ink-900); line-height: 1.2; }
+.pm-amenu__email {
   font-size: 12px; color: var(--pm-ink-500); margin-top: 2px;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
 }
-.pm-acct__close {
+.pm-amenu__close {
   margin-left: auto; flex-shrink: 0;
   display: inline-flex; align-items: center; justify-content: center;
   width: 26px; height: 26px; border: none; border-radius: 999px;
   background: var(--pm-ink-100); color: var(--pm-ink-700); cursor: pointer;
   transition: background var(--pm-dur-fast), color var(--pm-dur-fast);
 }
-.pm-acct__close:hover { background: var(--pm-ink-200); color: var(--pm-ink-900); }
-.pm-acct__links { display: flex; flex-direction: column; }
-.pm-acct__link {
+.pm-amenu__close:hover { background: var(--pm-ink-200); color: var(--pm-ink-900); }
+.pm-amenu__links { display: flex; flex-direction: column; }
+.pm-amenu__link {
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   padding: 10px 12px; border-radius: 9px;
   color: var(--pm-ink-800); font-size: 13.5px; font-weight: 500; text-decoration: none;
   transition: background var(--pm-dur-fast), color var(--pm-dur-fast);
 }
-.pm-acct__link:hover { background: var(--pm-ink-100); color: var(--pm-navy-deep); }
-.pm-acct__link--signout {
+.pm-amenu__link:hover { background: var(--pm-ink-100); color: var(--pm-navy-deep); }
+.pm-amenu__link--signout {
   margin-top: 4px; border-top: 1px solid var(--pm-ink-200); border-radius: 0 0 9px 9px;
   color: var(--pm-ink-600);
 }
-.pm-acct__link--signout:hover { background: #fbecea; color: var(--pm-terracotta); }
+.pm-amenu__link--signout:hover { background: #fbecea; color: var(--pm-terracotta); }
 
 /* Unread pill next to a "Messages" row (desktop menu + mobile drawer). */
-.pm-acct__linkbadge {
+.pm-amenu__linkbadge {
   min-width: 18px; height: 18px; padding: 0 6px;
   background: var(--pm-terracotta); color: #fff;
   font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1;
   border-radius: 999px; display: inline-flex; align-items: center; justify-content: center;
 }
-.pm-acct__linkbadge[hidden] { display: none; }
+.pm-amenu__linkbadge[hidden] { display: none; }
 
 /* Mobile drawer account badge anchoring (avatar in the hamburger accordion). */
 .pm-mobile-acct__avatar { position: relative; }
@@ -522,7 +522,7 @@ shopify-account:not(:defined) { visibility: hidden; }
      so hide the header avatar here — tapping it otherwise popped a misplaced
      <shopify-account> menu over the drawer. */
   .pm-header__shopify-account,
-  .pm-acct { display: none; }
+  .pm-amenu { display: none; }
   /* Hide the text label inside header action buttons, but keep icon
      wrappers and the cart badge visible. */
   .pm-header__action-btn > span:not(.pm-header__cart-icon):not(.pm-header__cart-badge) {

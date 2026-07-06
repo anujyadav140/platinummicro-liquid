@@ -75,7 +75,7 @@
     window.addEventListener('pageshow', function (e) { if (e.persisted) paint(); });
 
     // ── Desktop <details> account dropdown niceties ──
-    var acct = document.querySelector('[data-pm-acct]');
+    var acct = document.querySelector('[data-pm-amenu]');
     if (acct) {
       // Close when clicking anywhere outside the open menu.
       document.addEventListener('click', function (e) {
@@ -86,12 +86,12 @@
       document.addEventListener('keydown', function (e) {
         if (e.key === 'Escape' && acct.open) {
           acct.removeAttribute('open');
-          var trigger = acct.querySelector('.pm-acct__trigger');
+          var trigger = acct.querySelector('.pm-amenu__trigger');
           if (trigger && trigger.focus) trigger.focus();
         }
       });
       // Explicit ✕ button inside the card.
-      var closeBtn = acct.querySelector('[data-pm-acct-close]');
+      var closeBtn = acct.querySelector('[data-pm-amenu-close]');
       if (closeBtn) {
         closeBtn.addEventListener('click', function (e) {
           e.preventDefault();
