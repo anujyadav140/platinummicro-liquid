@@ -431,6 +431,8 @@
           if (qPending[key] !== sent && qPending[key] != null) { flushLine(key); return; }
           qPending[key] = got;            // settle on the server's (capped) value
           applyDrawerCart(cart);
+          // Notify outside listeners (bundle guard etc.) that the cart mutated.
+          document.dispatchEvent(new CustomEvent('pm:cart-changed', { detail: { source: 'drawer-line' } }));
         }
         if (res.ok && res.body && res.body.items) settle(res.body);
         else {
@@ -523,6 +525,10 @@
         // Re-evaluate add buttons (e.g. re-enable a PDP "Already in cart" button
         // once its product is removed from the cart).
         if (window.PmAddToCart && window.PmAddToCart.syncMaxed) window.PmAddToCart.syncMaxed();
+        // Tell outside listeners the cart mutated — the bundle guard needs this
+        // to catch a split bundle the instant the drives line is trashed.
+        // (source is not in the auto-open list, so the drawer stays as-is.)
+        document.dispatchEvent(new CustomEvent('pm:cart-changed', { detail: { source: 'drawer-line' } }));
       })
       .catch(function () {});
   }
