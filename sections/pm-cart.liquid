@@ -659,11 +659,21 @@
     function esc(s){ return String(s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];}); }
     function money(cents){ return cents === 0 ? 'FREE' : '$' + (cents/100).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
-    // Prefill the form: the signed-in customer's saved address if present,
-    // otherwise default to the store's primary market (United States).
-    var savedCountry  = root.getAttribute('data-ship-country')  || 'United States';
-    var savedProvince = root.getAttribute('data-ship-province') || '';
-    var savedZip      = root.getAttribute('data-ship-zip')      || '';
+    // ── Destination resolution ──
+    // Two sources, in order: (1) the signed-in customer's saved address
+    // rendered by Liquid (data-ship-*); (2) a destination remembered in
+    // localStorage from a previous estimate. New customer accounts often
+    // don't expose customer.default_address to storefront Liquid, so the
+    // remembered destination is what makes auto-estimate reliable — once a
+    // customer estimates their address, every later visit auto-calculates.
+    var DEST_KEY = 'pm:ship:dest';
+    function readDest() { try { var d = JSON.parse(localStorage.getItem(DEST_KEY) || 'null'); return (d && d.country && d.zip) ? d : null; } catch (e) { return null; } }
+    function saveDest(d) { try { localStorage.setItem(DEST_KEY, JSON.stringify(d)); } catch (e) {} }
+
+    var remembered = readDest();
+    var savedCountry  = root.getAttribute('data-ship-country')  || (remembered && remembered.country)  || 'United States';
+    var savedProvince = root.getAttribute('data-ship-province') || (remembered && remembered.province) || '';
+    var savedZip      = root.getAttribute('data-ship-zip')      || (remembered && remembered.zip)      || '';
     if (country) {
       for (var i = 0; i < country.options.length; i++) {
         if (country.options[i].value === savedCountry) { country.selectedIndex = i; break; }
@@ -680,10 +690,12 @@
     });
 
     // ── Auto-estimate on load ──
-    // A signed-in customer with a saved address gets shipping calculated
-    // automatically, no clicks. Guests (no saved address) keep the manual
-    // "Estimate" flow. Any failure/throttle falls back silently to manual.
-    if (root.getAttribute('data-ship-country') && savedZip) {
+    // Fire automatically when we have a full destination (country + state +
+    // zip) from EITHER the account address or a remembered estimate. The US
+    // rate API requires a state, so all three parts are needed. Otherwise
+    // the manual "Estimate" flow stands (a guest we've never seen). Any
+    // failure/throttle falls back silently to manual.
+    if (savedCountry && savedProvince && savedZip) {
       if (amount) amount.textContent = '';
       if (toggle) toggle.textContent = 'Calculating…';
       fetchRates(true);
@@ -739,6 +751,8 @@
           if (amount) amount.textContent = money(cheapest) + ' ';
           if (toggle) toggle.textContent = 'change';
           if (typeof refreshTotals === 'function') refreshTotals();
+          // Remember this destination so future visits auto-calculate.
+          saveDest({ country: c, province: p, zip: z });
         })
         .catch(function () {
           // Silent on auto (fall back to the manual "Estimate" affordance);
