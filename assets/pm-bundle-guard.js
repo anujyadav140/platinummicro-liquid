@@ -38,15 +38,18 @@
   'use strict';
 
   var QUIET_MS = 450;     // reconcile only after the cart is quiet this long
-  var FAILSAFE_MS = 3500; // hard ceiling on how long renders stay suspended
+  var FAILSAFE_MS = 9000; // hard ceiling on how long renders stay suspended
+                          // (must exceed the swap + settle poll below)
 
   var plainCache = {};    // handle -> { id, price } of the full-price variant
   var lastCart = null;    // most recent cart snapshot (for click-time prediction)
   var userRemoved = {};   // line key -> ts of a customer-initiated removal
   var swapped = {};       // discounted-base key -> ts, AFTER we've removed it
+  var awaitingPlain = {}; // base SKU -> true, while we wait for its full-price
+                          // line to appear in /cart.js (so we never render a
+                          // moment where the base row is missing entirely)
   var quietTimer = null;
   var failsafeTimer = null;
-  var insuranceTimer = null;
   var running = false;
 
   function isPackVariant(text) { return /pack of \d+/i.test(String(text || '')); }
@@ -134,19 +137,45 @@
     });
   }
 
+  // Is the full-price (non-pack) line for this base SKU present in the cart yet?
+  function plainPresent(cart, sku) {
+    return ((cart && cart.items) || []).some(function (l) {
+      return l.sku === sku && !isPackVariant((l.variant_title || '') + ' ' + (l.title || ''));
+    });
+  }
+
+  // Render ONLY once every swapped base's full-price line is actually in the
+  // cart. Shopify's /cart.js lags a beat after the add, and the discounted line
+  // is already filtered out by the drawer (markRemoved) — so if we rendered
+  // straightaway the base row would blink out until the plain line landed. We
+  // keep the drawer suspended (the optimistically-painted row, already at full
+  // price, stays put) and poll briefly; the instant the plain line is present
+  // we release and render exactly once, so the row transitions seamlessly.
+  function settleRender(tries) {
+    if (!Object.keys(awaitingPlain).length) { release(); renderNow(); return; }
+    if (tries >= 10) { awaitingPlain = {}; release(); renderNow(); return; } // ~2.5s ceiling, then show truth
+    fetch('/cart.js', { headers: { Accept: 'application/json' } })
+      .then(function (r) { return r.json(); })
+      .then(function (cart) {
+        lastCart = cart;
+        Object.keys(awaitingPlain).forEach(function (sku) { if (plainPresent(cart, sku)) delete awaitingPlain[sku]; });
+        if (!Object.keys(awaitingPlain).length) {
+          release();
+          // Render the confirmed-good cart directly (plain present; the dead
+          // discounted line is filtered by the drawer) — no extra fetch that
+          // could itself be stale.
+          if (window.PmCart && window.PmCart.applyCart) window.PmCart.applyCart(cart); else renderNow();
+        } else {
+          setTimeout(function () { settleRender(tries + 1); }, 250);
+        }
+      })
+      .catch(function () { release(); renderNow(); });
+  }
+
   function finishReconcile() {
     running = false;
-    release();
-    if (location.pathname === '/cart') { location.reload(); return; } // server-rendered page
-    renderNow();
-    // Insurance: Shopify's /cart.js is eventually consistent, so renderNow's
-    // read can momentarily miss the freshly-added plain line. One more forced
-    // render a beat later settles on the true state. (The dead discounted key
-    // is filtered by the drawer regardless, so no discounted price can flash.)
-    clearTimeout(insuranceTimer);
-    insuranceTimer = setTimeout(function () {
-      if (window.PmCart && window.PmCart.refresh) window.PmCart.refresh(true);
-    }, 800);
+    if (location.pathname === '/cart') { release(); location.reload(); return; } // server-rendered page
+    settleRender(0);
   }
 
   // Swap ONE orphan base (remove discounted line by key → add plain variant),
@@ -179,6 +208,7 @@
       // base (loop), and tell the drawer the discounted line is dead so no
       // render — the guard's OR the drawer's own — can repaint its old price.
       noteSwapped(o.key);
+      awaitingPlain[o.sku] = true; // hold the final render until this base's full-price line is in the cart
       if (window.PmCart && window.PmCart.markRemoved) window.PmCart.markRemoved(o.key);
       return fetch('/cart/add.js', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },

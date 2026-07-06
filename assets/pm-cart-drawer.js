@@ -618,7 +618,10 @@
   // consistent for a moment after a mutation) can never repaint the old
   // discounted price. That's what stopped the swapped line flickering
   // between its discounted and full price.
-  window.PmCart = { open: open, close: close, refresh: refresh, markRemoved: markRemoved };
+  // applyCart lets the bundle guard paint a specific, already-verified cart
+  // snapshot (one where the swapped-in full-price line is confirmed present),
+  // instead of the guard forcing another /cart.js read that could be stale.
+  window.PmCart = { open: open, close: close, refresh: refresh, markRemoved: markRemoved, applyCart: applyDrawerCart };
 
   // ── Flicker fix ────────────────────────────────────────────────────
   // The header badge is server-rendered with the Shopify cart LINE count
