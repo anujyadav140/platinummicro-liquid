@@ -612,7 +612,13 @@
     return '$' + dollars.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
-  window.PmCart = { open: open, close: close, refresh: refresh };
+  // markRemoved is exposed so the bundle guard can tell the drawer that a
+  // discounted base line it just swapped out is DEAD — every render then
+  // filters that key, so a stale /cart.js snapshot (Shopify is eventually
+  // consistent for a moment after a mutation) can never repaint the old
+  // discounted price. That's what stopped the swapped line flickering
+  // between its discounted and full price.
+  window.PmCart = { open: open, close: close, refresh: refresh, markRemoved: markRemoved };
 
   // ── Flicker fix ────────────────────────────────────────────────────
   // The header badge is server-rendered with the Shopify cart LINE count

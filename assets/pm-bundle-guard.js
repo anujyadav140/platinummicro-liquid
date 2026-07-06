@@ -43,8 +43,10 @@
   var plainCache = {};    // handle -> { id, price } of the full-price variant
   var lastCart = null;    // most recent cart snapshot (for click-time prediction)
   var userRemoved = {};   // line key -> ts of a customer-initiated removal
+  var swapped = {};       // discounted-base key -> ts, AFTER we've removed it
   var quietTimer = null;
   var failsafeTimer = null;
+  var insuranceTimer = null;
   var running = false;
 
   function isPackVariant(text) { return /pack of \d+/i.test(String(text || '')); }
@@ -59,6 +61,18 @@
     var ts = userRemoved[key];
     if (!ts) return false;
     if (Date.now() - ts > 15000) { delete userRemoved[key]; return false; }
+    return true;
+  }
+
+  // A discounted base we've already SUCCESSFULLY removed. Shopify's /cart.js is
+  // eventually consistent, so a sweep right after the swap can still return the
+  // old discounted line — without this we'd re-swap it in a loop (adding a
+  // duplicate plain and re-rendering, which the customer sees as flicker).
+  function noteSwapped(key) { if (key) swapped[key] = Date.now(); }
+  function recentlySwapped(key) {
+    var ts = swapped[key];
+    if (!ts) return false;
+    if (Date.now() - ts > 30000) { delete swapped[key]; return false; } // keys never recur; expire for hygiene
     return true;
   }
 
@@ -115,7 +129,8 @@
       if (p._bundle === 'addon' && p._bundle_base_sku) covered[p._bundle_base_sku] = true;
     });
     return items.filter(function (l) {
-      return lineIsDiscountedBase(l) && !covered[l.sku] && !recentlyUserRemoved(l.key);
+      return lineIsDiscountedBase(l) && !covered[l.sku] &&
+             !recentlyUserRemoved(l.key) && !recentlySwapped(l.key);
     });
   }
 
@@ -124,6 +139,14 @@
     release();
     if (location.pathname === '/cart') { location.reload(); return; } // server-rendered page
     renderNow();
+    // Insurance: Shopify's /cart.js is eventually consistent, so renderNow's
+    // read can momentarily miss the freshly-added plain line. One more forced
+    // render a beat later settles on the true state. (The dead discounted key
+    // is filtered by the drawer regardless, so no discounted price can flash.)
+    clearTimeout(insuranceTimer);
+    insuranceTimer = setTimeout(function () {
+      if (window.PmCart && window.PmCart.refresh) window.PmCart.refresh(true);
+    }, 800);
   }
 
   // Swap ONE orphan base (remove discounted line by key → add plain variant),
@@ -152,6 +175,11 @@
     }).then(function (r1) {
       if (!r1.ok) throw new Error('remove ' + r1.status);
       if (recentlyUserRemoved(o.key)) throw new Error('user removed base');
+      // Removal committed. Record it so a stale sweep can't re-swap this same
+      // base (loop), and tell the drawer the discounted line is dead so no
+      // render — the guard's OR the drawer's own — can repaint its old price.
+      noteSwapped(o.key);
+      if (window.PmCart && window.PmCart.markRemoved) window.PmCart.markRemoved(o.key);
       return fetch('/cart/add.js', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ items: [{ id: plain.id, quantity: o.quantity }] })
