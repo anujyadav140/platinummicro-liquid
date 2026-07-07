@@ -1,4 +1,4 @@
-/* build: pm-bundle-guard 2026-07-07-cart-reload-loop-fix (force CDN re-hash) */
+/* build: pm-bundle-guard 2026-07-07-drawer-no-render-nonbundle (force CDN re-hash) */
 /* PM — Bundle integrity guard.
  *
  * Migrated BigCommerce bundles add TWO cart lines: the base unit on a
@@ -219,6 +219,12 @@
       if (mutated) location.reload();
       return;
     }
+    // Drawer: only re-render when we actually swapped a bundle. On a clean cart
+    // (no orphans — e.g. the shopper is just changing a bulk qty) re-rendering
+    // here fetches a possibly-behind /cart.js and reverts the drawer's optimistic
+    // qty/removal — the "+ jumps up then snaps back" and "deleted row returns"
+    // glitches. Nothing to fix ⇒ stand down and let the drawer own its render.
+    if (!mutated) { running = false; release(); return; }
     settleRender(0);
   }
 

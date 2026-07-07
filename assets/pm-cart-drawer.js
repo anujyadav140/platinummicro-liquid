@@ -1,4 +1,4 @@
-/* build: pm-cart-drawer 2026-07-07-stepper-pdp-parity (force CDN re-hash) */
+/* build: pm-cart-drawer 2026-07-07-stepper-nobounce (force CDN re-hash) */
 /**
  * PmCart — slide-out cart drawer.
  * Mirrors Hydrogen's PmCartDrawer.
@@ -489,16 +489,23 @@
       .then(function (res) {
         qInflight[key] = false;
         function settle(cart) {
-          // SAME MODEL AS THE PDP STEPPER: the stepper clamps locally to the
-          // line's known stock cap (data-cart-cap, from data-max-qty) and the
-          // server cart is simply the source of truth — we re-render from it.
-          // No "learned cap" that sticks and clamps future clicks, and no toast.
-          // That learned-cap machinery is exactly what bricked the +/- (a bulk
-          // line RE-KEYS on a tier crossing → the old code read qty 0/low → pinned
-          // maxedCap → clamped everything). Trusting the re-render kills all of it.
+          // SAME MODEL AS THE PDP STEPPER: clamp locally to the line's known stock
+          // cap (data-cart-cap) and treat the server cart as the source of truth.
+          // No "learned cap" that sticks and clamps future clicks (that was the
+          // brick) and no toast.
+          var items = cart.items || [];
+          var ln = items.filter(function (i) { return i.key === key; })[0];
+          // A bulk line RE-KEYS on a tier crossing, so match by variant id if the
+          // exact key misses — needed to read the committed qty below.
+          if (!ln) { var vid = parseInt(String(key).split(':')[0], 10); if (vid) ln = items.filter(function (i) { return i.id === vid; })[0]; }
           // User kept clicking while this was in flight → send the newest value.
           if (qPending[key] !== sent && qPending[key] != null) { flushLine(key); return; }
-          delete qPending[key]; // settled — next click reads the re-rendered input value
+          // PIN qPending to the committed qty (do NOT delete it). render() reads
+          // qPending for the input, so keeping it set means a concurrent re-render
+          // (the bundle guard, or a second settle) can't bounce the stepper back to
+          // a stale number — the "+ jumps up then reverts" glitch. Deleting it here
+          // is what reopened that race.
+          if (ln) qPending[key] = ln.quantity; else delete qPending[key];
           if (!window.__pmSuspendCartRender) applyDrawerCart(cart);
           // Notify outside listeners (bundle guard etc.) that the cart mutated.
           document.dispatchEvent(new CustomEvent('pm:cart-changed', { detail: { source: 'drawer-line' } }));
