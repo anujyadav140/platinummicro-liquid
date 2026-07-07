@@ -48,6 +48,18 @@
 {%- assign _bundle_products = product.metafields.pmb.bundle_products.value -%}
 {%- assign _bundle_discount = product.metafields.pmb.bundle_discount_percent.value | default: 0 -%}
 {%- assign _bundle_max_qty  = product.metafields.pmb.bundle_max_quantity.value -%}
+{%- comment -%}
+  Bulk Options — products TAGGED "Bulk Options" get quantity-tier pricing:
+  10-19 = 10% off, 20-29 = 20% off, 30+ = 30% off. The tiers are shown here
+  (link + modal + live "you're saving X%" as qty changes); the actual discount
+  is applied by 3 Shopify automatic discounts scoped to the Bulk Options
+  collection (best qualifying tier wins on cart quantity). Merchant enables it
+  on any product simply by adding the "Bulk Options" tag in the admin.
+  ⚠ If you change these percentages/thresholds, also update the automatic
+  discounts in Admin → Discounts so the display and the charge stay in sync.
+{%- endcomment -%}
+{%- assign _is_bulk = false -%}
+{%- if product.tags contains 'Bulk Options' -%}{%- assign _is_bulk = true -%}{%- endif -%}
 {%- assign _bundle_label    = product.metafields.pmb.bundle_label.value -%}
 {%- assign _has_bundle = false -%}
 {%- if _bundle_products and _bundle_products.size > 0 -%}
@@ -536,6 +548,16 @@
             <button type="button" class="pm-pdp__qty-btn" data-pm-pdp-qty="1" aria-label="Increase quantity">+</button>
           </div>
 
+          {%- if _is_bulk -%}
+          <div class="pm-bulk" data-pm-bulk data-bulk-tiers="[[10,19,10],[20,29,20],[30,0,30]]">
+            <button type="button" class="pm-bulk__trigger" data-pm-bulk-open aria-haspopup="dialog" aria-controls="pm-bulk-modal">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18l-1.5 10.5a2 2 0 0 1-2 1.5H6.5a2 2 0 0 1-2-1.5L3 9Z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg>
+              <span>Buy in bulk and save</span>
+            </button>
+            <div class="pm-bulk__live" data-pm-bulk-live hidden aria-live="polite"></div>
+          </div>
+          {%- endif -%}
+
           {%- if _instock -%}
             {%- comment -%} TC-084: inventory cap so JS disables the button when the cart holds every available unit. {%- endcomment -%}
             {%- assign _pdp_maxq = '' -%}
@@ -855,6 +877,78 @@
     hidden
   ></div>
   <section class="pm-rv" data-pm-rv-mount data-current-sku="{{ _sku | escape }}" hidden></section>
+
+  {%- if _is_bulk -%}
+  {%- comment -%} Bulk discount rates modal — mirrors the 3 automatic discounts on the Bulk Options collection. {%- endcomment -%}
+  <div class="pm-bulkmodal" id="pm-bulk-modal" data-pm-bulk-modal role="dialog" aria-modal="true" aria-labelledby="pm-bulk-modal-title" hidden>
+    <div class="pm-bulkmodal__backdrop" data-pm-bulk-close></div>
+    <div class="pm-bulkmodal__panel" role="document">
+      <button type="button" class="pm-bulkmodal__close" data-pm-bulk-close aria-label="Close">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+      <div class="pm-bulkmodal__head">
+        <span class="pm-bulkmodal__eyebrow">Volume pricing</span>
+        <h2 class="pm-bulkmodal__title" id="pm-bulk-modal-title">Bulk discount rates</h2>
+        <p class="pm-bulkmodal__lede">The more you order, the more you save. Discounts apply automatically at checkout — no code needed.</p>
+      </div>
+      <ul class="pm-bulkmodal__tiers">
+        <li class="pm-bulkmodal__tier" data-tier-min="10" data-tier-max="19">
+          <span class="pm-bulkmodal__range"><strong>10&nbsp;–&nbsp;19</strong> units</span>
+          <span class="pm-bulkmodal__pct">10% off</span>
+        </li>
+        <li class="pm-bulkmodal__tier" data-tier-min="20" data-tier-max="29">
+          <span class="pm-bulkmodal__range"><strong>20&nbsp;–&nbsp;29</strong> units</span>
+          <span class="pm-bulkmodal__pct">20% off</span>
+        </li>
+        <li class="pm-bulkmodal__tier" data-tier-min="30" data-tier-max="0">
+          <span class="pm-bulkmodal__range"><strong>30+</strong> units</span>
+          <span class="pm-bulkmodal__pct">30% off</span>
+        </li>
+      </ul>
+      <p class="pm-bulkmodal__foot">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+        Mix isn&rsquo;t required — the discount is based on the quantity of this item in your cart.
+      </p>
+    </div>
+  </div>
+
+  <style>
+    /* ── Bulk Options: "buy in bulk and save" trigger + live savings ── */
+    .pm-bulk{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:-4px 0 4px;}
+    .pm-bulk__trigger{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border:1px solid #e4d9cd;border-radius:999px;background:linear-gradient(180deg,#fdfaf6,#f7efe6);color:#a63d2f;font:600 13px/1 'Inter',system-ui,sans-serif;letter-spacing:.01em;cursor:pointer;transition:border-color .16s,background .16s,transform .16s,box-shadow .16s;}
+    .pm-bulk__trigger svg{color:#c04e3e;flex:none;}
+    .pm-bulk__trigger:hover{border-color:#d8a48f;background:linear-gradient(180deg,#fff,#faf1e8);box-shadow:0 2px 10px rgba(166,61,47,.14);transform:translateY(-1px);}
+    .pm-bulk__trigger:focus-visible{outline:2px solid #c04e3e;outline-offset:2px;}
+    .pm-bulk__live{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:#e8f5ee;color:#137a48;font:700 12.5px/1 'Inter',system-ui,sans-serif;border:1px solid #bce8d1;animation:pmBulkPop .22s ease;}
+    .pm-bulk__live::before{content:"";width:7px;height:7px;border-radius:50%;background:#1aa05e;box-shadow:0 0 0 3px rgba(26,160,94,.18);}
+    @keyframes pmBulkPop{from{opacity:0;transform:translateY(3px) scale(.96);}to{opacity:1;transform:none;}}
+
+    /* ── Bulk discount rates modal ── */
+    .pm-bulkmodal{position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;padding:20px;}
+    .pm-bulkmodal[hidden]{display:none;}
+    .pm-bulkmodal__backdrop{position:absolute;inset:0;background:rgba(7,21,37,.58);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);animation:pmBulkFade .2s ease;}
+    .pm-bulkmodal__panel{position:relative;width:100%;max-width:420px;background:#fff;border-radius:18px;box-shadow:0 24px 70px rgba(7,21,37,.34),0 2px 8px rgba(7,21,37,.12);overflow:hidden;animation:pmBulkRise .26s cubic-bezier(.16,1,.3,1);}
+    .pm-bulkmodal__close{position:absolute;top:14px;right:14px;width:32px;height:32px;display:grid;place-items:center;border:none;border-radius:9px;background:rgba(255,255,255,.14);color:#fff;cursor:pointer;transition:background .16s;}
+    .pm-bulkmodal__close:hover{background:rgba(255,255,255,.28);}
+    .pm-bulkmodal__close:focus-visible{outline:2px solid #fff;outline-offset:2px;}
+    .pm-bulkmodal__head{padding:26px 28px 20px;background:linear-gradient(135deg,#0d2340 0%,#12315c 100%);color:#fff;}
+    .pm-bulkmodal__eyebrow{display:inline-block;font:700 11px/1 'Inter',system-ui,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#e79b8c;margin-bottom:9px;}
+    .pm-bulkmodal__title{margin:0 0 8px;font:800 23px/1.15 'Inter',system-ui,sans-serif;letter-spacing:-.01em;}
+    .pm-bulkmodal__lede{margin:0;font:400 13.5px/1.55 'Inter',system-ui,sans-serif;color:#c6d0dd;}
+    .pm-bulkmodal__tiers{list-style:none;margin:0;padding:14px 16px;display:flex;flex-direction:column;gap:8px;}
+    .pm-bulkmodal__tier{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 16px;border:1px solid #eef0f3;border-radius:12px;background:#fbfcfd;transition:border-color .16s,background .16s,box-shadow .16s,transform .16s;}
+    .pm-bulkmodal__range{font:500 14.5px/1 'Inter',system-ui,sans-serif;color:#344054;}
+    .pm-bulkmodal__range strong{font-weight:800;color:#101828;}
+    .pm-bulkmodal__pct{font:800 14px/1 'Inter',system-ui,sans-serif;color:#a63d2f;background:#faeee9;border:1px solid #f0d9d1;padding:7px 12px;border-radius:999px;white-space:nowrap;transition:background .16s,color .16s,border-color .16s;}
+    .pm-bulkmodal__tier.is-active{border-color:#1aa05e;background:#f0faf4;box-shadow:0 4px 16px rgba(26,160,94,.15);transform:translateX(2px);}
+    .pm-bulkmodal__tier.is-active .pm-bulkmodal__pct{background:#1aa05e;color:#fff;border-color:#1aa05e;}
+    .pm-bulkmodal__foot{display:flex;align-items:flex-start;gap:8px;margin:0;padding:4px 24px 24px;font:400 12.5px/1.5 'Inter',system-ui,sans-serif;color:#667085;}
+    .pm-bulkmodal__foot svg{color:#1aa05e;flex:none;margin-top:2px;}
+    @keyframes pmBulkFade{from{opacity:0;}to{opacity:1;}}
+    @keyframes pmBulkRise{from{opacity:0;transform:translateY(14px) scale(.97);}to{opacity:1;transform:none;}}
+    @media (prefers-reduced-motion:reduce){.pm-bulkmodal__backdrop,.pm-bulkmodal__panel,.pm-bulk__live{animation:none;}}
+  </style>
+  {%- endif -%}
 </main>
 
 <script>
@@ -1570,6 +1664,90 @@
 
   // Add to Quote is wired via the global pm-quote.js delegated
   // [data-pm-quote-add] click handler — no per-PDP handler needed.
+
+  // ── Bulk Options: "buy in bulk and save" modal + live per-qty savings ──
+  // Display only — the real discount is applied by the Bulk Options automatic
+  // discounts at checkout. Tiers here MUST mirror those discounts.
+  (function () {
+    var bulk = document.querySelector('[data-pm-bulk]');
+    var modal = document.getElementById('pm-bulk-modal');
+    if (!bulk || !modal) return;
+
+    var live    = bulk.querySelector('[data-pm-bulk-live]');
+    var openBtn = bulk.querySelector('[data-pm-bulk-open]');
+    var qtyEl   = document.getElementById('pm-pdp-qty');
+    var tiers   = [];
+    try { tiers = JSON.parse(bulk.getAttribute('data-bulk-tiers') || '[]'); } catch (e) { tiers = []; }
+    // tiers: [[min, max(0=∞), pct], …] ascending by min.
+
+    function tierFor(n) {
+      var hit = null;
+      for (var i = 0; i < tiers.length; i++) {
+        var min = tiers[i][0], max = tiers[i][1], pct = tiers[i][2];
+        if (n >= min && (max === 0 || n <= max)) hit = { min: min, pct: pct };
+      }
+      return hit;
+    }
+
+    function updateLive() {
+      var n = Math.max(1, parseInt(qtyEl && qtyEl.value, 10) || 1);
+      var t = tierFor(n);
+      // Highlight the matching tier row inside the modal.
+      var rows = modal.querySelectorAll('[data-tier-min]');
+      for (var i = 0; i < rows.length; i++) {
+        var min = parseInt(rows[i].getAttribute('data-tier-min'), 10);
+        rows[i].classList.toggle('is-active', !!t && t.min === min);
+      }
+      if (!live) return;
+      if (t) {
+        live.hidden = false;
+        live.textContent = "You're saving " + t.pct + "% at checkout";
+      } else if (n > 1 && tiers.length) {
+        // Nudge toward the first tier once they start increasing quantity.
+        var need = tiers[0][0] - n;
+        live.hidden = false;
+        live.textContent = 'Add ' + need + ' more to save ' + tiers[0][2] + '%';
+      } else {
+        live.hidden = true;
+        live.textContent = '';
+      }
+    }
+
+    var lastFocus = null;
+    function openModal() {
+      lastFocus = document.activeElement;
+      modal.hidden = false;
+      document.documentElement.style.overflow = 'hidden';
+      if (window.PmFocusTrap) { PmFocusTrap.trap(modal); }
+      else { var c = modal.querySelector('[data-pm-bulk-close]'); if (c) c.focus(); }
+    }
+    function closeModal() {
+      modal.hidden = true;
+      document.documentElement.style.overflow = '';
+      if (window.PmFocusTrap) { PmFocusTrap.release(); }
+      else if (lastFocus && lastFocus.focus) { lastFocus.focus(); }
+    }
+
+    if (openBtn) openBtn.addEventListener('click', openModal);
+    modal.querySelectorAll('[data-pm-bulk-close]').forEach(function (el) {
+      el.addEventListener('click', closeModal);
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !modal.hidden) closeModal();
+    });
+
+    // Track the quantity stepper. The existing stepper handlers clamp the value
+    // synchronously on click, so defer our read to the next tick to see the
+    // clamped result; the input/change events already fire post-clamp.
+    if (qtyEl) {
+      qtyEl.addEventListener('input', updateLive);
+      qtyEl.addEventListener('change', updateLive);
+    }
+    document.querySelectorAll('[data-pm-pdp-qty]').forEach(function (b) {
+      b.addEventListener('click', function () { setTimeout(updateLive, 0); });
+    });
+    updateLive();
+  })();
 })();
 </script>
 
