@@ -70,12 +70,11 @@
                   {%- endif -%}
                   <div class="pm-cart-row__price">
                     <div class="pm-cart-row__price-now">
-                      <span class="pm-cart-row__line-price" data-cart-line-price>{{ item.final_line_price | money }}</span>
                       <s class="pm-cart-row__line-was" data-cart-line-was {% unless _line_discounted %}hidden{% endunless %}>{{ item.original_line_price | money }}</s>
+                      <span class="pm-cart-row__line-price" data-cart-line-price>{{ item.final_line_price | money }}</span>
                     </div>
                     <div class="pm-cart-row__unit">
-                      <span data-cart-unit>{{ item.final_price | money }} each</span>
-                      <span class="pm-cart-row__save" data-cart-save {% unless _line_discounted %}hidden{% endunless %}>{{ _line_pct }}% off</span>
+                      <span class="pm-cart-row__save" data-cart-save {% unless _line_discounted %}hidden{% endunless %}>{{ _line_pct }}% off</span><span data-cart-unit>{{ item.final_price | money }} each</span>
                     </div>
                   </div>
                 </div>
@@ -163,7 +162,7 @@
               </div>
               <button type="button" class="pm-ship__btn" data-pm-ship-go>Get rates</button>
               <div class="pm-ship__result" data-pm-ship-result aria-live="polite"></div>
-              <p class="pm-ship__note">Estimate only. Final shipping is confirmed at checkout.</p>
+              <p class="pm-ship__note">Estimate only. You'll choose your shipping method at checkout.</p>
             </div>
           </div>
 
@@ -296,7 +295,7 @@
 .pm-cart-row__unit { font-size: 12px; color: var(--pm-ink-400); margin-top: 3px; }
 .pm-cart-row__save { color: #137a48; font-weight: 700; }
 .pm-cart-row__save[hidden] { display: none; }
-.pm-cart-row__save::before { content: "·"; margin: 0 5px 0 3px; color: var(--pm-ink-300); font-weight: 400; }
+.pm-cart-row__save::after { content: "·"; margin: 0 5px; color: var(--pm-ink-300); font-weight: 400; }
 
 .pm-cart-row__controls { display: flex; align-items: center; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
 .pm-qty {
@@ -413,8 +412,9 @@
   display: flex; justify-content: space-between; font-size: 14px; color: var(--pm-ink-900);
   padding: 8px 10px; border-radius: 8px; background: #fff; border: 1px solid var(--pm-line, rgba(13,35,64,0.1));
 }
-.pm-ship__rate--cheapest { border-color: var(--pm-terracotta); box-shadow: inset 0 0 0 1px var(--pm-terracotta); }
-.pm-ship__rate span:last-child { font-weight: 700; }
+.pm-ship__rate-name { display: inline-flex; align-items: center; gap: 8px; }
+.pm-ship__rate-tag { font-size: 10px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #137a48; background: #e8f5ee; border: 1px solid #bce8d1; border-radius: 999px; padding: 2px 7px; }
+.pm-ship__rate > span:last-child { font-weight: 700; }
 .pm-ship__loading, .pm-ship__none { font-size: 13px; color: var(--pm-ink-500); }
 .pm-ship__note { margin: 10px 0 0; font-size: 11.5px; color: var(--pm-ink-500); }
 
@@ -808,10 +808,15 @@
             return;
           }
           rates.sort(function (a, b) { return parseFloat(a.price) - parseFloat(b.price); });
+          // Informational list — NOT a picker (the shopper chooses the method at
+          // checkout). Tag the cheapest "Lowest" so it's clear which rate the
+          // estimate reflects, without dressing it up as a selected radio.
           result.innerHTML = rates.map(function (rt, idx) {
             var cents = Math.round(parseFloat(rt.price) * 100);
-            return '<div class="pm-ship__rate' + (idx === 0 ? ' pm-ship__rate--cheapest' : '') + '">' +
-                     '<span>' + esc(rt.name) + '</span><span>' + money(cents) + '</span></div>';
+            var tag = idx === 0 ? '<span class="pm-ship__rate-tag">Lowest</span>' : '';
+            return '<div class="pm-ship__rate">' +
+                     '<span class="pm-ship__rate-name">' + esc(rt.name) + tag + '</span>' +
+                     '<span>' + money(cents) + '</span></div>';
           }).join('');
           // Apply the cheapest as the running estimate + reflect it in the row.
           var cheapest = Math.round(parseFloat(rates[0].price) * 100);

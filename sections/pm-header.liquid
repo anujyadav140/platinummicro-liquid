@@ -197,6 +197,8 @@
       {%- for link in linklists[section.settings.menu].links -%}
 
         {%- assign _key = link.title | handleize -%}
+        {%- comment -%} Temporarily hidden from the nav bar — remove this line to restore Blog. {%- endcomment -%}
+        {%- if _key == 'blog' -%}{%- continue -%}{%- endif -%}
         {%- assign _static_children = '' -%}
         {%- assign _show_brands     = false -%}
         {%- comment -%}

@@ -288,6 +288,9 @@
         </button>
 
         {%- for link in linklists.main-menu.links -%}
+          {%- assign _mkey = link.title | handleize -%}
+          {%- comment -%} Temporarily hidden — remove the next line to restore Blog in the mobile drawer. {%- endcomment -%}
+          {%- if _mkey == 'blog' -%}{%- continue -%}{%- endif -%}
           <a class="pm-mobile-nav__link" href="{{ link.url }}">{{ link.title }}</a>
         {%- endfor -%}
 
