@@ -1,4 +1,4 @@
-/* build: pm-cart-drawer 2026-07-07-osc-b (force CDN re-hash) */
+/* build: pm-cart-drawer 2026-07-07-stockcap-fix (force CDN re-hash) */
 /**
  * PmCart — slide-out cart drawer.
  * Mirrors Hydrogen's PmCartDrawer.
@@ -489,9 +489,23 @@
       .then(function (res) {
         qInflight[key] = false;
         function settle(cart) {
-          var ln = (cart.items || []).filter(function (i) { return i.key === key; })[0];
+          var items = cart.items || [];
+          var ln = items.filter(function (i) { return i.key === key; })[0];
+          // Shopify RE-KEYS a line when its discount changes (a bulk qty crossing
+          // a 10/20/30 tier), so an exact key match can miss even though the line
+          // is right there. Without this the read fell to got=0 and (via
+          // maxedCap=0) BRICKED the +/- stepper. Fall back to the variant id (the
+          // "<variantId>:" prefix — one line per variant for these products).
+          if (!ln) {
+            var vid = parseInt(String(key).split(':')[0], 10);
+            if (vid) ln = items.filter(function (i) { return i.id === vid; })[0];
+          }
           var got = ln ? ln.quantity : 0;
-          if (got < sent) {
+          // Only a POSITIVE server qty below what we asked is a genuine stock cap.
+          // NEVER pin the cap to 0: updateLine would then clamp every future change
+          // to 0 and the stepper would be stuck (can't increase, can't decrease).
+          // got===0 means the line is gone — clear any cap and let the render show it.
+          if (got >= 1 && got < sent) {
             maxedCap[key] = got;
             // Hit the stock ceiling — tell the user, but at most once per
             // STOCK_TOAST_GAP ms so rapid +/- spam can't flood the screen.
@@ -559,7 +573,7 @@
     var li = itemsEl.querySelector('[data-cart-item][data-cart-key="' + key + '"]');
     var cap = li ? parseInt(li.getAttribute('data-cart-cap'), 10) : NaN;
     if (!isNaN(cap) && cap >= 1 && qty > cap) qty = cap;
-    if (typeof maxedCap[key] === 'number' && qty > maxedCap[key]) qty = maxedCap[key];
+    if (typeof maxedCap[key] === 'number' && maxedCap[key] >= 1 && qty > maxedCap[key]) qty = maxedCap[key];
     qPending[key] = qty;
     if (li) li.querySelector('.pm-cart__qty-input').value = qty; // optimistic
     optimisticHeader();
