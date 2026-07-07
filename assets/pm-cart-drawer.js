@@ -110,7 +110,7 @@
       // Shopify reuses the SAME line key when an identical item is re-added,
       // leaving those keys set would wrongly hide the re-added item until a
       // full page reload (the "cart stays empty until refresh" bug). Clear it.
-      if (src === 'pcard' || src === 'pdp' || src === 'quick-order' || src === 'cap') {
+      if (src === 'pcard' || src === 'pdp' || src === 'quick-order' || src === 'cap' || src === 'hpe-config') {
         Object.keys(removedKeys).forEach(function (k) { delete removedKeys[k]; });
       }
       refresh().then(function () {
@@ -176,19 +176,16 @@
   }
 
   function render(cart) {
-    var allItems = (cart && cart.items) ? cart.items : [];
-    // Stop suppressing a removed key once a snapshot no longer contains it: the
-    // removal is committed, so keeping it would only hide a later RE-ADD of the
-    // same item (Shopify reuses the identical line key). While a removal is
-    // still settling the stale snapshot DOES contain the key, so it isn't
-    // cleared here — the original "ghost row" guard is preserved.
-    Object.keys(removedKeys).forEach(function (k) {
-      if (!allItems.some(function (it) { return it.key === k; })) delete removedKeys[k];
-    });
     // Drop any line the user optimistically removed but the server hasn't
     // committed yet — counts, totals, and rows all work off this filtered set
-    // so a stale snapshot can't resurrect a removed row.
-    var rawItems = allItems.filter(function (it) { return !isRecentlyRemoved(it.key); });
+    // so a stale snapshot can't resurrect a removed row. NOTE: do NOT clear a
+    // removed key here just because this snapshot lacks it — the bundle guard
+    // uses this same suppression to hide the dead discounted line WHILE it swaps
+    // in the full-price one, and Shopify's /cart.js is eventually consistent, so
+    // a later stale snapshot that still contains the discounted line must stay
+    // filtered or the price oscillates. Re-adds are handled by clearing
+    // removedKeys on the add event itself (see the pm:cart-changed listener).
+    var rawItems = ((cart && cart.items) ? cart.items : []).filter(function (it) { return !isRecentlyRemoved(it.key); });
     // Stable, BUNDLE-AWARE order. Each line gets a group key + role:
     //   · a bundle base and its drive share the group "S:<base SKU>" (the
     //     drive carries _bundle_base_sku), base role 0, drive role 1 — so the
