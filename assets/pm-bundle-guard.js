@@ -1,3 +1,4 @@
+/* build: pm-bundle-guard 2026-07-07-cart-reload-loop-fix (force CDN re-hash) */
 /* PM — Bundle integrity guard.
  *
  * Migrated BigCommerce bundles add TWO cart lines: the base unit on a
@@ -57,6 +58,9 @@
   var quietTimer = null;
   var failsafeTimer = null;
   var running = false;
+  var mutated = false;    // did THIS reconcile actually swap a line? Gates the
+                          // /cart reload: a clean cart (no orphans) must never
+                          // reload, or the init reconcile would loop the page.
 
   function isPackVariant(text) { return /pack of \d+/i.test(String(text || '')); }
   function lineIsDiscountedBase(l) {
@@ -201,11 +205,20 @@
   }
 
   function finishReconcile() {
-    // NOTE: running is intentionally NOT cleared here — it stays held through
-    // settleRender (and any follow-on swap of a newly-orphaned base) so a
-    // concurrent reconcile can't race in and double-swap. settleRender clears it
-    // at the very end, once the cart is clean and rendered.
-    if (location.pathname === '/cart') { running = false; release(); location.reload(); return; } // server-rendered page
+    // NOTE: for the drawer path, running is intentionally NOT cleared here — it
+    // stays held through settleRender (and any follow-on swap of a newly-orphaned
+    // base) so a concurrent reconcile can't race in and double-swap. settleRender
+    // clears it at the very end, once the cart is clean and rendered.
+    if (location.pathname === '/cart') {
+      // Server-rendered page: the ONLY reason to reload is to reflect a swap we
+      // actually made. Reloading on a clean cart (no orphans → this runs on
+      // every load via the init reconcile) would loop /cart forever. So reload
+      // only when a swap mutated the cart; otherwise just stand down.
+      running = false;
+      release();
+      if (mutated) location.reload();
+      return;
+    }
     settleRender(0);
   }
 
@@ -262,6 +275,7 @@
         throw new Error('re-add fail');
       }
       delete swapFailed[o.sku]; // swap landed — clear any earlier failure note
+      mutated = true;           // a real cart change happened → /cart may reload to reflect it
       swapNext(list, i + 1);
     }).catch(function () { swapNext(list, i + 1); }); // one bad swap doesn't strand the rest
   }
@@ -269,6 +283,7 @@
   function reconcile() {
     if (running) { schedule(); return; } // a swap is in flight — retry after quiet
     running = true;
+    mutated = false; // fresh cycle — no swap has happened yet
     fetch('/cart.js', { headers: { Accept: 'application/json' } })
       .then(function (r) { return r.json(); })
       .then(function (cart) {
