@@ -144,24 +144,24 @@
         "card-1": {
           "type": "card",
           "settings": {
-            "image_position": "center",
-            "eyebrow": "LIMITED-TIME OFFER",
-            "title": "Cisco refresh window — Q4 pricing locked.",
-            "body": "HPE, Cisco, and Dell lease returns arriving now. Fixed-price bundles, no auction.",
-            "cta_label": "View the deal",
-            "cta_href": "/collections/bundles",
-            "image_url": "https://cdn.shopify.com/s/files/1/0715/8841/3523/files/enterprise.jpg"
+            "image_position": "right center",
+            "eyebrow": "HPE PROLIANT SERVERS",
+            "title": "HPE ProLiant servers, built to your spec.",
+            "body": "ProLiant DL, ML, and Edge systems on Intel Xeon and AMD EPYC. Configured, tested, and shipped with real lead times.",
+            "cta_label": "Shop ProLiant",
+            "cta_href": "/collections/hewlett-packard-enterprise",
+            "image_url": "https://cdn.shopify.com/s/files/1/0715/8841/3523/files/s00013736__2524zoom_2524_2523__81639.1777942852.1280.1280.png"
           }
         },
         "card-2": {
           "type": "card",
           "settings": {
             "image_position": "center",
-            "eyebrow": "NEW ARRIVALS",
-            "title": "Latest enterprise storage in stock.",
-            "body": "NVMe-ready NAS and rack units from Asustor, QNAP and Synology.",
-            "cta_label": "Shop storage",
-            "cta_href": "/collections/storage",
+            "eyebrow": "BULK PRICING",
+            "title": "Tiered pricing for businesses.",
+            "body": "Volume discounts for integrators and public-sector buyers.",
+            "cta_label": "Shop Bulk",
+            "cta_href": "/collections/bulk-options",
             "image_url": "https://cdn.shopify.com/s/files/1/0715/8841/3523/files/education.png"
           }
         },
@@ -169,11 +169,11 @@
           "type": "card",
           "settings": {
             "image_position": "center",
-            "eyebrow": "BULK PRICING",
-            "title": "Volume quotes in 24 hours.",
-            "body": "Tiered pricing for system integrators and public-sector buyers.",
-            "cta_label": "Get a quote",
-            "cta_href": "/collections/all",
+            "eyebrow": "BUNDLE OFFER",
+            "title": "Add qualifying bundles and save.",
+            "body": "Pre-configured NAS, drive, and server bundles priced to move.",
+            "cta_label": "Shop Bundles",
+            "cta_href": "/collections/bundles",
             "image_url": "https://cdn.shopify.com/s/files/1/0715/8841/3523/files/public-sector.jpg"
           }
         }
