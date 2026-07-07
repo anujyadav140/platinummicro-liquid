@@ -1,4 +1,4 @@
-/* build: pm-cart-drawer 2026-07-07-no-self-refresh (force CDN re-hash) */
+/* build: pm-cart-drawer 2026-07-07-rekey-alias (force CDN re-hash) */
 /**
  * PmCart — slide-out cart drawer.
  * Mirrors Hydrogen's PmCartDrawer.
@@ -14,6 +14,18 @@
   var maxedCap = {};
   // Per-line qty stepper state — robust against rapid-click races.
   var qPending = {}, qInflight = {}, qTimers = {};
+  // A bulk line's KEY CHANGES whenever its discount tier changes (Shopify re-keys
+  // the line on a 10/20/30 crossing). Old key → current key. Every stepper entry
+  // point resolves through this so queued clicks / timers / deletes never target
+  // a dead key. Targeting a dead key was THE rapid-+ revert: the follow-up
+  // change.js couldn't apply (404), the user's later clicks were never committed,
+  // and the row snapped back to the last committed qty.
+  var keyAlias = {};
+  function liveKey(k) {
+    var hops = 0;
+    while (keyAlias[k] && hops < 10) { k = keyAlias[k]; hops++; }
+    return k;
+  }
   // Lines the user optimistically removed. A render can fire (e.g. the bundle
   // guard's) BEFORE Shopify has committed the removal, and would rebuild the
   // row from a cart that still contains it — making the row reappear. Any
@@ -488,6 +500,7 @@
   // we send the NEWER value instead of rendering this now-stale response — that
   // is what stops the number bouncing (e.g. 14→18→15) during rapid +/- spam.
   function flushLine(key) {
+    key = liveKey(key); // a queued timer/click may still hold a re-keyed line's old key
     if (qInflight[key]) return;
     var sent = qPending[key];
     if (sent == null) return;
@@ -500,26 +513,41 @@
       .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
       .then(function (res) {
         qInflight[key] = false;
-        function settle(cart) {
+        function settle(cart, applied) {
           // SAME MODEL AS THE PDP STEPPER: clamp locally to the line's known stock
           // cap (data-cart-cap) and treat the server cart as the source of truth.
           // No "learned cap" that sticks and clamps future clicks (that was the
           // brick) and no toast.
           var items = cart.items || [];
           var ln = items.filter(function (i) { return i.key === key; })[0];
-          // A bulk line RE-KEYS on a tier crossing, so match by variant id if the
-          // exact key misses — needed to read the committed qty below.
+          // A bulk line RE-KEYS whenever its discount tier changes (a 10/20/30
+          // crossing), so find it by variant id when the exact key misses…
           if (!ln) { var vid = parseInt(String(key).split(':')[0], 10); if (vid) ln = items.filter(function (i) { return i.id === vid; })[0]; }
-          // User kept clicking while this was in flight → send the newest value.
+          // …and MIGRATE the stepper state to the new key, remembering the alias
+          // so queued timers/clicks re-route. Without this, the follow-up flush
+          // targeted the DEAD key, Shopify 404'd it, the user's later clicks were
+          // never committed, and the counter snapped back — the rapid-+ revert.
+          var reKeyed = !!(ln && ln.key !== key);
+          if (reKeyed) {
+            keyAlias[key] = ln.key;
+            if (qPending[key] != null && qPending[ln.key] == null) qPending[ln.key] = qPending[key];
+            delete qPending[key];
+            key = ln.key;
+          }
+          // User kept clicking while this was in flight → send the newest value
+          // (addressed to the LIVE key now).
           if (qPending[key] !== sent && qPending[key] != null) { flushLine(key); return; }
+          // This flush DIDN'T apply and the key had gone stale underneath it → the
+          // user's value was never committed. Re-send it to the live key. Once:
+          // a failure on a LIVE key is a genuine rejection → fall through to
+          // server truth instead of looping.
+          if (!applied && reKeyed && ln && qPending[key] != null && qPending[key] !== ln.quantity) { flushLine(key); return; }
           // PIN qPending to the committed qty (do NOT delete it). render() reads
-          // qPending for the input, so keeping it set means a concurrent re-render
-          // can't bounce the stepper back to a stale number. Also CONSOLIDATE: a
-          // bulk line may have RE-KEYED (tier crossing), so drop every stale-key
-          // pending entry for this variant and pin only the CURRENT key.
+          // qPending for the input, so a late concurrent re-render can't bounce
+          // the stepper. CONSOLIDATE to exactly one live entry per variant.
           if (ln) {
             var lvid = String(ln.id);
-            Object.keys(qPending).forEach(function (pk) { if (String(pk).split(':')[0] === lvid) delete qPending[pk]; });
+            Object.keys(qPending).forEach(function (pk) { if (pk !== ln.key && String(pk).split(':')[0] === lvid) delete qPending[pk]; });
             qPending[ln.key] = ln.quantity;
           } else {
             delete qPending[key];
@@ -528,12 +556,15 @@
           // Notify outside listeners (bundle guard etc.) that the cart mutated.
           document.dispatchEvent(new CustomEvent('pm:cart-changed', { detail: { source: 'drawer-line' } }));
         }
-        if (res.ok && res.body && res.body.items) settle(res.body);
+        if (res.ok && res.body && res.body.items) settle(res.body, true);
         else {
-          // 422 over-cap (no body) → re-sync from the authoritative cart so the
-          // stepper snaps to the real committed qty (and other lines don't vanish).
+          // Change didn't apply — stale key after a tier re-key, or a genuine
+          // rejection (over stock). Read the authoritative cart and settle from
+          // that; settle() re-sends once when the cause was a stale key.
           fetch('/cart.js', { headers: { Accept: 'application/json' } })
-            .then(function (r) { return r.json(); }).then(settle).catch(function () {});
+            .then(function (r) { return r.json(); })
+            .then(function (c) { settle(c, false); })
+            .catch(function () {});
         }
       })
       .catch(function () { qInflight[key] = false; });
@@ -571,8 +602,11 @@
   }
 
   function updateLine(key, qty) {
+    var domKey = key;   // the rendered row may still carry a pre-re-key key
+    key = liveKey(key); // stepper state always lives under the CURRENT line key
     // Clamp the optimistic value to a known cap so it can't shoot past stock.
-    var li = itemsEl.querySelector('[data-cart-item][data-cart-key="' + key + '"]');
+    var li = itemsEl.querySelector('[data-cart-item][data-cart-key="' + domKey + '"]') ||
+             itemsEl.querySelector('[data-cart-item][data-cart-key="' + key + '"]');
     var cap = li ? parseInt(li.getAttribute('data-cart-cap'), 10) : NaN;
     if (!isNaN(cap) && cap >= 1 && qty > cap) qty = cap; // clamp to the line's known stock cap — same as the PDP stepper (data-max-qty)
     qPending[key] = qty;
@@ -582,11 +616,15 @@
     qTimers[key] = setTimeout(function () { flushLine(key); }, 220);
   }
 
-  function removeLine(key) {
+  function removeLine(key, isRetry) {
+    var domKey = key;   // the rendered row may still carry a pre-re-key key
+    key = liveKey(key); // never send a delete to a dead (re-keyed) line key
     // Pure optimistic: pull the row out of the DOM right now, update
     // header/badge from what's left, fire delete in the background.
-    markRemoved(key); // any render before the server commits must not resurrect it
-    var li = itemsEl.querySelector('[data-cart-item][data-cart-key="' + key + '"]');
+    markRemoved(domKey); // any render before the server commits must not resurrect it
+    if (key !== domKey) markRemoved(key);
+    var li = itemsEl.querySelector('[data-cart-item][data-cart-key="' + domKey + '"]') ||
+             itemsEl.querySelector('[data-cart-item][data-cart-key="' + key + '"]');
     if (li) {
       li.style.transition = 'opacity 120ms, max-height 180ms 60ms, padding 180ms 60ms, margin 180ms 60ms';
       li.style.maxHeight = li.offsetHeight + 'px';
@@ -614,23 +652,45 @@
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
       body: JSON.stringify({ id: key, quantity: 0 })
     })
-      .then(function (r) { return r.json(); })
-      .then(function (cart) {
-        // Sync silently in case another tab modified the cart concurrently.
-        // Skip the repaint while the guard is mid-swap (it renders at the end).
-        var stillThere = itemsEl.querySelector('[data-cart-item][data-cart-key="' + key + '"]');
-        if (cart.items && stillThere && !window.__pmSuspendCartRender) render(cart);
-        // Re-evaluate add buttons (e.g. re-enable a PDP "Already in cart" button
-        // once its product is removed from the cart).
-        if (window.PmAddToCart && window.PmAddToCart.syncMaxed) window.PmAddToCart.syncMaxed();
-        // Tell outside listeners the cart mutated — the bundle guard needs this
-        // to catch a split bundle the instant the drives line is trashed.
-        // (source is not in the auto-open list, so the drawer stays as-is.)
-        document.dispatchEvent(new CustomEvent('pm:cart-changed', { detail: { source: 'drawer-line' } }));
+      .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+      .then(function (res) {
+        var cart = res.body || {};
+        if (res.ok && cart.items) {
+          // Sync silently in case another tab modified the cart concurrently.
+          // Skip the repaint while the guard is mid-swap (it renders at the end).
+          var stillThere = itemsEl.querySelector('[data-cart-item][data-cart-key="' + key + '"]');
+          if (stillThere && !window.__pmSuspendCartRender) render(cart);
+          // Re-evaluate add buttons (e.g. re-enable a PDP "Already in cart" button
+          // once its product is removed from the cart).
+          if (window.PmAddToCart && window.PmAddToCart.syncMaxed) window.PmAddToCart.syncMaxed();
+          // Tell outside listeners the cart mutated — the bundle guard needs this
+          // to catch a split bundle the instant the drives line is trashed.
+          // (source is not in the auto-open list, so the drawer stays as-is.)
+          document.dispatchEvent(new CustomEvent('pm:cart-changed', { detail: { source: 'drawer-line' } }));
+          return;
+        }
+        // Delete didn't apply — most likely the line RE-KEYED (bulk tier change)
+        // between render and click, so we hit a dead key and the row would have
+        // resurrected on the next refresh. Find the live line by variant and
+        // retry ONCE; if it's already gone or ambiguous, resync truthfully.
+        if (isRetry) { delete removedKeys[key]; refresh(); return; }
+        fetch('/cart.js', { headers: { Accept: 'application/json' } })
+          .then(function (r) { return r.json(); })
+          .then(function (fresh) {
+            var vid = parseInt(String(key).split(':')[0], 10);
+            var matches = (fresh.items || []).filter(function (i) { return i.id === vid; });
+            if (matches.length === 1) {
+              keyAlias[key] = matches[0].key;
+              removeLine(matches[0].key, true);
+            } else {
+              delete removedKeys[key];
+              refresh();
+            }
+          })
+          .catch(function () { delete removedKeys[key]; refresh(); });
       })
       .catch(function () {
-        // Removal failed server-side — un-hide the line and resync so it
-        // isn't wrongly suppressed.
+        // Network failure — un-hide the line and resync so it isn't wrongly suppressed.
         delete removedKeys[key];
         refresh();
       });
