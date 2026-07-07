@@ -1,4 +1,4 @@
-/* build: pm-cart-drawer 2026-07-07-stockcap-fix (force CDN re-hash) */
+/* build: pm-cart-drawer 2026-07-07-stepper-pdp-parity (force CDN re-hash) */
 /**
  * PmCart — slide-out cart drawer.
  * Mirrors Hydrogen's PmCartDrawer.
@@ -489,39 +489,16 @@
       .then(function (res) {
         qInflight[key] = false;
         function settle(cart) {
-          var items = cart.items || [];
-          var ln = items.filter(function (i) { return i.key === key; })[0];
-          // Shopify RE-KEYS a line when its discount changes (a bulk qty crossing
-          // a 10/20/30 tier), so an exact key match can miss even though the line
-          // is right there. Without this the read fell to got=0 and (via
-          // maxedCap=0) BRICKED the +/- stepper. Fall back to the variant id (the
-          // "<variantId>:" prefix — one line per variant for these products).
-          if (!ln) {
-            var vid = parseInt(String(key).split(':')[0], 10);
-            if (vid) ln = items.filter(function (i) { return i.id === vid; })[0];
-          }
-          var got = ln ? ln.quantity : 0;
-          // Only a POSITIVE server qty below what we asked is a genuine stock cap.
-          // NEVER pin the cap to 0: updateLine would then clamp every future change
-          // to 0 and the stepper would be stuck (can't increase, can't decrease).
-          // got===0 means the line is gone — clear any cap and let the render show it.
-          if (got >= 1 && got < sent) {
-            maxedCap[key] = got;
-            // Hit the stock ceiling — tell the user, but at most once per
-            // STOCK_TOAST_GAP ms so rapid +/- spam can't flood the screen.
-            var now = Date.now();
-            if (now - lastStockToastAt > STOCK_TOAST_GAP) {
-              lastStockToastAt = now;
-              var rawName = (ln && (ln.product_title || ln.title)) || '';
-              var name = rawName.length > 42 ? rawName.slice(0, 41).trim() + '…' : rawName;
-              var msg = (name ? name + ' — ' : '') +
-                'only ' + got + ' in stock, that\'s the most you can add.';
-              showStockToast(msg);
-            }
-          } else delete maxedCap[key];
+          // SAME MODEL AS THE PDP STEPPER: the stepper clamps locally to the
+          // line's known stock cap (data-cart-cap, from data-max-qty) and the
+          // server cart is simply the source of truth — we re-render from it.
+          // No "learned cap" that sticks and clamps future clicks, and no toast.
+          // That learned-cap machinery is exactly what bricked the +/- (a bulk
+          // line RE-KEYS on a tier crossing → the old code read qty 0/low → pinned
+          // maxedCap → clamped everything). Trusting the re-render kills all of it.
           // User kept clicking while this was in flight → send the newest value.
           if (qPending[key] !== sent && qPending[key] != null) { flushLine(key); return; }
-          qPending[key] = got;            // settle on the server's (capped) value
+          delete qPending[key]; // settled — next click reads the re-rendered input value
           if (!window.__pmSuspendCartRender) applyDrawerCart(cart);
           // Notify outside listeners (bundle guard etc.) that the cart mutated.
           document.dispatchEvent(new CustomEvent('pm:cart-changed', { detail: { source: 'drawer-line' } }));
@@ -529,7 +506,7 @@
         if (res.ok && res.body && res.body.items) settle(res.body);
         else {
           // 422 over-cap (no body) → re-sync from the authoritative cart so the
-          // other lines don't vanish; learn the real cap.
+          // stepper snaps to the real committed qty (and other lines don't vanish).
           fetch('/cart.js', { headers: { Accept: 'application/json' } })
             .then(function (r) { return r.json(); }).then(settle).catch(function () {});
         }
@@ -572,8 +549,7 @@
     // Clamp the optimistic value to a known cap so it can't shoot past stock.
     var li = itemsEl.querySelector('[data-cart-item][data-cart-key="' + key + '"]');
     var cap = li ? parseInt(li.getAttribute('data-cart-cap'), 10) : NaN;
-    if (!isNaN(cap) && cap >= 1 && qty > cap) qty = cap;
-    if (typeof maxedCap[key] === 'number' && maxedCap[key] >= 1 && qty > maxedCap[key]) qty = maxedCap[key];
+    if (!isNaN(cap) && cap >= 1 && qty > cap) qty = cap; // clamp to the line's known stock cap — same as the PDP stepper (data-max-qty)
     qPending[key] = qty;
     if (li) li.querySelector('.pm-cart__qty-input').value = qty; // optimistic
     optimisticHeader();
