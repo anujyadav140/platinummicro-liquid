@@ -550,11 +550,17 @@
 
           {%- if _is_bulk -%}
           <div class="pm-bulk" data-pm-bulk data-bulk-tiers="[[10,19,10],[20,29,20],[30,0,30]]">
-            <button type="button" class="pm-bulk__trigger" data-pm-bulk-open aria-haspopup="dialog" aria-controls="pm-bulk-modal">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 9h18l-1.5 10.5a2 2 0 0 1-2 1.5H6.5a2 2 0 0 1-2-1.5L3 9Z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg>
-              <span>Buy in bulk and save</span>
+            <button type="button" class="pm-bulk__btn" data-pm-bulk-open aria-haspopup="dialog" aria-controls="pm-bulk-modal">
+              <span class="pm-bulk__ico" aria-hidden="true">
+                <svg class="pm-bulk__ico-bag" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18l-1.5 10.5a2 2 0 0 1-2 1.5H6.5a2 2 0 0 1-2-1.5L3 9Z"/><path d="M8 9V6a4 4 0 0 1 8 0v3"/></svg>
+                <svg class="pm-bulk__ico-ck" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+              </span>
+              <span class="pm-bulk__txt" aria-live="polite">
+                <span class="pm-bulk__t1" data-pm-bulk-t1>Buy in bulk and save</span>
+                <span class="pm-bulk__t2" data-pm-bulk-t2>Up to 30% off</span>
+              </span>
+              <svg class="pm-bulk__chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
             </button>
-            <div class="pm-bulk__live" data-pm-bulk-live hidden aria-live="polite"></div>
           </div>
           {%- endif -%}
 
@@ -913,15 +919,24 @@
   </div>
 
   <style>
-    /* ── Bulk Options: "buy in bulk and save" trigger + live savings ── */
-    .pm-bulk{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:-4px 0 4px;}
-    .pm-bulk__trigger{display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border:1px solid #e4d9cd;border-radius:999px;background:linear-gradient(180deg,#fdfaf6,#f7efe6);color:#a63d2f;font:600 13px/1 'Inter',system-ui,sans-serif;letter-spacing:.01em;cursor:pointer;transition:border-color .16s,background .16s,transform .16s,box-shadow .16s;}
-    .pm-bulk__trigger svg{color:#c04e3e;flex:none;}
-    .pm-bulk__trigger:hover{border-color:#d8a48f;background:linear-gradient(180deg,#fff,#faf1e8);box-shadow:0 2px 10px rgba(166,61,47,.14);transform:translateY(-1px);}
-    .pm-bulk__trigger:focus-visible{outline:2px solid #c04e3e;outline-offset:2px;}
-    .pm-bulk__live{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:#e8f5ee;color:#137a48;font:700 12.5px/1 'Inter',system-ui,sans-serif;border:1px solid #bce8d1;animation:pmBulkPop .22s ease;}
-    .pm-bulk__live::before{content:"";width:7px;height:7px;border-radius:50%;background:#1aa05e;box-shadow:0 0 0 3px rgba(26,160,94,.18);}
-    @keyframes pmBulkPop{from{opacity:0;transform:translateY(3px) scale(.96);}to{opacity:1;transform:none;}}
+    /* ── Bulk Options: full-width "buy in bulk and save" strip that morphs into a live savings state ── */
+    .pm-bulk{margin-top:14px;border:1px solid #ecdfd6;border-radius:10px;background:linear-gradient(180deg,#fdfaf6,#faf2ea);transition:border-color .18s,background .18s;}
+    .pm-bulk__btn{display:flex;align-items:center;gap:11px;width:100%;padding:10px 12px;background:none;border:none;border-radius:10px;text-align:left;cursor:pointer;font-family:var(--pm-font-body);transition:background .15s;}
+    .pm-bulk__btn:hover{background:rgba(166,61,47,.05);}
+    .pm-bulk__btn:focus-visible{outline:2px solid #c04e3e;outline-offset:2px;}
+    .pm-bulk__ico{width:32px;height:32px;flex:none;border-radius:8px;background:#fff;border:1px solid #efe1d7;display:grid;place-items:center;color:#c04e3e;transition:color .18s,border-color .18s;}
+    .pm-bulk__ico-ck{display:none;}
+    .pm-bulk__txt{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;}
+    .pm-bulk__t1{font:700 12.5px/1.3 var(--pm-font-body);color:var(--pm-ink-900);}
+    .pm-bulk__t2{font:500 11.5px/1.3 var(--pm-font-body);color:var(--pm-ink-500);}
+    .pm-bulk__chev{flex:none;color:#c9b7a8;transition:color .18s;}
+    .pm-bulk.is-active{border-color:#c9ecd6;background:linear-gradient(180deg,#f4fbf7,#e9f6ee);}
+    .pm-bulk.is-active .pm-bulk__btn:hover{background:rgba(26,160,94,.06);}
+    .pm-bulk.is-active .pm-bulk__ico{color:#1aa05e;border-color:#c9ecd6;}
+    .pm-bulk.is-active .pm-bulk__ico-bag{display:none;}
+    .pm-bulk.is-active .pm-bulk__ico-ck{display:block;}
+    .pm-bulk.is-active .pm-bulk__t1{color:#137a48;}
+    .pm-bulk.is-active .pm-bulk__chev{color:#a9d9bd;}
 
     /* ── Bulk discount rates modal ── */
     .pm-bulkmodal{position:fixed;inset:0;z-index:1200;display:flex;align-items:center;justify-content:center;padding:20px;}
@@ -946,7 +961,7 @@
     .pm-bulkmodal__foot svg{color:#1aa05e;flex:none;margin-top:2px;}
     @keyframes pmBulkFade{from{opacity:0;}to{opacity:1;}}
     @keyframes pmBulkRise{from{opacity:0;transform:translateY(14px) scale(.97);}to{opacity:1;transform:none;}}
-    @media (prefers-reduced-motion:reduce){.pm-bulkmodal__backdrop,.pm-bulkmodal__panel,.pm-bulk__live{animation:none;}}
+    @media (prefers-reduced-motion:reduce){.pm-bulkmodal__backdrop,.pm-bulkmodal__panel{animation:none;}.pm-bulk,.pm-bulk__btn,.pm-bulk__ico,.pm-bulk__chev{transition:none;}}
   </style>
   {%- endif -%}
 </main>
@@ -1673,12 +1688,15 @@
     var modal = document.getElementById('pm-bulk-modal');
     if (!bulk || !modal) return;
 
-    var live    = bulk.querySelector('[data-pm-bulk-live]');
+    var strip   = bulk;
+    var t1El    = bulk.querySelector('[data-pm-bulk-t1]');
+    var t2El    = bulk.querySelector('[data-pm-bulk-t2]');
     var openBtn = bulk.querySelector('[data-pm-bulk-open]');
     var qtyEl   = document.getElementById('pm-pdp-qty');
     var tiers   = [];
     try { tiers = JSON.parse(bulk.getAttribute('data-bulk-tiers') || '[]'); } catch (e) { tiers = []; }
     // tiers: [[min, max(0=∞), pct], …] ascending by min.
+    var maxPct = tiers.length ? tiers[tiers.length - 1][2] : 0;
 
     function tierFor(n) {
       var hit = null;
@@ -1687,6 +1705,11 @@
         if (n >= min && (max === 0 || n <= max)) hit = { min: min, pct: pct };
       }
       return hit;
+    }
+    // Smallest tier whose threshold is still above the current qty — for the "add N more" nudge.
+    function nextTier(n) {
+      for (var i = 0; i < tiers.length; i++) { if (tiers[i][0] > n) return { min: tiers[i][0], pct: tiers[i][2] }; }
+      return null;
     }
 
     function updateLive() {
@@ -1698,18 +1721,16 @@
         var min = parseInt(rows[i].getAttribute('data-tier-min'), 10);
         rows[i].classList.toggle('is-active', !!t && t.min === min);
       }
-      if (!live) return;
+      // Morph the strip in place: terracotta "buy in bulk" ⇄ green "you're saving X%".
+      var nt = nextTier(n);
       if (t) {
-        live.hidden = false;
-        live.textContent = "You're saving " + t.pct + "% at checkout";
-      } else if (n > 1 && tiers.length) {
-        // Nudge toward the first tier once they start increasing quantity.
-        var need = tiers[0][0] - n;
-        live.hidden = false;
-        live.textContent = 'Add ' + need + ' more to save ' + tiers[0][2] + '%';
+        strip.classList.add('is-active');
+        if (t1El) t1El.textContent = "You're saving " + t.pct + "% at checkout";
+        if (t2El) t2El.textContent = nt ? ('Add ' + (nt.min - n) + ' more to reach ' + nt.pct + '% off') : 'Best volume price unlocked';
       } else {
-        live.hidden = true;
-        live.textContent = '';
+        strip.classList.remove('is-active');
+        if (t1El) t1El.textContent = 'Buy in bulk and save';
+        if (t2El) t2El.textContent = (n > 1 && nt) ? ('Add ' + (nt.min - n) + ' more to save ' + nt.pct + '%') : ('Up to ' + maxPct + '% off');
       }
     }
 
