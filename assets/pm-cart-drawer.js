@@ -105,6 +105,14 @@
     // Listen for external cart changes
     document.addEventListener('pm:cart-changed', function (e) {
       var src = (e && e.detail && e.detail.source) || '';
+      // An ADD means the user is putting items INTO the cart. Any pending
+      // "recently removed" suppression is stale intent now — and because
+      // Shopify reuses the SAME line key when an identical item is re-added,
+      // leaving those keys set would wrongly hide the re-added item until a
+      // full page reload (the "cart stays empty until refresh" bug). Clear it.
+      if (src === 'pcard' || src === 'pdp' || src === 'quick-order' || src === 'cap') {
+        Object.keys(removedKeys).forEach(function (k) { delete removedKeys[k]; });
+      }
       refresh().then(function () {
         // Auto-open the drawer only after a genuine add-to-cart action (product
         // card, PDP, or quick-order). Quote edits, cart clears, and cross-tab
@@ -168,10 +176,19 @@
   }
 
   function render(cart) {
+    var allItems = (cart && cart.items) ? cart.items : [];
+    // Stop suppressing a removed key once a snapshot no longer contains it: the
+    // removal is committed, so keeping it would only hide a later RE-ADD of the
+    // same item (Shopify reuses the identical line key). While a removal is
+    // still settling the stale snapshot DOES contain the key, so it isn't
+    // cleared here — the original "ghost row" guard is preserved.
+    Object.keys(removedKeys).forEach(function (k) {
+      if (!allItems.some(function (it) { return it.key === k; })) delete removedKeys[k];
+    });
     // Drop any line the user optimistically removed but the server hasn't
     // committed yet — counts, totals, and rows all work off this filtered set
     // so a stale snapshot can't resurrect a removed row.
-    var rawItems = ((cart && cart.items) ? cart.items : []).filter(function (it) { return !isRecentlyRemoved(it.key); });
+    var rawItems = allItems.filter(function (it) { return !isRecentlyRemoved(it.key); });
     // Stable, BUNDLE-AWARE order. Each line gets a group key + role:
     //   · a bundle base and its drive share the group "S:<base SKU>" (the
     //     drive carries _bundle_base_sku), base role 0, drive role 1 — so the
