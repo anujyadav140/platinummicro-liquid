@@ -585,11 +585,20 @@
   // even when a change crosses a tier boundary (10→20→30%).
   function applyServerCart(cart) {
     if (!cart || !cart.items) return;
+    var rows = [].slice.call(document.querySelectorAll('[data-cart-row]'));
     var byKey = {};
-    cart.items.forEach(function (it) { byKey[it.key] = it; });
-    document.querySelectorAll('[data-cart-row]').forEach(function (row) {
+    cart.items.forEach(function (it) { if (it && it.key != null) byKey[it.key] = it; });
+    // Shopify re-keys a line once an automatic discount attaches, so the row's
+    // page-load data-cart-key stops matching the change response — which stranded
+    // each line on its original tier (summary updated, line didn't). When the
+    // row and line counts line up (nothing mid-removal), fall back to DOM order
+    // (rows render in cart-line order) and re-pin the key so it matches next time.
+    var alignByOrder = rows.length === cart.items.length;
+    rows.forEach(function (row, i) {
       var it = byKey[row.getAttribute('data-cart-key')];
+      if (!it && alignByOrder) it = cart.items[i];
       if (!it) return;
+      if (it.key != null) row.setAttribute('data-cart-key', it.key);
       row.setAttribute('data-cart-unit-cents', it.final_price);
       row.setAttribute('data-cart-unit-original', it.original_price);
       var pe = row.querySelector('[data-cart-line-price]'); if (pe) pe.textContent = formatMoney(it.final_line_price);
