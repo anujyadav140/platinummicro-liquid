@@ -31,7 +31,7 @@
             <p class="pm-cart-bucket__lede">Ready to ship. Settle in checkout.</p>
           </header>
           {%- for item in cart.items -%}
-            <div class="pm-cart-row" data-cart-row="{{ forloop.index }}" data-cart-key="{{ item.key }}" data-cart-unit-cents="{{ item.final_price }}">
+            <div class="pm-cart-row" data-cart-row="{{ forloop.index }}" data-cart-key="{{ item.key }}" data-cart-unit-cents="{{ item.final_price }}" data-cart-unit-original="{{ item.original_price }}">
               <a href="{{ item.url }}" class="pm-cart-row__img-link">
                 {%- if item.image -%}
                   <img
@@ -62,12 +62,21 @@
                       <div class="pm-cart-row__sku">SKU: {{ item.variant.sku }}</div>
                     {%- endif -%}
                   </div>
+                  {%- assign _line_discounted = false -%}
+                  {%- assign _line_pct = 0 -%}
+                  {%- if item.original_line_price > item.final_line_price -%}
+                    {%- assign _line_discounted = true -%}
+                    {%- assign _line_pct = item.original_line_price | minus: item.final_line_price | times: 100.0 | divided_by: item.original_line_price | round -%}
+                  {%- endif -%}
                   <div class="pm-cart-row__price">
-                    <div class="pm-cart-row__line-price" data-cart-line-price>{{ item.final_line_price | money }}</div>
-                    {%- if item.original_line_price != item.final_line_price -%}
-                      <div class="pm-cart-row__line-was">{{ item.original_line_price | money }}</div>
-                    {%- endif -%}
-                    <div class="pm-cart-row__unit">{{ item.final_price | money }} each</div>
+                    <div class="pm-cart-row__price-now">
+                      <span class="pm-cart-row__line-price" data-cart-line-price>{{ item.final_line_price | money }}</span>
+                      <s class="pm-cart-row__line-was" data-cart-line-was {% unless _line_discounted %}hidden{% endunless %}>{{ item.original_line_price | money }}</s>
+                    </div>
+                    <div class="pm-cart-row__unit">
+                      <span data-cart-unit>{{ item.final_price | money }} each</span>
+                      <span class="pm-cart-row__save" data-cart-save {% unless _line_discounted %}hidden{% endunless %}>{{ _line_pct }}% off</span>
+                    </div>
                   </div>
                 </div>
 
@@ -119,14 +128,12 @@
           <div class="pm-cart-card__rows">
             <div class="pm-cart-card__row">
               <span data-cart-itemcount-label>Subtotal ({{ cart.item_count }} {% if cart.item_count == 1 %}item{% else %}items{% endif %})</span>
-              <span data-cart-subtotal class="pm-cart-card__row-val">{{ cart.total_price | money }}</span>
+              <span data-cart-subtotal class="pm-cart-card__row-val">{{ cart.original_total_price | money }}</span>
             </div>
-            {%- if cart.total_discounts > 0 -%}
-              <div class="pm-cart-card__row pm-cart-card__row--savings">
-                <span>Savings</span>
-                <span>−{{ cart.total_discounts | money }}</span>
-              </div>
-            {%- endif -%}
+            <div class="pm-cart-card__row pm-cart-card__row--savings" data-cart-savings-row {% unless cart.total_discounts > 0 %}hidden{% endunless %}>
+              <span>Savings</span>
+              <span data-cart-savings>−{{ cart.total_discounts | money }}</span>
+            </div>
             <div class="pm-cart-card__row" data-pm-ship
               {%- if customer.default_address and customer.default_address.country != blank -%}
                 data-ship-country="{{ customer.default_address.country | escape }}"
@@ -282,9 +289,14 @@
 .pm-cart-row__variant { font-size: 13px; color: var(--pm-ink-500); margin-top: 2px; }
 .pm-cart-row__sku { font-size: 12px; color: var(--pm-ink-400); margin-top: 2px; }
 .pm-cart-row__price { text-align: right; flex-shrink: 0; }
+.pm-cart-row__price-now { display: flex; align-items: baseline; justify-content: flex-end; gap: 8px; flex-wrap: wrap; }
 .pm-cart-row__line-price { font-size: 16px; font-weight: 700; color: var(--pm-ink-900); }
 .pm-cart-row__line-was { font-size: 13px; color: var(--pm-ink-400); text-decoration: line-through; }
-.pm-cart-row__unit { font-size: 12px; color: var(--pm-ink-400); margin-top: 2px; }
+.pm-cart-row__line-was[hidden] { display: none; }
+.pm-cart-row__unit { font-size: 12px; color: var(--pm-ink-400); margin-top: 3px; }
+.pm-cart-row__save { color: #137a48; font-weight: 700; }
+.pm-cart-row__save[hidden] { display: none; }
+.pm-cart-row__save::before { content: "·"; margin: 0 5px 0 3px; color: var(--pm-ink-300); font-weight: 400; }
 
 .pm-cart-row__controls { display: flex; align-items: center; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
 .pm-qty {
@@ -364,6 +376,7 @@
 .pm-cart-card__h2 { margin: 0 0 16px; font-size: 18px; font-weight: 700; color: var(--pm-ink-900); }
 .pm-cart-card__rows { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
 .pm-cart-card__row { display: flex; justify-content: space-between; font-size: 14px; color: var(--pm-ink-600); }
+.pm-cart-card__row[hidden] { display: none; }
 .pm-cart-card__row-val { font-weight: 600; color: var(--pm-ink-900); }
 .pm-cart-card__row--savings { color: var(--pm-terracotta); }
 .pm-cart-card__row--savings span:last-child { font-weight: 600; }
@@ -496,10 +509,14 @@
     var row = getRow(line); if (!row) return;
     var qty = pendingQty[line]; if (qty == null) return;
     var unitCents = parseInt(row.getAttribute('data-cart-unit-cents'), 10) || 0;
+    var origUnit  = parseInt(row.getAttribute('data-cart-unit-original'), 10) || unitCents;
     var qtySpan = row.querySelector('[data-cart-qty-display]');
     if (qtySpan) qtySpan.textContent = qty;
     var priceEl = row.querySelector('[data-cart-line-price]');
     if (priceEl) priceEl.textContent = formatMoney(qty * unitCents);
+    // Optimistically scale the struck "was" too (kept in sync with the qty).
+    var wasEl = row.querySelector('[data-cart-line-was]');
+    if (wasEl && !wasEl.hidden) wasEl.textContent = formatMoney(qty * origUnit);
     var btns = row.querySelectorAll('.pm-qty-btn');
     if (btns[0]) btns[0].setAttribute('data-qty', Math.max(0, qty - 1));
     if (btns[1]) btns[1].setAttribute('data-qty', qty + 1);
@@ -510,8 +527,13 @@
     refreshTotals();
   }
 
+  // Optimistic summary while the shopper clicks the stepper. Subtotal = ORIGINAL
+  // price, Total = DISCOUNTED price, Savings = the gap — so the three always
+  // reconcile (Subtotal − Savings = Total). Exact within a discount tier; the
+  // authoritative server cart (applyServerCart) snaps it after each change so
+  // quantity-tiered bulk discounts stay exact across thresholds.
   function refreshTotals() {
-    var subtotalCents = 0, itemCount = 0;
+    var origCents = 0, finalCents = 0, itemCount = 0;
     document.querySelectorAll('[data-cart-row]').forEach(function (row) {
       var line = row.getAttribute('data-cart-row');
       var q = pendingQty[line];
@@ -519,20 +541,32 @@
         var sp = row.querySelector('[data-cart-qty-display]');
         q = sp ? parseInt(sp.textContent, 10) || 0 : 0;
       }
-      var unitCents = parseInt(row.getAttribute('data-cart-unit-cents'), 10) || 0;
-      subtotalCents += q * unitCents;
-      itemCount += q;
+      var finalUnit = parseInt(row.getAttribute('data-cart-unit-cents'), 10) || 0;
+      var origUnit  = parseInt(row.getAttribute('data-cart-unit-original'), 10) || finalUnit;
+      finalCents += q * finalUnit;
+      origCents  += q * origUnit;
+      itemCount  += q;
     });
-    var sub = document.querySelector('[data-cart-subtotal]');   if (sub)   sub.textContent   = formatMoney(subtotalCents);
-    // Include the shipping estimate in the Total when one has been fetched,
-    // so it survives quantity edits (it's cleared if the cart contents change
-    // enough that the estimate is stale — see the estimator below).
+    setSummary(origCents, Math.max(0, origCents - finalCents), finalCents, itemCount);
+    updateBadges(itemCount);
+  }
+
+  // Shared summary painter — used by the optimistic pass AND the server sync so
+  // both render the rows identically. shipCents is folded into Total.
+  function setSummary(subtotalCents, savingsCents, itemsTotalCents, itemCount) {
+    var sub = document.querySelector('[data-cart-subtotal]'); if (sub) sub.textContent = formatMoney(subtotalCents);
+    var srow = document.querySelector('[data-cart-savings-row]');
+    var sval = document.querySelector('[data-cart-savings]');
+    if (savingsCents > 0) { if (srow) srow.hidden = false; if (sval) sval.textContent = '−' + formatMoney(savingsCents); }
+    else if (srow) { srow.hidden = true; }
     var shipCents = window.__pmShipEstimateCents || 0;
-    var total = document.querySelector('[data-cart-total]');    if (total) total.textContent = formatMoney(subtotalCents + shipCents);
+    var total = document.querySelector('[data-cart-total]'); if (total) total.textContent = formatMoney(itemsTotalCents + shipCents);
     var lbl = document.querySelector('[data-cart-itemcount-label]');
-    if (lbl) lbl.textContent = 'Subtotal (' + itemCount + ' ' + (itemCount === 1 ? 'item' : 'items') + ')';
-    // Header + mobile badges show stocked cart lines PLUS pending quote lines,
-    // so a stepper edit here must update every badge and keep the quote count.
+    if (lbl && itemCount != null) lbl.textContent = 'Subtotal (' + itemCount + ' ' + (itemCount === 1 ? 'item' : 'items') + ')';
+  }
+
+  // Header + mobile badges show stocked cart lines PLUS pending quote lines.
+  function updateBadges(itemCount) {
     var quoteCount = 0;
     try {
       var _qraw = window.localStorage.getItem('pm:quote:v1');
@@ -543,6 +577,36 @@
       if (badgeTotal > 0) { badge.textContent = badgeTotal; badge.removeAttribute('hidden'); }
       else { badge.setAttribute('hidden', ''); }
     });
+  }
+
+  // Authoritative sync from a /cart/change.js response. Re-bakes each line's
+  // discounted unit + line total + "was"/"% off", then repaints the summary from
+  // the real cart — so quantity-tiered bulk discounts are EXACT after each edit,
+  // even when a change crosses a tier boundary (10→20→30%).
+  function applyServerCart(cart) {
+    if (!cart || !cart.items) return;
+    var byKey = {};
+    cart.items.forEach(function (it) { byKey[it.key] = it; });
+    document.querySelectorAll('[data-cart-row]').forEach(function (row) {
+      var it = byKey[row.getAttribute('data-cart-key')];
+      if (!it) return;
+      row.setAttribute('data-cart-unit-cents', it.final_price);
+      row.setAttribute('data-cart-unit-original', it.original_price);
+      var pe = row.querySelector('[data-cart-line-price]'); if (pe) pe.textContent = formatMoney(it.final_line_price);
+      var unit = row.querySelector('[data-cart-unit]'); if (unit) unit.textContent = formatMoney(it.final_price) + ' each';
+      var wasEl = row.querySelector('[data-cart-line-was]');
+      var saveEl = row.querySelector('[data-cart-save]');
+      if (it.original_line_price > it.final_line_price) {
+        var pct = Math.round((it.original_line_price - it.final_line_price) / it.original_line_price * 100);
+        if (wasEl) { wasEl.textContent = formatMoney(it.original_line_price); wasEl.hidden = false; }
+        if (saveEl) { saveEl.textContent = pct + '% off'; saveEl.hidden = false; }
+      } else {
+        if (wasEl) wasEl.hidden = true;
+        if (saveEl) saveEl.hidden = true;
+      }
+    });
+    setSummary(cart.original_total_price, cart.total_discount, cart.total_price, cart.item_count);
+    updateBadges(cart.item_count);
   }
 
   function flushChange(line) {
@@ -572,11 +636,15 @@
             var cw = getRow(line) && getRow(line).querySelector('.pm-qty');
             if (cw && realQty > 0) cw.setAttribute('data-cart-max', realQty);
             refreshRowDisplay(line);
+            applyServerCart(cart); // capped → resync summary + line discounts
           }).catch(function () {});
         return;
       }
       var serverItem = res.body.items && res.body.items[parseInt(line, 10) - 1];
       var serverQty = serverItem ? serverItem.quantity : 0;
+      // Snap every line + the summary to the authoritative cart so tiered bulk
+      // discounts stay exact as quantities cross 10/20/30-unit thresholds.
+      applyServerCart(res.body);
       // TC-085: a capped increment means serverQty IS the real available max —
       // pin it so + disables even when Liquid's inventory_quantity was higher
       // than what's actually sellable online.
