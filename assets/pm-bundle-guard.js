@@ -45,6 +45,12 @@
   var lastCart = null;    // most recent cart snapshot (for click-time prediction)
   var userRemoved = {};   // line key -> ts of a customer-initiated removal
   var swapped = {};       // discounted-base key -> ts, AFTER we've removed it
+  var swapFailed = {};    // base SKU -> ts of a FAILED swap (add didn't land).
+                          // The failed swap re-adds the discounted base under a
+                          // FRESH key, which findOrphans would otherwise re-pick
+                          // and re-swap immediately — a tight loop that repaints
+                          // the discounted price over and over. Skip that SKU for
+                          // a short cooldown so one bad swap can't oscillate.
   var awaitingPlain = {}; // base SKU -> true, while we wait for its full-price
                           // line to appear in /cart.js (so we never render a
                           // moment where the base row is missing entirely)
@@ -76,6 +82,14 @@
     var ts = swapped[key];
     if (!ts) return false;
     if (Date.now() - ts > 30000) { delete swapped[key]; return false; } // keys never recur; expire for hygiene
+    return true;
+  }
+
+  function noteSwapFail(sku) { if (sku) swapFailed[sku] = Date.now(); }
+  function recentlySwapFailed(sku) {
+    var ts = swapFailed[sku];
+    if (!ts) return false;
+    if (Date.now() - ts > 8000) { delete swapFailed[sku]; return false; } // brief cooldown, then retry
     return true;
   }
 
@@ -133,7 +147,8 @@
     });
     return items.filter(function (l) {
       return lineIsDiscountedBase(l) && !covered[l.sku] &&
-             !recentlyUserRemoved(l.key) && !recentlySwapped(l.key);
+             !recentlyUserRemoved(l.key) && !recentlySwapped(l.key) &&
+             !recentlySwapFailed(l.sku);
     });
   }
 
@@ -216,6 +231,12 @@
       });
     }).then(function (r2) {
       if (!r2 || !r2.ok) {
+        // Plain add failed. Restore the original so the customer doesn't lose
+        // the item, but mark this SKU failed + stop waiting for a plain that
+        // won't come — so the straggler sweep can't re-pick the restored line
+        // and re-swap it in a tight loop (the price-oscillation bug).
+        noteSwapFail(o.sku);
+        delete awaitingPlain[o.sku];
         if (!recentlyUserRemoved(o.key)) {
           fetch('/cart/add.js', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -224,6 +245,7 @@
         }
         throw new Error('re-add fail');
       }
+      delete swapFailed[o.sku]; // swap landed — clear any earlier failure note
       swapNext(list, i + 1);
     }).catch(function () { swapNext(list, i + 1); }); // one bad swap doesn't strand the rest
   }
