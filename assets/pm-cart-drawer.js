@@ -1,3 +1,4 @@
+/* build: pm-cart-drawer 2026-07-07-osc-b (force CDN re-hash) */
 /**
  * PmCart — slide-out cart drawer.
  * Mirrors Hydrogen's PmCartDrawer.
