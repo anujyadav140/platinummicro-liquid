@@ -101,8 +101,10 @@
                   sort within each group. _emitted tracks the global output position
                   so the first row stays eager for LCP regardless of grouping. {%- endcomment -%}
               {%- assign _emitted = 0 -%}
+              {%- comment -%} "In stock" = tracked, positive qty (see snippet pm-instock); NOT product.available, which counts untracked / continue-selling items as in-stock. {%- endcomment -%}
               {%- for product in collection.products -%}
-                {%- if product.available -%}
+                {%- capture _isc -%}{%- render 'pm-instock', product: product -%}{%- endcapture -%}
+                {%- if _isc contains 'true' -%}
                   {%- if _emitted < columns_d -%}
                     <li>{%- render 'pm-product-card', product: product, eager: true -%}</li>
                   {%- else -%}
@@ -112,7 +114,8 @@
                 {%- endif -%}
               {%- endfor -%}
               {%- for product in collection.products -%}
-                {%- unless product.available -%}
+                {%- capture _isc -%}{%- render 'pm-instock', product: product -%}{%- endcapture -%}
+                {%- unless _isc contains 'true' -%}
                   {%- if _emitted < columns_d -%}
                     <li>{%- render 'pm-product-card', product: product, eager: true -%}</li>
                   {%- else -%}

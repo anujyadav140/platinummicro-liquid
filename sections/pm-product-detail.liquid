@@ -18,7 +18,9 @@
 {%- assign _sku     = _v.sku -%}
 {%- assign _upc     = _v.barcode -%}
 {%- assign _stock   = _v.inventory_quantity -%}
-{%- assign _instock = product.available -%}
+{%- comment -%} In stock = tracked, positive qty (snippet pm-instock) — NOT product.available, which counts untracked / "sell when out of stock" items as in-stock. {%- endcomment -%}
+{%- capture _isc -%}{%- render 'pm-instock', product: product -%}{%- endcapture -%}
+{%- assign _instock = false -%}{%- if _isc contains 'true' -%}{%- assign _instock = true -%}{%- endif -%}
 
 {%- comment -%} ── MPN: prefer metafield, fall back to SKU so the line never goes empty ── {%- endcomment -%}
 {%- assign _mpn = product.metafields.custom.mpn | default: product.metafields.specs.mpn -%}

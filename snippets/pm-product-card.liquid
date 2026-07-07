@@ -51,9 +51,12 @@
       <div class="pm-pcard__sku">SKU {{ _v.sku }}</div>
     {%- endif -%}
 
+    {%- comment -%} In stock = tracked, positive qty (snippet pm-instock) — NOT product.available (which counts untracked / continue-selling items as in-stock). {%- endcomment -%}
+    {%- capture _isc -%}{%- render 'pm-instock', product: product -%}{%- endcapture -%}
+    {%- assign _in_stock = false -%}{%- if _isc contains 'true' -%}{%- assign _in_stock = true -%}{%- endif -%}
     <div class="pm-pcard__foot">
       <div class="pm-pcard__price">
-        {%- if _v.price == 0 -%}
+        {%- if _v.price == 0 or _in_stock == false -%}
           {%- comment -%} Quote-only / price-on-request: show "Pricing by quote" instead
               of a misleading $0.00. Mirrors the PDP treatment; the card footer already
               renders "Add to Quote" for these. {%- endcomment -%}
@@ -69,7 +72,7 @@
         {%- endif -%}
       </div>
 
-      {%- if product.available -%}
+      {%- if _in_stock -%}
         {%- comment -%} TC-084: expose the inventory cap for ANY tracked variant with a
             positive count — DENY + CONTINUE alike (matches the PDP gate; CONTINUE is the
             inventory-desync workaround) — so pm-add-to-cart.js can disable "+ Add" once

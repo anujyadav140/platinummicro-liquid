@@ -408,15 +408,18 @@
       {%- else -%}
         {%- assign _in_stock = 0 -%}
         {%- assign _out_stock = 0 -%}
+        {%- comment -%} Count IN STOCK = tracked positive qty (snippet pm-instock), matching the grid — not .available (untracked / continue-selling items are quote). {%- endcomment -%}
         {%- if _is_search -%}
           {%- for item in _results.results -%}
             {%- if item.object_type == 'product' -%}
-              {%- if item.available -%}{%- assign _in_stock = _in_stock | plus: 1 -%}{%- else -%}{%- assign _out_stock = _out_stock | plus: 1 -%}{%- endif -%}
+              {%- capture _isc -%}{%- render 'pm-instock', product: item -%}{%- endcapture -%}
+              {%- if _isc contains 'true' -%}{%- assign _in_stock = _in_stock | plus: 1 -%}{%- else -%}{%- assign _out_stock = _out_stock | plus: 1 -%}{%- endif -%}
             {%- endif -%}
           {%- endfor -%}
         {%- else -%}
           {%- for p in _results.products -%}
-            {%- if p.available -%}{%- assign _in_stock = _in_stock | plus: 1 -%}{%- else -%}{%- assign _out_stock = _out_stock | plus: 1 -%}{%- endif -%}
+            {%- capture _isc -%}{%- render 'pm-instock', product: p -%}{%- endcapture -%}
+            {%- if _isc contains 'true' -%}{%- assign _in_stock = _in_stock | plus: 1 -%}{%- else -%}{%- assign _out_stock = _out_stock | plus: 1 -%}{%- endif -%}
           {%- endfor -%}
         {%- endif -%}
         <ul class="pm-facet__values">

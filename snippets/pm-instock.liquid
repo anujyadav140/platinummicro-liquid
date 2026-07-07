@@ -1,0 +1,26 @@
+{%- comment -%}
+  Single source of truth: is `product` genuinely IN STOCK (vs quote-only)?
+
+  IN STOCK = it has at least one variant whose inventory is TRACKED by Shopify
+  AND has a POSITIVE quantity. Everything else is quote-only:
+    • untracked variants ("no number" against the qty) — Shopify calls these
+      always-available, which is exactly the bug this replaces;
+    • tracked variants at 0 or below, including "sell when out of stock"
+      (continue-selling) items — a real number, but not actually in stock.
+
+  This deliberately does NOT use `product.available` (which is true for untracked
+  and continue-selling products). No inventory data is changed anywhere — this is
+  purely how the storefront classifies in-stock vs "Available for Quote".
+
+  Outputs the literal string `true` or `false`. Use via:
+    {%- capture _isc -%}{%- render 'pm-instock', product: product -%}{%- endcapture -%}
+    {%- assign _in_stock = false -%}{%- if _isc contains 'true' -%}{%- assign _in_stock = true -%}{%- endif -%}
+{%- endcomment -%}
+{%- assign _pm_in = false -%}
+{%- for v in product.variants -%}
+  {%- if v.inventory_management == 'shopify' and v.inventory_quantity and v.inventory_quantity > 0 -%}
+    {%- assign _pm_in = true -%}
+    {%- break -%}
+  {%- endif -%}
+{%- endfor -%}
+{{- _pm_in -}}
