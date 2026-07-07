@@ -167,29 +167,45 @@
   // price, stays put) and poll briefly; the instant the plain line is present
   // we release and render exactly once, so the row transitions seamlessly.
   function settleRender(tries) {
-    if (!Object.keys(awaitingPlain).length) { release(); renderNow(); return; }
-    if (tries >= 10) { awaitingPlain = {}; release(); renderNow(); return; } // ~2.5s ceiling, then show truth
     fetch('/cart.js', { headers: { Accept: 'application/json' } })
       .then(function (r) { return r.json(); })
       .then(function (cart) {
         lastCart = cart;
         Object.keys(awaitingPlain).forEach(function (sku) { if (plainPresent(cart, sku)) delete awaitingPlain[sku]; });
-        if (!Object.keys(awaitingPlain).length) {
-          release();
-          // Render the confirmed-good cart directly (plain present; the dead
-          // discounted line is filtered by the drawer) — no extra fetch that
-          // could itself be stale.
-          if (window.PmCart && window.PmCart.applyCart) window.PmCart.applyCart(cart); else renderNow();
-        } else {
+        // Still waiting for a swapped-in full-price line to land? poll again.
+        if (Object.keys(awaitingPlain).length && tries < 10) {
           setTimeout(function () { settleRender(tries + 1); }, 250);
+          return;
         }
+        awaitingPlain = {}; // drained, or gave up after ~2.5s
+        // ── The 2nd-bundle oscillation fix ──
+        // A NEW orphan may have appeared WHILE this swap settled: the customer
+        // pulled ANOTHER bundle's drive. If we rendered now we'd paint that
+        // base at its discounted (bundle) price for a frame before its own swap
+        // runs — the "second SKU flips back to the bundle price" bug. So swap
+        // every remaining orphan FIRST, still suspended and still holding the
+        // reconcile lock (running stays true so no concurrent reconcile can
+        // double-add), and only render once the cart is fully clean.
+        var more = findOrphans(cart.items || []);
+        if (more.length) {
+          Promise.all(more.map(function (o) { return prefetchPlain(o.handle); }))
+            .then(function () { swapNext(more, 0); });
+          return;
+        }
+        // Settled — no orphans left. Release the lock + suspension, render once.
+        running = false;
+        release();
+        if (window.PmCart && window.PmCart.applyCart) window.PmCart.applyCart(cart); else renderNow();
       })
-      .catch(function () { release(); renderNow(); });
+      .catch(function () { running = false; release(); renderNow(); });
   }
 
   function finishReconcile() {
-    running = false;
-    if (location.pathname === '/cart') { release(); location.reload(); return; } // server-rendered page
+    // NOTE: running is intentionally NOT cleared here — it stays held through
+    // settleRender (and any follow-on swap of a newly-orphaned base) so a
+    // concurrent reconcile can't race in and double-swap. settleRender clears it
+    // at the very end, once the cart is clean and rendered.
+    if (location.pathname === '/cart') { running = false; release(); location.reload(); return; } // server-rendered page
     settleRender(0);
   }
 
