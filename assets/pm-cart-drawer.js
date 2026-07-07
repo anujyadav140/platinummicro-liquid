@@ -1,4 +1,4 @@
-/* build: pm-cart-drawer 2026-07-07-rekey-alias (force CDN re-hash) */
+/* build: pm-cart-drawer 2026-07-07-fresh-add (force CDN re-hash) */
 /**
  * PmCart — slide-out cart drawer.
  * Mirrors Hydrogen's PmCartDrawer.
@@ -25,6 +25,20 @@
     var hops = 0;
     while (keyAlias[k] && hops < 10) { k = keyAlias[k]; hops++; }
     return k;
+  }
+  // key → a debounced flush is scheduled but hasn't fired yet. Together with
+  // qInflight this defines an ACTIVE stepper edit.
+  var qTimerLive = {};
+  // Drop optimistic qty state that is NOT part of an active edit (nothing in
+  // flight, no debounce pending). Called whenever the cart changes through any
+  // path that ISN'T the stepper — add-to-cart, clear, another tab — because the
+  // pinned value only exists to out-vote stale re-renders DURING an edit. Left
+  // alone, it out-votes fresh truth too: re-adding an item at qty 1 rendered
+  // the previous session's pinned qty (e.g. 85) instead of 1.
+  function clearIdlePending() {
+    Object.keys(qPending).forEach(function (k) {
+      if (!qInflight[k] && !qTimerLive[k]) delete qPending[k];
+    });
   }
   // Lines the user optimistically removed. A render can fire (e.g. the bundle
   // guard's) BEFORE Shopify has committed the removal, and would rebuild the
@@ -123,6 +137,10 @@
       // optimistic edit — during rapid +/- the snapshot lags far behind and
       // bounces the stepper back to an old number. Ignore our own events.
       if (src === 'drawer-line') return;
+      // The cart changed through something that ISN'T the stepper (add, clear,
+      // quote, another tab) → any idle pinned qty is stale truth now. Without
+      // this, re-adding an item at qty 1 rendered the old pinned qty (e.g. 85).
+      clearIdlePending();
       // An ADD means the user is putting items INTO the cart. Any pending
       // "recently removed" suppression is stale intent now — and because
       // Shopify reuses the SAME line key when an identical item is re-added,
@@ -156,6 +174,7 @@
     // mutations (bundle guard repairs, other tabs) can land while the
     // drawer sits closed or mid-render, and open() must never show stale
     // prices. Force past any guard suspension — an explicit open shows truth.
+    clearIdlePending(); // idle pins must not out-vote the fresh truth
     refresh(true);
   }
 
@@ -613,7 +632,8 @@
     if (li) li.querySelector('.pm-cart__qty-input').value = qty; // optimistic
     optimisticHeader();
     clearTimeout(qTimers[key]);
-    qTimers[key] = setTimeout(function () { flushLine(key); }, 220);
+    qTimerLive[key] = true; // an edit is active until this debounce fires + settles
+    qTimers[key] = setTimeout(function () { qTimerLive[key] = false; flushLine(key); }, 220);
   }
 
   function removeLine(key, isRetry) {
@@ -623,6 +643,10 @@
     // header/badge from what's left, fire delete in the background.
     markRemoved(domKey); // any render before the server commits must not resurrect it
     if (key !== domKey) markRemoved(key);
+    // Removing the line makes any optimistic qty for this VARIANT moot — drop it
+    // now so a later re-add of the same item can't inherit the old pinned qty.
+    var rvid = String(key).split(':')[0];
+    Object.keys(qPending).forEach(function (pk) { if (String(pk).split(':')[0] === rvid) delete qPending[pk]; });
     var li = itemsEl.querySelector('[data-cart-item][data-cart-key="' + domKey + '"]') ||
              itemsEl.querySelector('[data-cart-item][data-cart-key="' + key + '"]');
     if (li) {
