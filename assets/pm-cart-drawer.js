@@ -1,4 +1,4 @@
-/* build: pm-cart-drawer 2026-07-07-stepper-nobounce (force CDN re-hash) */
+/* build: pm-cart-drawer 2026-07-07-no-self-refresh (force CDN re-hash) */
 /**
  * PmCart — slide-out cart drawer.
  * Mirrors Hydrogen's PmCartDrawer.
@@ -106,6 +106,11 @@
     // Listen for external cart changes
     document.addEventListener('pm:cart-changed', function (e) {
       var src = (e && e.detail && e.detail.source) || '';
+      // Our OWN qty/removal changes ('drawer-line') already re-render in place
+      // (settle/removeLine handle it). Re-fetching /cart.js here would race the
+      // optimistic edit — during rapid +/- the snapshot lags far behind and
+      // bounces the stepper back to an old number. Ignore our own events.
+      if (src === 'drawer-line') return;
       // An ADD means the user is putting items INTO the cart. Any pending
       // "recently removed" suppression is stale intent now — and because
       // Shopify reuses the SAME line key when an identical item is re-added,
@@ -245,6 +250,13 @@
       // line total computed from it) so a concurrent render (e.g. the bundle
       // guard's) can't bounce the stepper back to the old number.
       var pend = qPending[item.key];
+      if (pend == null) {
+        // The line can RE-KEY on a bulk tier crossing, orphaning the pending edit
+        // under the old key. Recover it by variant id (stable across re-keys) so a
+        // re-render never reverts the stepper to the behind server qty.
+        var _vid = String(item.variant_id);
+        for (var _k in qPending) { if (String(_k).split(':')[0] === _vid) pend = qPending[_k]; }
+      }
       var q = (pend != null) ? pend : item.quantity;
       var lineCents = (pend != null) ? (item.price * q) : (item.line_price || item.price * item.quantity);
       var node = buildLineNode({
@@ -502,10 +514,16 @@
           if (qPending[key] !== sent && qPending[key] != null) { flushLine(key); return; }
           // PIN qPending to the committed qty (do NOT delete it). render() reads
           // qPending for the input, so keeping it set means a concurrent re-render
-          // (the bundle guard, or a second settle) can't bounce the stepper back to
-          // a stale number — the "+ jumps up then reverts" glitch. Deleting it here
-          // is what reopened that race.
-          if (ln) qPending[key] = ln.quantity; else delete qPending[key];
+          // can't bounce the stepper back to a stale number. Also CONSOLIDATE: a
+          // bulk line may have RE-KEYED (tier crossing), so drop every stale-key
+          // pending entry for this variant and pin only the CURRENT key.
+          if (ln) {
+            var lvid = String(ln.id);
+            Object.keys(qPending).forEach(function (pk) { if (String(pk).split(':')[0] === lvid) delete qPending[pk]; });
+            qPending[ln.key] = ln.quantity;
+          } else {
+            delete qPending[key];
+          }
           if (!window.__pmSuspendCartRender) applyDrawerCart(cart);
           // Notify outside listeners (bundle guard etc.) that the cart mutated.
           document.dispatchEvent(new CustomEvent('pm:cart-changed', { detail: { source: 'drawer-line' } }));
