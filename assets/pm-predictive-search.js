@@ -53,13 +53,19 @@
     // collection, query) or Shopify simply omits that resource — that's what
     // caused collections to never appear (TC-011). limit_scope=each makes the
     // limit apply PER type, so collections/queries aren't starved by products.
+    // resources[options][fields] REPLACES the default field list (title,
+    // product_type, variants.title, vendor), so restate the defaults and add
+    // variants.sku + variants.barcode — without them a part-number search says
+    // "No matches" here while the full /search page (different engine,
+    // searches SKUs by default) finds it. Same opt-in pm-quick-order.js uses.
     var url = ROUTE +
       '?q=' + encodeURIComponent(term) +
       '&section_id=pm-predictive-search' +
       '&resources[type]=product,collection,query' +
       '&resources[limit]=6' +
       '&resources[limit_scope]=each' +
-      '&resources[options][unavailable_products]=last';
+      '&resources[options][unavailable_products]=last' +
+      '&resources[options][fields]=title,product_type,variants.title,vendor,variants.sku,variants.barcode';
 
     fetch(url, { signal: controller.signal })
       .then(function (r) { return r.ok ? r.text() : Promise.reject(r.status); })
