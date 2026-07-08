@@ -32,7 +32,14 @@
   }
   function thumb(url) {
     if (!url) return '';
-    return String(url).replace(/(\.(?:jpe?g|png|webp|gif))(\?|$)/i, '_300x$1$2');
+    // Size via ?width= (server-side transform, filename-agnostic) — never the
+    // legacy _WxH filename suffix; migrated BC filenames carry ".jpg" mid-name.
+    var u = String(url);
+    if (u.slice(0, 2) === '//') u = 'https:' + u;
+    if (/cdn\.shopify\.com|\/cdn\//.test(u) && !/[?&]width=/.test(u)) {
+      u += (u.indexOf('?') >= 0 ? '&' : '?') + 'width=300';
+    }
+    return u;
   }
   // Normalize either shape (/recommendations/products.json OR /collections/*/products.json)
   // into one card model: { id, title, url, vendor, image, price(cents), available, variantId }.
