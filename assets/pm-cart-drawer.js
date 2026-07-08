@@ -1,4 +1,4 @@
-/* build: pm-cart-drawer 2026-07-07-fresh-add (force CDN re-hash) */
+/* build: pm-cart-drawer 2026-07-08-img-width-param (force CDN re-hash) */
 /**
  * PmCart — slide-out cart drawer.
  * Mirrors Hydrogen's PmCartDrawer.
@@ -349,7 +349,17 @@
 
     var img = node.querySelector('img');
     if (opts.imageUrl) {
-      img.src = String(opts.imageUrl).replace(/\.(jpg|jpeg|png|webp)/i, '_120x120.$1');
+      // Size via Shopify's ?width= query param (server-side transform on the real
+      // image object) — NOT the _WxH filename trick. Migrated products carry ".jpg"
+      // mid-filename (e.g. "…1280.1280.jpg_c_2__…__26578.jpg"), so a regex that
+      // inserts _120x120 before the FIRST ".jpg" builds a URL that doesn't exist
+      // → 404 → broken thumbnail. The query param is filename-agnostic and matches
+      // what the /cart page does with `image_url: width: 160`.
+      var _u = String(opts.imageUrl);
+      if (/cdn\.shopify\.com|\/cdn\//.test(_u) && !/[?&]width=/.test(_u)) {
+        _u += (_u.indexOf('?') >= 0 ? '&' : '?') + 'width=120';
+      }
+      img.src = _u;
       img.alt = opts.title || '';
     } else {
       img.remove();
