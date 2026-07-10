@@ -227,7 +227,7 @@
                 <button
                   type="button"
                   class="pm-pdp__thumb{% if forloop.first %} is-active{% endif %}"
-                  data-pm-pdp-thumb="{{ image | image_url: width: 900 }}"
+                  data-pm-pdp-thumb="{{ image | image_url: width: 1600 }}"
                   aria-label="View image {{ forloop.index }}"
                 >
                   <img
@@ -244,13 +244,24 @@
 
           <div class="pm-pdp__hero" data-pm-pdp-hero>
             {%- if product.featured_image -%}
+              {%- comment -%}
+                Source is 1600px (not the display ~528px) because the frame
+                applies a 2x CSS hover-zoom on this same <img> — at 2x on a
+                retina screen the zoom needs ~2100px to stay crisp, so 900px
+                looked soft exactly when a buyer zoomed to inspect a part
+                (Shopify guideline: product images up to 2048², min 800² for
+                zoom). No srcset here on purpose: the thumb-swap JS sets
+                .src, which a srcset would override → keep it a single source.
+                fetchpriority high because this is the PDP's LCP element.
+              {%- endcomment -%}
               <img
                 id="pm-pdp-main-img"
-                src="{{ product.featured_image | image_url: width: 900 }}"
+                src="{{ product.featured_image | image_url: width: 1600 }}"
                 alt="{{ product.featured_image.alt | default: product.title | escape }}"
-                width="900"
-                height="900"
+                width="1600"
+                height="1600"
                 loading="eager"
+                fetchpriority="high"
                 data-pm-pdp-zoom
               >
             {%- else -%}
