@@ -9,6 +9,7 @@
  */
 {
   "current": {
+    "favicon": "shopify://shop_images/pm-favicon-512.png",
     "color_navy_deep": "#0D2340",
     "color_navy_deepest": "#071525",
     "color_terracotta": "#A63D2F",
@@ -94,14 +95,14 @@
         "type": "shopify://apps/inbox/blocks/chat/841fc607-4181-4ad1-842d-e24d7f8bad6b",
         "disabled": true,
         "settings": {
+          "greeting_message": "",
           "button_color": "#0D2340",
           "secondary_color": "#FFFFFF",
           "ternary_color": "#A63D2F",
           "button_icon": "chat_bubble",
           "button_text": "chat_with_us",
           "button_horizontal_position": "bottom_right",
-          "button_vertical_position": "lowest",
-          "greeting_message": ""
+          "button_vertical_position": "lowest"
         }
       },
       "6143736321357441667": {

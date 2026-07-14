@@ -1,3 +1,12 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "sections": {
     "pm-hero-banner": {
@@ -35,7 +44,9 @@
       "type": "pm-account-strip",
       "settings": {
         "enabled": true,
-        "phone": "818 505 6853"
+        "phone": "818 505 6853",
+        "messages_url": "",
+        "returns_url": ""
       }
     },
     "pm-card-section": {
@@ -145,36 +156,36 @@
           "type": "card",
           "settings": {
             "image_position": "center",
+            "image_url": "https://platinum-micro.myshopify.com/cdn/shop/t/3/assets/pm-banner-hpe.png",
             "eyebrow": "HPE PROLIANT SERVERS",
             "title": "HPE ProLiant servers, built to your spec.",
             "body": "ProLiant DL, ML, and Edge systems on Intel Xeon and AMD EPYC. Configured, tested, and shipped with real lead times.",
             "cta_label": "Shop ProLiant",
-            "cta_href": "/collections/hewlett-packard-enterprise",
-            "image_url": "https://platinum-micro.myshopify.com/cdn/shop/t/3/assets/pm-banner-hpe.png"
+            "cta_href": "/collections/hewlett-packard-enterprise"
           }
         },
         "card-2": {
           "type": "card",
           "settings": {
             "image_position": "center",
+            "image_url": "https://platinum-micro.myshopify.com/cdn/shop/t/3/assets/pm-banner-bulk.png",
             "eyebrow": "BULK PRICING",
             "title": "Tiered pricing for businesses.",
             "body": "Volume discounts for integrators and public-sector buyers.",
             "cta_label": "Shop Bulk",
-            "cta_href": "/collections/bulk-options",
-            "image_url": "https://platinum-micro.myshopify.com/cdn/shop/t/3/assets/pm-banner-bulk.png"
+            "cta_href": "/collections/bulk-options"
           }
         },
         "card-3": {
           "type": "card",
           "settings": {
             "image_position": "center",
+            "image_url": "https://platinum-micro.myshopify.com/cdn/shop/t/3/assets/pm-banner-bundle.png",
             "eyebrow": "BUNDLE OFFER",
             "title": "Add qualifying bundles and save.",
             "body": "Pre-configured NAS, drive, and server bundles priced to move.",
             "cta_label": "Shop Bundles",
-            "cta_href": "/collections/bundles",
-            "image_url": "https://platinum-micro.myshopify.com/cdn/shop/t/3/assets/pm-banner-bundle.png"
+            "cta_href": "/collections/bundles"
           }
         }
       },
@@ -185,6 +196,7 @@
       ],
       "settings": {
         "heading": "",
+        "layout": "featured",
         "section_bg": "#fbfaf7",
         "padding_top": 64,
         "padding_bottom": 64,
@@ -194,8 +206,7 @@
         "title_color": "#ffffff",
         "body_color": "#d8dee7",
         "accent_color": "#a63d2f",
-        "cta_text_color": "#ffffff",
-        "layout": "featured"
+        "cta_text_color": "#ffffff"
       }
     },
     "pm-brand-wall": {
@@ -205,27 +216,6 @@
           "type": "brand",
           "settings": {
             "name": "HPE",
-            "link": ""
-          }
-        },
-        "brand-dell": {
-          "type": "brand",
-          "settings": {
-            "name": "Dell",
-            "link": ""
-          }
-        },
-        "brand-cisco": {
-          "type": "brand",
-          "settings": {
-            "name": "Cisco",
-            "link": ""
-          }
-        },
-        "brand-lenovo": {
-          "type": "brand",
-          "settings": {
-            "name": "Lenovo",
             "link": ""
           }
         },
@@ -240,6 +230,38 @@
           "type": "brand",
           "settings": {
             "name": "AMD",
+            "link": ""
+          }
+        },
+        "brand_TUkJgd": {
+          "type": "brand",
+          "settings": {
+            "logo": "shopify://shop_images/SanDisk_Logo_2007_svg.webp",
+            "name": "SanDisk",
+            "link": ""
+          }
+        },
+        "brand_YDjDRU": {
+          "type": "brand",
+          "settings": {
+            "logo": "shopify://shop_images/pny-logo.png",
+            "name": "PNY",
+            "link": ""
+          }
+        },
+        "brand_iidEfT": {
+          "type": "brand",
+          "settings": {
+            "logo": "shopify://shop_images/gigabyte-logo.png",
+            "name": "Gigabyte",
+            "link": ""
+          }
+        },
+        "brand_ADJWwF": {
+          "type": "brand",
+          "settings": {
+            "logo": "shopify://shop_images/supermicro-logo.png",
+            "name": "Supermicro",
             "link": ""
           }
         },
@@ -288,11 +310,12 @@
       },
       "block_order": [
         "brand-hpe",
-        "brand-dell",
-        "brand-cisco",
-        "brand-lenovo",
         "brand-intel",
         "brand-amd",
+        "brand_TUkJgd",
+        "brand_YDjDRU",
+        "brand_iidEfT",
+        "brand_ADJWwF",
         "brand-samsung",
         "brand-seagate",
         "brand-wd",
@@ -327,7 +350,17 @@
     "pm-chat-cta": {
       "type": "pm-chat-cta",
       "settings": {
-        "contact_url": "/pages/contact"
+        "eyebrow": "WE'RE HERE TO HELP",
+        "heading": "Questions? Talk to our team.",
+        "body": "Chat with a Platinum Micro specialist about configs, lead times, or volume quotes — we usually reply in minutes.",
+        "button_label": "Chat with us",
+        "contact_url": "/pages/contact",
+        "bg_color": "#0d2340",
+        "eyebrow_color": "#c04e3e",
+        "heading_color": "#ffffff",
+        "body_color": "#d2d7de",
+        "padding_top": 72,
+        "padding_bottom": 72
       }
     },
     "pm-about-banner": {
