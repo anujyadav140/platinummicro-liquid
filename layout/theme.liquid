@@ -5,8 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="{{ settings.color_brand_primary | default: '#0D2340' }}">
 
-  {%- if settings.favicon != blank -%}
-    <link rel="icon" type="image/png" href="{{ settings.favicon | image_url: width: 32 }}">
+  {%- comment -%}
+    Favicon — 48px per Shopify's image-size guidance. The Favicon theme
+    setting was never populated on the live theme (no icon tag rendered and
+    /favicon.ico 404s → generic globe in browser tabs), so fall back to the
+    shop's square brand logo, then the wide brand logo, then the theme logo
+    setting — some icon always renders once any of those exists. Uploading a
+    square image in Theme settings → Favicon still wins over the fallbacks.
+  {%- endcomment -%}
+  {%- assign _favicon = settings.favicon | default: shop.brand.square_logo | default: shop.brand.logo | default: settings.logo -%}
+  {%- if _favicon != blank -%}
+    <link rel="icon" type="image/png" href="{{ _favicon | image_url: width: 48, height: 48 }}">
+    <link rel="apple-touch-icon" href="{{ _favicon | image_url: width: 180, height: 180 }}">
   {%- endif -%}
 
   <title>
