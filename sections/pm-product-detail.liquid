@@ -341,12 +341,8 @@
                 of those; a shipping promise wouldn't be.
               {%- endcomment -%}
               <a class="pm-pdp__quote-jump" href="#pm-recs-anchor" data-pm-recs-jump hidden>
-                <span class="pm-pdp__quote-jump-dot" aria-hidden="true"></span>
-                <span class="pm-pdp__quote-jump-txt">
-                  <strong>Need it sooner?</strong>
-                  <span>Similar items are available to buy now &mdash; see below</span>
-                </span>
-                <svg class="pm-pdp__quote-jump-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="4" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+                <span>Need it sooner? Shop similar items</span>
               </a>
             </div>
           {%- endif -%}
@@ -373,7 +369,13 @@
             Sits in the details column (under Shipping & Returns) so it
             fills the space beside the gallery instead of leaving the
             middle column empty.
+            IN-STOCK products only: on quote-only PDPs the space goes to
+            the "you can buy now" rail instead, and the glance bullets
+            just pushed it further down (user call, 2026-07-16). The
+            hydration JS null-checks [data-pm-pdp-glance], so omitting
+            the markup entirely is safe.
           {%- endcomment -%}
+          {%- if _instock -%}
           <div class="pm-pdp__glance" data-pm-pdp-glance{% if _features.size == 0 and _spec_count == 0 %} hidden{% endif %}>
             <div class="pm-pdp__glance-eyebrow" data-pm-pdp-glance-eyebrow>
               {%- if _features.size > 0 -%}Key features{%- else -%}At a glance{%- endif -%}
@@ -414,6 +416,7 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
             </a>
           </div>
+          {%- endif -%}
 
         </div>
 
