@@ -1134,3 +1134,12 @@
   box-shadow: var(--pm-shadow-sm);
   text-decoration: none;
 }
+/* MOBILE-ONLY (user call, 2026-07-16): at ≥1024px the PDP is multi-column and
+   the "you can buy now" rail renders directly below the buy area — the jump
+   link is clutter there. Below 1024px the page stacks, the rail sits screens
+   away, and the link is the only above-the-fold signal it exists. The JS
+   reveal (hidden attr) still gates it on mobile; this hides it on desktop
+   regardless of that reveal. */
+@media (min-width: 1024px) {
+  .pm-pdp__quote-jump { display: none; }
+}
