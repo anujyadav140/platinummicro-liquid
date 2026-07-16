@@ -9,7 +9,7 @@
  * Renders a CDW-style horizontal scroll rail of small cards below the PDP specs, each with
  * an Add-to-Cart (in stock) or Request-a-Quote (out of stock) action. Lazy-loaded on scroll.
  *
- * build: pm-recommendations 2026-07-15-prefer-available
+ * build: pm-recommendations 2026-07-16-relevance-rank
  */
 (function () {
   'use strict';
@@ -26,7 +26,38 @@
   // in-stock card actually renders. Absent the attribute (every other mount),
   // behavior is unchanged.
   var preferAvail = mount.getAttribute('data-prefer-available') === '1';
+  var myVendor = (mount.getAttribute('data-vendor') || '').trim().toLowerCase();
   if (!pid) return;
+
+  // First distinctive word of this product's title that isn't the vendor or a
+  // part number — for "HPE P83287-005 ProLiant DL360 …" that's "proliant".
+  var seriesToken = (function () {
+    var t = (mount.getAttribute('data-title') || '').toLowerCase();
+    var words = t.split(/[\s,\-–—/()]+/);
+    for (var i = 0; i < words.length; i++) {
+      var w = words[i];
+      if (w.length < 4) continue;
+      if (/\d/.test(w)) continue;                          // part numbers / capacities
+      if (myVendor && myVendor.indexOf(w) >= 0) continue;  // the brand itself
+      return w;
+    }
+    return '';
+  })();
+
+  // Relevance score. Shopify's intent=related is driven by order/behavioural
+  // data this store doesn't have yet, so it happily returns 10 unrelated SKUs
+  // (a ProLiant DL360 → NAS boxes, a motherboard, a heatsink) and — because it
+  // fills the whole limit — it used to starve the vendor-collection fallback
+  // that holds the actually-similar products. Rank same-vendor and same-series
+  // first so the rail leads with real alternatives whatever Shopify suggests.
+  // NB: product_type is deliberately not scored — this catalog sets it to
+  // "Physical" on every product, so it carries no signal.
+  function relevance(p) {
+    var score = 0;
+    if (myVendor && (p.vendor || '').trim().toLowerCase() === myVendor) score += 4;
+    if (seriesToken && (p.title || '').toLowerCase().indexOf(seriesToken) >= 0) score += 3;
+    return score;
+  }
 
   function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) {
@@ -152,41 +183,50 @@
       .then(function (d) { return ((d && d.products) || []).map(norm); })
       .catch(function () { return []; });
   }
-  function topUp(products) {
-    if (products.length >= need || !fbColl) return Promise.resolve(products);
-    return fetch('/collections/' + encodeURIComponent(fbColl) + '/products.json?limit=24', { headers: { Accept: 'application/json' } })
+  // The fallback collection is the product's own first real collection — on this
+  // store that's typically the VENDOR collection (e.g. hewlett-packard-enterprise),
+  // i.e. the best pool of genuinely similar SKUs. Fetch it ALWAYS, not just when
+  // Shopify's related set is short: related returning a full 10 unrelated items
+  // is exactly the case where we most need these candidates to compete.
+  function getFallback() {
+    if (!fbColl) return Promise.resolve([]);
+    return fetch('/collections/' + encodeURIComponent(fbColl) + '/products.json?limit=250', { headers: { Accept: 'application/json' } })
       .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (fb) {
-        var pool = (fb && fb.products) || [];
-        var seen = {}; seen[String(pid)] = 1;
-        products.forEach(function (p) { seen[String(p.id)] = 1; });
-        for (var i = 0; i < pool.length && products.length < need; i++) {
-          var p = pool[i];
-          if (!seen[String(p.id)]) { seen[String(p.id)] = 1; products.push(norm(p)); }
-        }
-        return products;
-      })
-      .catch(function () { return products; });
+      .then(function (fb) { return ((fb && fb.products) || []).map(norm); })
+      .catch(function () { return []; });
   }
 
   var done = false;
   function load() {
     if (done) return; done = true;
-    getRelated()
-      .then(function (rel) { return topUp(rel.slice(0, need)); })
-      .then(function (products) {
-        // Stable buyable-first ordering for quote-only PDPs: the rail is
-        // headed "you can buy now", so purchasable cards must lead. Ties keep
-        // their original (relevance) order; other mounts skip this entirely.
-        if (preferAvail) {
-          products = products
-            .map(function (p, i) { return { p: p, i: i }; })
-            .sort(function (a, b) {
-              return ((b.p.available ? 1 : 0) - (a.p.available ? 1 : 0)) || (a.i - b.i);
-            })
-            .map(function (x) { return x.p; });
-        }
-        return products;
+    Promise.all([getRelated(), getFallback()])
+      .then(function (res) {
+        // Merge both pools, de-duped, excluding the product being viewed.
+        // Shopify's related keeps a slight edge on ties by being added first.
+        var seen = {}; seen[String(pid)] = 1;
+        var pool = [];
+        res[0].concat(res[1]).forEach(function (p) {
+          if (!p || seen[String(p.id)]) return;
+          seen[String(p.id)] = 1;
+          pool.push(p);
+        });
+
+        // Rank: relevance (same vendor / same series) always wins — an unrelated
+        // in-stock NAS is not a "similar item" to a ProLiant. Within equal
+        // relevance, quote-only rails put buyable cards first (that rail promises
+        // "you can buy now"); everything else keeps its incoming order.
+        return pool
+          .map(function (p, i) { return { p: p, i: i, r: relevance(p) }; })
+          .sort(function (a, b) {
+            if (b.r !== a.r) return b.r - a.r;
+            if (preferAvail) {
+              var d = (b.p.available ? 1 : 0) - (a.p.available ? 1 : 0);
+              if (d) return d;
+            }
+            return a.i - b.i;
+          })
+          .slice(0, need)
+          .map(function (x) { return x.p; });
       })
       .then(render)
       .catch(function () {});

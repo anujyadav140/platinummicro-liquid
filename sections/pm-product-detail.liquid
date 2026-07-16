@@ -767,6 +767,8 @@
   <div
     {% unless _instock %}id="pm-recs-anchor" class="pm-recs-early" data-prefer-available="1" {% endunless %}data-pm-recs
     data-product-id="{{ product.id }}"
+    data-vendor="{{ product.vendor | escape }}"
+    data-title="{{ product.title | escape }}"
     data-intent="related"
     data-limit="10"
     data-heading="{% if _instock %}You may also like{% else %}Similar items you can buy now{% endif %}"
