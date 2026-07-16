@@ -327,6 +327,27 @@
             <div class="pm-pdp__price-block pm-pdp__price-block--quote">
               <div class="pm-pdp__price-quote">Pricing by quote</div>
               <div class="pm-pdp__price-quote-sub">Request a quote for current pricing &amp; availability.</div>
+              {%- comment -%}
+                "Need it sooner?" — anchors to the alternatives rail, which
+                quote-only products render right below the buy area (see the
+                _recs_mount capture). Ships hidden: pm-recommendations.js
+                reveals every [data-pm-recs-jump] only after the rail renders
+                with at least one buyable card, so it can never point at an
+                empty rail.
+                Copy says "buy now" (not "in stock, ships today"): the reveal
+                can only test Shopify's `available` flag, which — unlike the
+                theme's pm-instock rule — also counts untracked / continue-
+                selling variants. "Available to buy now" is true for every one
+                of those; a shipping promise wouldn't be.
+              {%- endcomment -%}
+              <a class="pm-pdp__quote-jump" href="#pm-recs-anchor" data-pm-recs-jump hidden>
+                <span class="pm-pdp__quote-jump-dot" aria-hidden="true"></span>
+                <span class="pm-pdp__quote-jump-txt">
+                  <strong>Need it sooner?</strong>
+                  <span>Similar items are available to buy now &mdash; see below</span>
+                </span>
+                <svg class="pm-pdp__quote-jump-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+              </a>
             </div>
           {%- endif -%}
 
@@ -718,6 +739,39 @@
     </div>
   </div>
 
+  {%- comment -%}
+    ── Recommendations mount — built once, placed by stock state ──
+    Fallback collection = first non-utility collection the product belongs to,
+    used to top up the rail when Shopify's related set is thin (e.g.
+    freshly-imported HPE servers).
+    QUOTE-ONLY products emit the mount HERE — directly under the buy area,
+    before Description — headed "Similar items you can buy now" with
+    data-prefer-available (pm-recommendations.js sorts purchasable cards
+    first), so a price-shopper landing from Google sees buyable alternatives
+    before bouncing. The buy-area jump link targets #pm-recs-anchor.
+    That heading is a claim about the rail's contents, so pm-recommendations.js
+    reverts it to "You may also like" if no purchasable card ends up in it.
+    IN-STOCK products emit the mount in its original spot below the specs
+    with the original heading — markup identical to before this feature.
+  {%- endcomment -%}
+  {%- assign _rec_fbcol = '' -%}
+  {%- for c in product.collections -%}
+    {%- unless c.handle == 'all' or c.handle == 'frontpage' or c.handle contains 'bundle' -%}
+      {%- if _rec_fbcol == '' -%}{%- assign _rec_fbcol = c.handle -%}{%- endif -%}
+    {%- endunless -%}
+  {%- endfor -%}
+  {%- capture _recs_mount -%}
+  <div
+    {% unless _instock %}id="pm-recs-anchor" class="pm-recs-early" data-prefer-available="1" {% endunless %}data-pm-recs
+    data-product-id="{{ product.id }}"
+    data-intent="related"
+    data-limit="10"
+    data-heading="{% if _instock %}You may also like{% else %}Similar items you can buy now{% endif %}"
+    data-fallback-collection="{{ _rec_fbcol }}"
+  ></div>
+  {%- endcapture -%}
+  {%- unless _instock -%}{{ _recs_mount }}{%- endunless -%}
+
   {%- comment -%} ── Description ‖ Specifications ─────────────────────────── {%- endcomment -%}
   {%- comment -%} Non-config products keep the original full-width Description/Specs band here ── {%- endcomment -%}
   {%- unless _cfg -%}
@@ -858,22 +912,10 @@
     intent=related (powered by the store's own order/behavioral data). The mount is
     empty until pm-recommendations.js lazy-fetches /recommendations/products.json and
     renders PM cards below the specs. Empty result → mount stays 0-height (no section).
+    IN-STOCK products only — quote-only products place this mount ABOVE the
+    Description band instead (see the _recs_mount capture there).
   {%- endcomment -%}
-  {%- comment -%} First non-utility collection the product belongs to — used to top up the rail when Shopify's related set is thin (e.g. freshly-imported HPE servers). {%- endcomment -%}
-  {%- assign _rec_fbcol = '' -%}
-  {%- for c in product.collections -%}
-    {%- unless c.handle == 'all' or c.handle == 'frontpage' or c.handle contains 'bundle' -%}
-      {%- if _rec_fbcol == '' -%}{%- assign _rec_fbcol = c.handle -%}{%- endif -%}
-    {%- endunless -%}
-  {%- endfor -%}
-  <div
-    data-pm-recs
-    data-product-id="{{ product.id }}"
-    data-intent="related"
-    data-limit="10"
-    data-heading="You may also like"
-    data-fallback-collection="{{ _rec_fbcol }}"
-  ></div>
+  {%- if _instock -%}{{ _recs_mount }}{%- endif -%}
 
   {%- comment -%}
     ── Recently viewed strip ──

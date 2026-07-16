@@ -8,6 +8,8 @@
  *
  * Renders a CDW-style horizontal scroll rail of small cards below the PDP specs, each with
  * an Add-to-Cart (in stock) or Request-a-Quote (out of stock) action. Lazy-loaded on scroll.
+ *
+ * build: pm-recommendations 2026-07-15-prefer-available
  */
 (function () {
   'use strict';
@@ -18,6 +20,12 @@
   var need    = parseInt(mount.getAttribute('data-limit'), 10) || 10;
   var heading = mount.getAttribute('data-heading') || 'You may also like';
   var fbColl  = mount.getAttribute('data-fallback-collection') || '';
+  // Quote-only PDPs set data-prefer-available="1": purchasable cards sort to
+  // the front of the rail, and the buy-area "Need it sooner?" jump link
+  // ([data-pm-recs-jump], shipped hidden) is revealed only when at least one
+  // in-stock card actually renders. Absent the attribute (every other mount),
+  // behavior is unchanged.
+  var preferAvail = mount.getAttribute('data-prefer-available') === '1';
   if (!pid) return;
 
   function esc(s) {
@@ -100,11 +108,22 @@
 
   function render(products) {
     if (!products.length) return;
+    // The quote-only mount's heading ("Similar items you can buy now") is a claim
+    // about the rail's contents, so it only survives if the rail actually has a
+    // purchasable card. Shopify's recommendation + fallback-collection endpoints
+    // don't filter by stock, and whole categories here can be quote-only, so an
+    // all-quote result is expected — fall back to the neutral heading rather
+    // than title a wall of "Request a Quote" cards as in stock.
+    var hasAvailable = false;
+    for (var h = 0; h < products.length; h++) {
+      if (products[h].available && products[h].variantId) { hasAvailable = true; break; }
+    }
+    var title = (preferAvail && !hasAvailable) ? 'You may also like' : heading;
     mount.innerHTML =
-      '<section class="pm-recs" aria-label="' + esc(heading) + '">' +
+      '<section class="pm-recs" aria-label="' + esc(title) + '">' +
         '<div class="pm-container pm-recs__inner">' +
           '<header class="pm-recs__head">' +
-            '<h2 class="pm-recs__title">' + esc(heading) + '</h2>' +
+            '<h2 class="pm-recs__title">' + esc(title) + '</h2>' +
             '<div class="pm-recs__nav">' +
               '<button type="button" class="pm-recs__navbtn" data-recs-prev aria-label="Scroll left" hidden>' + CHEV_L + '</button>' +
               '<button type="button" class="pm-recs__navbtn" data-recs-next aria-label="Scroll right" hidden>' + CHEV_R + '</button>' +
@@ -117,6 +136,13 @@
     // wire injected Add-to-Cart buttons (pm-add-to-cart.js delegates on document)
     document.dispatchEvent(new CustomEvent('pm:plp-updated'));
     if (window.PmAddToCart && window.PmAddToCart.syncMaxed) window.PmAddToCart.syncMaxed();
+    // Reveal the quote-only buy-area jump link(s) ONLY when the rendered rail
+    // contains at least one genuinely purchasable card — the link promises
+    // "in stock & ready to ship", so an all-quote rail keeps it hidden.
+    if (preferAvail && hasAvailable) {
+      var jumps = document.querySelectorAll('[data-pm-recs-jump]');
+      for (var j = 0; j < jumps.length; j++) jumps[j].hidden = false;
+    }
   }
 
   function getRelated() {
@@ -148,6 +174,20 @@
     if (done) return; done = true;
     getRelated()
       .then(function (rel) { return topUp(rel.slice(0, need)); })
+      .then(function (products) {
+        // Stable buyable-first ordering for quote-only PDPs: the rail is
+        // headed "you can buy now", so purchasable cards must lead. Ties keep
+        // their original (relevance) order; other mounts skip this entirely.
+        if (preferAvail) {
+          products = products
+            .map(function (p, i) { return { p: p, i: i }; })
+            .sort(function (a, b) {
+              return ((b.p.available ? 1 : 0) - (a.p.available ? 1 : 0)) || (a.i - b.i);
+            })
+            .map(function (x) { return x.p; });
+        }
+        return products;
+      })
       .then(render)
       .catch(function () {});
   }
