@@ -980,7 +980,9 @@
   margin: 0;
   padding: 0 0 6px;
   display: flex;
-  align-items: flex-start;
+  /* stretch (not flex-start) so every card in the row is the same height —
+     titles wrap to 1 or 2 lines, and ragged card bottoms read as broken. */
+  align-items: stretch;
   gap: 12px;
   overflow-x: auto;
   scroll-snap-type: x proximity;
@@ -1010,8 +1012,16 @@
   text-decoration: none;
   color: inherit;
 }
+/* Square image frame. min-height:0 + flex:none are load-bearing: this is a
+   flex item, whose default min-height:auto lets tall content (a portrait
+   tower-server shot) overrule aspect-ratio and stretch the whole card out of
+   line with its neighbours. The img fills the frame and letterboxes via
+   object-fit rather than sizing itself from its intrinsic dimensions. */
 .pm-recs__img {
+  flex: none;
   aspect-ratio: 1 / 1;
+  min-height: 0;
+  overflow: hidden;
   background: var(--pm-paper);
   border-radius: 7px;
   display: flex;
@@ -1020,7 +1030,7 @@
   padding: 12px;
   margin-bottom: 4px;
 }
-.pm-recs__img img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; }
+.pm-recs__img img { width: 100%; height: 100%; object-fit: contain; }
 .pm-recs__brand {
   font-size: 9.5px;
   font-weight: 700;
@@ -1049,7 +1059,9 @@
   color: var(--pm-ink-900);
 }
 .pm-recs__btn {
-  margin: 4px 11px 11px;
+  /* margin-top:auto pins the CTA to the card's bottom edge, so buttons line up
+     across the row no matter how many lines each title wraps to. */
+  margin: auto 11px 11px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
