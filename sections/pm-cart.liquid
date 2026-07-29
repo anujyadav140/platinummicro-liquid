@@ -505,6 +505,30 @@
 
   function getRow(line) { return document.querySelector('[data-cart-row="' + line + '"]'); }
 
+  // After a removal, every later cart line shifts down by one on the server.
+  // Re-number the surviving DOM rows AND the line-keyed state maps to match,
+  // so follow-up +/−/Remove clicks hit the right server line.
+  function renumberRows(removedLine) {
+    [pendingQty, inflightQty, inflight, debounceTimer].forEach(function (m) {
+      Object.keys(m).map(Number).sort(function (a, b) { return a - b; }).forEach(function (n) {
+        if (n === removedLine) { delete m[n]; }
+        else if (n > removedLine) { m[n - 1] = m[n]; delete m[n]; }
+      });
+    });
+    var i = 0;
+    document.querySelectorAll('[data-cart-row]').forEach(function (row) {
+      i += 1;
+      row.setAttribute('data-cart-row', i);
+      row.querySelectorAll('.pm-qty-btn[data-line]').forEach(function (b) { b.setAttribute('data-line', i); });
+      var rm = row.querySelector('[data-cart-remove]');
+      if (rm) {
+        rm.setAttribute('data-cart-remove', i);
+        var href = rm.getAttribute('href');
+        if (href) rm.setAttribute('href', href.replace(/([?&]line=)\d+/, '$1' + i));
+      }
+    });
+  }
+
   function refreshRowDisplay(line) {
     var row = getRow(line); if (!row) return;
     var qty = pendingQty[line]; if (qty == null) return;
@@ -642,11 +666,36 @@
             var it = cart.items && cart.items[parseInt(line, 10) - 1];
             var realQty = it ? it.quantity : 0;
             pendingQty[line] = realQty;
-            var cw = getRow(line) && getRow(line).querySelector('.pm-qty');
+            var rr = getRow(line);
+            if (rr) rr.style.opacity = ''; // failed change → un-grey the row
+            var cw = rr && rr.querySelector('.pm-qty');
             if (cw && realQty > 0) cw.setAttribute('data-cart-max', realQty);
             refreshRowDisplay(line);
             applyServerCart(cart); // capped → resync summary + line discounts
           }).catch(function () {});
+        return;
+      }
+      if (sentQty === 0) {
+        // Removal: /cart/change.js returns the cart WITHOUT the removed line,
+        // so items[line-1] here would read the NEXT line's quantity — which
+        // stranded the removed row greyed-out and resurrected it in the totals.
+        // A 200 response to quantity:0 IS the confirmation the line is gone.
+        if (res.body.item_count === 0) {
+          // Cart emptied → reload so Liquid renders the empty state.
+          window.location.assign(window.location.pathname);
+          return;
+        }
+        var goneRow = getRow(line);
+        var finishRemove = function () {
+          if (goneRow && goneRow.parentNode) goneRow.remove();
+          renumberRows(parseInt(line, 10));
+          applyServerCart(res.body); // rows align with the response again
+        };
+        if (goneRow) {
+          goneRow.style.transition = 'opacity 180ms ease';
+          goneRow.style.opacity = '0';
+          setTimeout(finishRemove, 200);
+        } else { finishRemove(); }
         return;
       }
       var serverItem = res.body.items && res.body.items[parseInt(line, 10) - 1];
@@ -681,7 +730,11 @@
           window.location.assign(window.location.pathname);
         }
       }
-    }).catch(function () { inflight[line] = false; });
+    }).catch(function () {
+      inflight[line] = false;
+      var er = getRow(line);
+      if (er) er.style.opacity = ''; // network failure → un-grey the row
+    });
   }
 
   function scheduleChange(line) {
