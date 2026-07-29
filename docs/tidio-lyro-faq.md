@@ -27,8 +27,8 @@ never grey-market. We are SBA Small Business certified and sell through cooperat
 government contract vehicles (OMNIA Partners, TD SYNNEX, GSA-aligned pricing).
 
 Mission: “Sourced direct. Sold honest.” Real stock, quotes in writing, a real person on
-the phone, and honest lead times. Contact: (877) PMG-4YOU, Mon–Fri 7am–5pm PT;
-admin@platinummicro.com; 15815 Monte Street, Suite 103, Sylmar, CA 91342.
+the phone, and honest lead times. Contact: (818) 505-6853, Mon–Fri 9am–5pm PT;
+sales@platinummicro.com; 15815 Monte Street, Suite 103, Sylmar, CA 91342.
 
 ---
 
@@ -37,13 +37,13 @@ admin@platinummicro.com; 15815 Monte Street, Suite 103, Sylmar, CA 91342.
 ### Shipping & delivery
 
 **Q: Do you offer free shipping?**
-A: Yes — free shipping on all items to the continental U.S. (Free Budget Shipping, about 8–14 business days transit). Faster options like USPS Priority (3–7 business days) are available at checkout. Alaska, Hawaii, and U.S. territories ship expedited with additional charges. We ship from Sylmar, California, and larger orders may arrive in multiple shipments.
+A: Free 2-Day Shipping is available on select items — choose it at checkout where it's offered (fees may apply). Standard Shipping otherwise arrives in about 5–7 business days. Alaska, Hawaii, and U.S. territories ship expedited with additional charges. We ship from Sylmar, California, and larger orders may arrive in multiple shipments.
 
 **Q: How fast will my order ship?**
-A: Orders ship within 1–2 business days after payment is confirmed (processing is Monday–Friday). Then it's transit time with the carrier: Free Budget Shipping is 8–14 business days, USPS Priority is 3–7 business days.
+A: Orders placed before 2:00 PM Pacific Time on a business day are processed the same day (after 2:00 PM PT, the next business day), and ship within about 2 business days of payment being confirmed. Processing is Monday–Friday. Then it's transit time with the carrier: Standard Shipping is about 5–7 business days, and Free 2-Day Shipping is available on select items.
 
 **Q: Do you ship internationally?**
-A: Not at this time — we ship only within the U.S. (the 48 continental states, plus Alaska, Hawaii, and U.S. territories). Non-U.S. buyers can contact our Business Development team about partner-channel options at admin@platinummicro.com.
+A: Not at this time — we ship only within the U.S. (the 48 continental states, plus Alaska, Hawaii, and U.S. territories). Non-U.S. buyers can contact our Business Development team about partner-channel options at sales@platinummicro.com.
 
 **Q: How do I track my order?**
 A: You'll get tracking by email once your order ships, and you can track directly with the carrier (UPS or USPS). You can also see status under Order History after signing in.
@@ -51,10 +51,10 @@ A: You'll get tracking by email once your order ships, and you can track directl
 ### Returns & warranty
 
 **Q: What is your return policy?**
-A: We have a 30-day return/exchange policy from the purchase date. All items ship brand new with the manufacturer warranty. To start a return or RMA, email admin@platinummicro.com or ask here and we'll walk you through it.
+A: We have a 30-day return/exchange policy from the purchase date. All items ship brand new with the manufacturer warranty. To start a return or RMA, email sales@platinummicro.com or ask here and we'll walk you through it.
 
 **Q: Are there items that can't be returned?**
-A: Yes. Non-returnable items are open software, digital downloads, software keycards, online subscriptions, and any products from LG, GIGABYTE, and FORTINET. Everything else falls under the standard 30-day return/exchange policy.
+A: Yes. Non-returnable items are opened software, downloadable software, software key cards, online subscriptions, LG monitors and displays, GIGABYTE motherboards, FORTINET networking hardware, and items with U.S. Department of Transportation shipping restrictions. There's also a minimum 10% restocking fee on returns for refund, waived when an item comes back factory sealed and unopened with its UPC and all original packaging intact. Everything else falls under the standard 30-day return/exchange policy.
 
 **Q: Do your products come with a warranty?**
 A: Yes — every item ships brand new with the full manufacturer warranty. Bulk and OEM products may come without retail packaging or accessories, but they still carry the full manufacturer warranty. We're not responsible for physical damage, misuse, or anything that voids the manufacturer warranty.
@@ -77,7 +77,7 @@ A: Yes. You can buy through OMNIA Partners (our lead cooperative vehicle), TD SY
 A: Yes — Net-30 trade credit is available on approved application. Ask us here and we'll send you the application.
 
 **Q: What payment methods do you accept?**
-A: Major payment methods at checkout, plus Net-30 trade credit on approved application. For purchase orders, ACH, or wire, contact us at admin@platinummicro.com and we'll set it up.
+A: Major payment methods at checkout, plus Net-30 trade credit on approved application. For purchase orders, ACH, or wire, contact us at sales@platinummicro.com and we'll set it up.
 
 **Q: I'm tax-exempt — how do I set that up?**
 A: Send your tax-exempt certification to tax-exempt@platinummicro.com and we'll apply it to your account and orders.
@@ -122,7 +122,7 @@ A: Yes — sign in and use Lists to save products to named lists (like a server 
 A: Use Quick Order to add multiple SKUs with quantities at once. For tiered or volume pricing, send the list here or Request a Quote and we'll respond, usually within one business day.
 
 **Q: How do I reach a human / what are your hours?**
-A: Call (877) PMG-4YOU, Monday–Friday 7:00am–5:00pm Pacific — calls go to a real person. Or email admin@platinummicro.com (checked all day), or leave your name and email here and a specialist will follow up.
+A: Call (818) 505-6853, Monday–Friday 9:00am–5:00pm Pacific — calls go to a real person. Or email sales@platinummicro.com (checked all day), or leave your name and email here and a specialist will follow up.
 
 ### Responsibility
 
