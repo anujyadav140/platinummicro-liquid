@@ -201,6 +201,39 @@
       eyebrow, real-data detail block, and the configurator render further down). Nothing else changed.
     {%- endcomment -%}
     {%- assign _hpe_enabled = false -%}
+    {%- comment -%}
+      ── HP (HP Inc, via the Hermes Catalog API) — TESTING ──
+      Same one-flag pattern as _hpe_enabled above. Set _hp_enabled = false to
+      switch the whole HP treatment off in one line.
+
+      NOTE this is a different vendor to the HPE block above: HP Inc (desktops,
+      workstations, displays, Poly, print) vs HPE (ProLiant servers) — separate
+      companies since 2015, separate APIs. They do not share data.
+
+      Safe to leave on: both HP snippets self-gate on the product actually having
+      the `hp` metafields, so they render nothing on every existing product. Only
+      the imported HP SLED products (tag: hp-hermes-test) show anything.
+    {%- endcomment -%}
+    {%- assign _hp_enabled = true -%}
+    {%- comment -%}
+      ── HP hardware wizard gate ── the consolidated HP import (tag B2G) carries
+      hardware config as REAL variant options, so those PDPs swap the native
+      option dropdowns for the stepped wizard (snippets/pm-hp-wizard.liquid).
+      The hidden selects stay in the DOM as the source of truth — the wizard
+      drives them, the existing variant-switch JS below stays untouched.
+    {%- endcomment -%}
+    {%- assign _hp_wizard = false -%}
+    {%- if _hp_enabled and product.vendor == 'HP' and product.tags contains 'B2G' and product.has_only_default_variant == false -%}
+      {%- assign _hp_wizard = true -%}
+    {%- endif -%}
+    {%- comment -%}
+      ── HP procurement data card (UNSPSC / origin / warranty / sustainability) ──
+      Anuj: don't display this at all. Independent of _hp_wizard — the card and
+      the configurator used to share one snippet (pm-hp-config.liquid) and one
+      render call; this flag turns off only the card's render call + its
+      [data-pm-hp-info] mount, the wizard keeps working untouched.
+    {%- endcomment -%}
+    {%- assign _hp_procurement_card = false -%}
     {%- assign _cfg = false -%}
     {%- if _hpe_enabled -%}
       {%- if product.title contains 'ProLiant' or product.vendor contains 'Hewlett' or product.vendor contains 'HPE' -%}{%- assign _cfg = true -%}{%- endif -%}
@@ -542,8 +575,10 @@
               {%- assign _odn = option.name | downcase -%}
               {%- unless _odn contains 'bundle' -%}{%- assign _visible_opt_count = _visible_opt_count | plus: 1 -%}{%- endunless -%}
             {%- endfor -%}
+            {%- if _hp_wizard -%}{%- render 'pm-hp-wizard', product: product -%}{%- endif -%}
             {%- if _visible_opt_count > 0 -%}
-            <div class="pm-pdp__options" id="pm-pdp-options">
+            <div class="pm-pdp__options" id="pm-pdp-options"{% if _hp_wizard %} hidden{% endif %}>
+              {%- comment -%} hidden when the HP wizard owns the UI — the selects stay as the variant-switch source of truth {%- endcomment -%}
               {%- for option in product.options_with_values -%}
                 {%- assign _odn = option.name | downcase -%}
                 {%- unless _odn contains 'bundle' -%}
@@ -565,10 +600,15 @@
           {%- endif -%}
 
           <div class="pm-pdp__avail-label">Availability</div>
+          {%- comment -%} Dropship items (vendor/distributor-fulfilled — the HP SLED batch, or anything tagged `dropship`) hold a placeholder qty, not real shelf stock, so they show plain "In stock" with no count. {%- endcomment -%}
+          {%- assign _dropship = false -%}
+          {%- if product.tags contains 'HP-SLED-2026' or product.tags contains 'dropship' -%}{%- assign _dropship = true -%}{%- endif -%}
           {%- if _instock -%}
-            <div class="pm-pdp__avail pm-pdp__avail--in" data-pm-pdp-avail>
-              {%- comment -%} Show the real count whenever there's a tracked qty > 0 — not only DENY — so variants flipped to CONTINUE (Shopify inventory-desync workaround) still show "N in stock". {%- endcomment -%}
-              {%- if _v.inventory_management == 'shopify' and _stock and _stock > 0 -%}
+            <div class="pm-pdp__avail pm-pdp__avail--in" data-pm-pdp-avail{% if _dropship %} data-dropship{% endif %}{% if _hp_wizard %} data-hp-wizard{% endif %}>
+              {%- comment -%} Show the real count whenever there's a tracked qty > 0 — not only DENY — so variants flipped to CONTINUE (Shopify inventory-desync workaround) still show "N in stock". The special configure-your-system HP products say "Available" instead (Anuj) — scoped to _hp_wizard only, everything else unchanged. {%- endcomment -%}
+              {%- if _hp_wizard -%}
+                Available
+              {%- elsif _dropship == false and _v.inventory_management == 'shopify' and _stock and _stock > 0 -%}
                 {{ _stock }} in stock
               {%- else -%}
                 In stock
@@ -679,6 +719,11 @@
 
           {%- comment -%} ── HPE ProLiant configurator (stepped wizard, ProLiant only) — PAUSED for launch; gated by _hpe_enabled (set at top of section). Re-enable there. ── {%- endcomment -%}
           {%- if _hpe_enabled -%}{%- render 'pm-hpe-config', product: product -%}{%- endif -%}
+
+          {%- comment -%} ── HP procurement data panel — gated by _hp_procurement_card (top of section). Currently OFF per Anuj. ── {%- endcomment -%}
+          {%- if _hp_procurement_card -%}
+            {%- render 'pm-hp-config', product: product -%}
+          {%- endif -%}
 
           {%- comment -%}
             ── Download datasheet (PDF) ──
@@ -895,6 +940,9 @@
               {%- if _spec_count > 8 -%}Show {{ _extra }} more {% if _extra == 1 %}spec{% else %}specs{% endif %}{%- endif -%}
             </span>
           </button>
+
+          {%- comment -%} ── HP procurement data (UNSPSC / origin / lifecycle) mounts here, under the specs where reference data belongs — filled by pm-hp-config. OFF per Anuj (_hp_procurement_card). ── {%- endcomment -%}
+          {%- if _hp_procurement_card -%}<div data-pm-hp-info></div>{%- endif -%}
 
           <p
             class="pm-pdp__empty"
@@ -1163,7 +1211,12 @@
           if (!match.available) {
             availEl.className = 'pm-pdp__avail pm-pdp__avail--out';
             availEl.textContent = 'Out of stock';
-          } else if (match.inventory_management === 'shopify' && typeof match.inventory_quantity === 'number' && match.inventory_quantity > 0) {
+          } else if (availEl.hasAttribute('data-hp-wizard')) {
+            // special configure-your-system HP products always say "Available" (Anuj)
+            availEl.className = 'pm-pdp__avail pm-pdp__avail--in';
+            availEl.textContent = 'Available';
+          } else if (!availEl.hasAttribute('data-dropship') && match.inventory_management === 'shopify' && typeof match.inventory_quantity === 'number' && match.inventory_quantity > 0) {
+            // dropship items (data-dropship, set server-side) never show a count — the qty is a placeholder
             availEl.className = 'pm-pdp__avail pm-pdp__avail--in';
             availEl.textContent = match.inventory_quantity.toLocaleString() + ' in stock';
           } else {

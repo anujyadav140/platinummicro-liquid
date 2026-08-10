@@ -1,0 +1,349 @@
+{%- comment -%}
+  PM — HP hardware configurator wizard (variant-driven). v1.1.
+
+  THE configurator for the consolidated HP products: OG stepped-wizard UI
+  (pips, navy done-checks, terracotta current step, paper footer) whose steps
+  are the product's REAL variant options. Drives the hidden native
+  <select data-pm-pdp-option> elements (dispatching `change`) so the PDP's
+  existing variant-switch JS keeps doing all page sync.
+
+  v1.1 (Anuj):
+  · PRICE DELTAS on every option card — "+$300.00 / −$150.00" vs the current
+    build, computed on the FULL repaired combo (variant prices; shows ±$0
+    only as blank until real prices land, then lights up automatically).
+  · COMPACT: two-column option grid when values are short (CPU/Memory),
+    single column for long values; tighter paddings; single-row footer
+    (price block + Continue side by side) — roughly halves the card height
+    so the buy-box stops stretching the page.
+
+  Steps = one per option (choices filtered to combos that exist, later picks
+  auto-repaired) + Review (summary, Add-build-to-cart → clicks
+  [data-pm-pdp-add], Request-a-quote → clicks the PDP quote button).
+  Preselects the current variant. Init waits for DOMContentLoaded because
+  the #pm-pdp-variants island renders below this snippet.
+
+  Caller gates rendering (HP + tag B2G + real options). Scoped hpw- styles.
+  ES5 only. Param: product (required)
+{%- endcomment -%}
+
+{%- assign _wv = product.selected_or_first_available_variant | default: product.variants.first -%}
+
+<div data-pm-hpw>
+  <script type="application/json" data-pm-hpw-options>
+    [
+      {%- assign _first = true -%}
+      {%- for option in product.options_with_values -%}
+        {%- assign _odn = option.name | downcase -%}
+        {%- unless _odn contains 'bundle' -%}
+          {%- unless _first -%},{%- endunless -%}
+          {%- assign _first = false -%}
+          {"pos": {{ forloop.index0 }}, "name": {{ option.name | json }}, "values": {{ option.values | json }}, "selected": {{ option.selected_value | json }}}
+        {%- endunless -%}
+      {%- endfor -%}
+    ]
+  </script>
+</div>
+
+<style>
+  [data-pm-hpw]{--hpw-navy:var(--pm-navy-deep,#0d2340);--hpw-rust:var(--pm-terracotta,#b0410f);--hpw-pale:var(--pm-terracotta-pale,#fdf3ee);--hpw-line:var(--pm-ink-200,#e4e7ec);--hpw-line2:var(--pm-ink-100,#eef0f3);--hpw-mut:var(--pm-ink-400,#667085);--hpw-faint:var(--pm-ink-300,#98a2b3);--hpw-ink:var(--pm-ink-800,#1d2939);--hpw-paper:var(--pm-paper,#f6f4ef);display:block;margin:0 0 12px;color:var(--hpw-navy);font-size:14px;line-height:1.4;font-family:var(--pm-font-body,inherit)}
+  [data-pm-hpw] *{box-sizing:border-box}
+  [data-pm-hpw] button{font-family:inherit}
+  .hpw-card{border:1px solid var(--hpw-line);border-radius:14px;background:#fff;overflow:hidden;box-shadow:var(--pm-shadow-sm,0 1px 2px rgba(16,24,40,.05))}
+  .hpw-head{padding:11px 13px 9px;border-bottom:1px solid var(--hpw-line2)}
+  .hpw-title{display:flex;align-items:center;gap:7px;font-weight:700;font-size:13px}
+  .hpw-title svg{color:var(--hpw-rust);flex:none}
+  .hpw-pips{display:flex;align-items:center;margin-top:9px}
+  .hpw-pip{flex:0 0 24px;width:24px;height:24px;border-radius:50%;border:2px solid var(--hpw-line);background:#fff;color:var(--hpw-faint);font-size:11px;font-weight:800;display:grid;place-items:center;cursor:pointer;padding:0;transition:all .14s ease}
+  .hpw-pip:hover{border-color:var(--hpw-faint)}
+  .hpw-pip.is-done{background:var(--hpw-navy);border-color:var(--hpw-navy);color:#fff}
+  .hpw-pip.is-now{background:var(--hpw-rust);border-color:var(--hpw-rust);color:#fff;box-shadow:0 0 0 3px var(--hpw-pale)}
+  .hpw-pipline{flex:1 1 6px;height:2px;background:var(--hpw-line);margin:0 3px;min-width:5px}
+  .hpw-stepname{margin-top:7px;font-size:11.5px;font-weight:600;color:var(--pm-ink-600,#475467)}
+  .hpw-body{padding:9px 12px 3px;max-height:252px;overflow-y:auto;overscroll-behavior:contain}
+  .hpw-list{display:grid;grid-template-columns:1fr;gap:6px;margin:0 0 6px}
+  .hpw-list.hpw-cols{grid-template-columns:1fr 1fr}
+  .hpw-opt{display:flex;align-items:center;gap:8px;width:100%;margin:0;padding:8px 10px;background:#fff;border:1.5px solid var(--hpw-line);border-radius:9px;cursor:pointer;text-align:left;transition:border-color .12s,background .12s}
+  .hpw-opt:hover{border-color:var(--hpw-faint);background:var(--hpw-paper)}
+  .hpw-opt.is-on{border-color:var(--hpw-rust);background:var(--hpw-pale)}
+  .hpw-radio{flex:none;width:15px;height:15px;border-radius:50%;border:2px solid var(--hpw-faint);transition:all .12s}
+  .hpw-opt.is-on .hpw-radio{border-color:var(--hpw-rust);box-shadow:inset 0 0 0 3px var(--hpw-rust)}
+  .hpw-opt-txt{flex:1;min-width:0}
+  .hpw-opt-label{display:block;font-size:12.5px;line-height:1.3;color:var(--hpw-ink);font-weight:550;overflow-wrap:anywhere}
+  .hpw-d{display:block;font-size:10.5px;font-weight:700;color:var(--hpw-mut);margin-top:1px}
+  .hpw-d.is-up{color:var(--hpw-rust)}
+  .hpw-opt.is-on .hpw-d{color:var(--hpw-rust)}
+  /* 5+ values collapse into a dropdown to keep the card short */
+  .hpw-selwrap{position:relative;margin:0 0 6px}
+  .hpw-sel{appearance:none;-webkit-appearance:none;width:100%;padding:10px 34px 10px 12px;border:1.5px solid var(--hpw-line);border-radius:9px;font-family:inherit;font-size:13px;font-weight:600;color:var(--hpw-ink);background:#fff;cursor:pointer;line-height:1.3}
+  .hpw-sel:hover{border-color:var(--hpw-faint)}
+  .hpw-sel:focus{outline:none;border-color:var(--hpw-rust);box-shadow:0 0 0 3px var(--hpw-pale)}
+  .hpw-selwrap svg{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--hpw-mut)}
+  .hpw-rev{list-style:none;margin:0 0 6px;padding:0}
+  .hpw-rev li{display:flex;align-items:baseline;gap:8px;padding:6px 2px;font-size:12.5px;border-bottom:1px dashed var(--hpw-line2)}
+  .hpw-rev li:last-child{border-bottom:0}
+  .hpw-rev .hpw-li-k{flex:0 0 96px;color:var(--hpw-faint);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em}
+  .hpw-rev b{font-weight:650;color:var(--hpw-ink)}
+  .hpw-foot{padding:9px 12px 11px;border-top:1px solid var(--hpw-line2);background:var(--hpw-paper)}
+  .hpw-footrow{display:flex;align-items:center;gap:10px}
+  .hpw-price-wrap{flex:1;min-width:0}
+  .hpw-price-label{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--hpw-mut)}
+  .hpw-price-val{font-size:19px;font-weight:800;color:var(--hpw-navy);line-height:1.15}
+  .hpw-price-sku{font-size:10.5px;color:var(--hpw-mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hpw-cta{flex:none;background:var(--hpw-rust);color:#fff;border:0;border-radius:9px;padding:10px 16px;font-size:12.5px;font-weight:700;cursor:pointer;transition:filter .12s;white-space:nowrap}
+  .hpw-cta:hover{filter:brightness(.93)}
+  .hpw-cta2{display:block;width:100%;margin-top:8px;background:#fff;color:var(--hpw-navy);border:1.5px solid var(--hpw-line);border-radius:9px;padding:9px;font-size:12.5px;font-weight:700;cursor:pointer;transition:border-color .12s}
+  .hpw-cta2:hover{border-color:var(--hpw-rust);color:var(--hpw-rust)}
+  .hpw-cta2[hidden]{display:none}
+  .hpw-backrow{display:flex;align-items:center;margin-top:7px}
+  .hpw-back{background:none;border:0;padding:2px 0;color:var(--hpw-mut);font-size:11.5px;font-weight:600;cursor:pointer}
+  .hpw-back:hover{color:var(--hpw-rust)}
+  .hpw-back[hidden]{display:none}
+</style>
+
+<script>
+(function () {
+  'use strict';
+  /* the #pm-pdp-variants island renders BELOW this snippet in the buy-box —
+     wait for DOM readiness so both JSON islands exist before we init */
+  if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
+  function init() {
+  var root = document.querySelector('[data-pm-hpw]');
+  if (!root) return;
+  var optsEl = root.querySelector('[data-pm-hpw-options]');
+  var varsEl = document.getElementById('pm-pdp-variants');
+  if (!optsEl || !varsEl) return;
+
+  var OPTS = [], VARS = [];
+  try { OPTS = JSON.parse(optsEl.textContent); VARS = JSON.parse(varsEl.textContent); } catch (e) { return; }
+  if (!OPTS.length || !VARS.length) return;
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function money(cents) {
+    try { return new Intl.NumberFormat(undefined, { style: 'currency', currency: (window.Shopify && Shopify.currency && Shopify.currency.active) || 'USD' }).format(cents / 100); }
+    catch (e) { return '$' + (cents / 100).toFixed(2); }
+  }
+
+  var N = OPTS.length + 1; /* option steps + Review */
+  var step = 0;
+  var sel = OPTS.map(function (o) { return o.selected; }); /* preselect current variant */
+
+  function variantFor(selArr) {
+    var m = VARS.filter(function (v) {
+      for (var i = 0; i < OPTS.length; i++) {
+        if (v['option' + (OPTS[i].pos + 1)] !== selArr[i]) return false;
+      }
+      return true;
+    });
+    return m[0] || null;
+  }
+  function currentVariant() { return variantFor(sel); }
+  /* values of option i that exist given picks on steps < i */
+  function liveValues(i, selArr) {
+    var pool = VARS.filter(function (v) {
+      for (var k = 0; k < i; k++) {
+        if (selArr[k] != null && v['option' + (OPTS[k].pos + 1)] !== selArr[k]) return false;
+      }
+      return true;
+    });
+    return OPTS[i].values.filter(function (val) {
+      return pool.some(function (v) { return v['option' + (OPTS[i].pos + 1)] === val; });
+    });
+  }
+  /* repair later picks in selArr so the combo stays a real variant */
+  function repairFrom(i, selArr) {
+    for (var k = i + 1; k < OPTS.length; k++) {
+      var live = liveValues(k, selArr);
+      if (live.indexOf(selArr[k]) === -1) selArr[k] = live[0] || null;
+    }
+  }
+  /* full repaired-combo price if option `step` were set to `val` */
+  function priceIf(stepIdx, val) {
+    var trial = sel.slice();
+    trial[stepIdx] = val;
+    repairFrom(stepIdx, trial);
+    var v = variantFor(trial);
+    return v && typeof v.price === 'number' ? v.price : null;
+  }
+  /* push the combo into the hidden native selects → PDP sync JS does the rest */
+  function syncSelects() {
+    OPTS.forEach(function (o, i) {
+      var s = document.querySelector('[data-pm-pdp-option="' + o.pos + '"]');
+      if (s && sel[i] != null && s.value !== sel[i]) {
+        s.value = sel[i];
+        var ev; try { ev = new Event('change', { bubbles: true }); } catch (e) { ev = document.createEvent('Event'); ev.initEvent('change', true, true); }
+        s.dispatchEvent(ev);
+      }
+    });
+    /* Add to Cart should remember the build: stash the picked options as cart
+       line-item properties (pm-add-to-cart.js reads data-pm-add-properties).
+       The cart drawer already renders any line's `properties` as a
+       "Configured build" accordion (built for the bundle configurator) — this
+       just feeds it the same shape, so no cart-side changes were needed. */
+    if (addBtn) {
+      var v = currentVariant();
+      if (v) {
+        var props = {};
+        OPTS.forEach(function (o, i) { if (sel[i] != null) props[o.name] = sel[i]; });
+        if (typeof v.price === 'number') props['Configured total'] = money(v.price);
+        addBtn.setAttribute('data-pm-add-properties', JSON.stringify(props));
+      } else {
+        addBtn.removeAttribute('data-pm-add-properties');
+      }
+    }
+  }
+
+  var gear = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
+  var check = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+
+  var card = document.createElement('div');
+  card.className = 'hpw-card';
+  card.innerHTML =
+    '<div class="hpw-head">'
+    + '<div class="hpw-title">' + gear + 'Configure your system</div>'
+    + '<div class="hpw-pips" data-pips></div>'
+    + '<div class="hpw-stepname" data-stepname></div>'
+    + '</div>'
+    + '<div class="hpw-body" data-body></div>'
+    + '<div class="hpw-foot">'
+    + '<div class="hpw-footrow">'
+    + '<div class="hpw-price-wrap">'
+    + '<div class="hpw-price-label">Configured price</div>'
+    + '<div class="hpw-price-val" data-price>&mdash;</div>'
+    + '<div class="hpw-price-sku" data-psku></div>'
+    + '</div>'
+    + '<button type="button" class="hpw-cta" data-cta>Continue &rarr;</button>'
+    + '</div>'
+    + '<button type="button" class="hpw-cta2" data-cta2 hidden>Request a quote for this build</button>'
+    + '<div class="hpw-backrow"><button type="button" class="hpw-back" data-back hidden>&larr; Back</button></div>'
+    + '</div>';
+  root.appendChild(card);
+
+  var pipsEl = card.querySelector('[data-pips]'), nameEl = card.querySelector('[data-stepname]'),
+      bodyEl = card.querySelector('[data-body]'), priceEl = card.querySelector('[data-price]'),
+      pskuEl = card.querySelector('[data-psku]'), ctaEl = card.querySelector('[data-cta]'),
+      cta2El = card.querySelector('[data-cta2]'), backEl = card.querySelector('[data-back]');
+  var addBtn = document.querySelector('[data-pm-pdp-add]');
+  var quoteBtn = document.querySelector('button[aria-label^="Request a quote"], button[aria-label^="Request a Quote"]');
+
+  function renderPips() {
+    var h = '', i;
+    for (i = 0; i < N; i++) {
+      if (i > 0) h += '<span class="hpw-pipline" aria-hidden="true"></span>';
+      var cls = i < step ? ' is-done' : (i === step ? ' is-now' : '');
+      var lbl = i < OPTS.length ? OPTS[i].name : 'Review';
+      h += '<button type="button" class="hpw-pip' + cls + '" data-pip="' + i + '" aria-label="Step ' + (i + 1) + ': ' + esc(lbl) + '"' + (i === step ? ' aria-current="step"' : '') + '>'
+        + (i < step ? check : (i + 1)) + '</button>';
+    }
+    pipsEl.innerHTML = h;
+  }
+
+  function renderFoot() {
+    var v = currentVariant();
+    priceEl.textContent = v && typeof v.price === 'number' ? money(v.price) : '—';
+    pskuEl.textContent = v && v.sku ? 'SKU ' + v.sku : '';
+    var last = step === N - 1;
+    if (last) {
+      ctaEl.innerHTML = 'Add build to cart';
+      ctaEl.hidden = !addBtn;
+      cta2El.hidden = !quoteBtn;
+    } else {
+      ctaEl.innerHTML = 'Continue &rarr;';
+      ctaEl.hidden = false;
+      cta2El.hidden = true;
+    }
+    backEl.hidden = step === 0;
+  }
+
+  function renderStep() {
+    var h = '';
+    if (step === N - 1) {
+      nameEl.textContent = 'Step ' + N + ' of ' + N + ' · Review your build';
+      h = '<ul class="hpw-rev">';
+      OPTS.forEach(function (o, i) {
+        h += '<li><span class="hpw-li-k">' + esc(o.name) + '</span><b>' + esc(sel[i] == null ? '—' : sel[i]) + '</b></li>';
+      });
+      h += '</ul>';
+    } else {
+      var o = OPTS[step];
+      nameEl.textContent = 'Step ' + (step + 1) + ' of ' + N + ' · ' + o.name;
+      var live = liveValues(step, sel);
+      var cur = currentVariant();
+      var curPrice = cur && typeof cur.price === 'number' ? cur.price : null;
+      function deltaOf(val) {
+        if (curPrice == null || sel[step] === val) return null;
+        var p = priceIf(step, val);
+        if (p == null) return null;
+        var diff = p - curPrice;
+        return diff === 0 ? null : diff;
+      }
+      if (live.length > 4) {
+        /* many values → dropdown (deltas ride along in the option label) */
+        h = '<div class="hpw-selwrap"><select class="hpw-sel" data-selstep aria-label="' + esc(o.name) + '">';
+        live.forEach(function (val) {
+          var diff = deltaOf(val);
+          var sfx = diff == null ? '' : '  (' + (diff > 0 ? '+' : '−') + money(Math.abs(diff)) + ')';
+          h += '<option value="' + esc(val) + '"' + (sel[step] === val ? ' selected' : '') + '>' + esc(val) + esc(sfx) + '</option>';
+        });
+        h += '</select><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></div>';
+      } else {
+        /* few values → radio cards, two columns when every value is short */
+        var cols = live.every(function (v) { return v.length <= 16; });
+        h = '<div class="hpw-list' + (cols ? ' hpw-cols' : '') + '">';
+        live.forEach(function (val) {
+          var on = sel[step] === val;
+          var diff = deltaOf(val), d = '';
+          if (diff != null) d = '<span class="hpw-d' + (diff > 0 ? ' is-up' : '') + '">' + (diff > 0 ? '+' : '&minus;') + money(Math.abs(diff)) + '</span>';
+          h += '<button type="button" class="hpw-opt' + (on ? ' is-on' : '') + '" data-val="' + esc(val) + '" aria-pressed="' + (on ? 'true' : 'false') + '">'
+            + '<span class="hpw-radio" aria-hidden="true"></span>'
+            + '<span class="hpw-opt-txt"><span class="hpw-opt-label">' + esc(val) + '</span>' + d + '</span>'
+            + '</button>';
+        });
+        h += '</div>';
+      }
+    }
+    bodyEl.innerHTML = h;
+    bodyEl.scrollTop = 0;
+    renderFoot();
+  }
+
+  function paint() { renderPips(); renderStep(); }
+  paint();
+  syncSelects(); /* align page with the preselected combo */
+
+  root.addEventListener('click', function (e) {
+    var pip = e.target.closest('[data-pip]');
+    if (pip) { step = parseInt(pip.getAttribute('data-pip'), 10) || 0; paint(); return; }
+
+    var opt = e.target.closest('[data-val]');
+    if (opt && step < OPTS.length) {
+      sel[step] = opt.getAttribute('data-val');
+      repairFrom(step, sel);
+      syncSelects();
+      /* deltas are relative to the new pick — re-render the step (lists are
+         short here; the grid rarely scrolls) */
+      renderStep();
+      return;
+    }
+
+    if (e.target.closest('[data-back]')) { if (step > 0) { step--; paint(); } return; }
+
+    if (e.target.closest('[data-cta]')) {
+      if (step < N - 1) { step++; paint(); }
+      else if (addBtn) { addBtn.click(); }
+      return;
+    }
+    if (e.target.closest('[data-cta2]')) { if (quoteBtn) quoteBtn.click(); return; }
+  });
+
+  /* dropdown steps (5+ values) pick via change */
+  root.addEventListener('change', function (e) {
+    var s = e.target.closest('.hpw-sel[data-selstep]');
+    if (!s || step >= OPTS.length) return;
+    sel[step] = s.value;
+    repairFrom(step, sel);
+    syncSelects();
+    renderStep(); /* refresh deltas + footer for the new baseline */
+  });
+  }
+})();
+</script>

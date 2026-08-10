@@ -113,10 +113,24 @@
       addQty = Math.max(1, parseInt(qInput && qInput.value, 10) || 1);
     }
 
+    // Opt-in only: a button carries data-pm-add-properties (JSON) when the
+    // page wants the line item to remember something about how it was
+    // configured — e.g. the HP "configure your system" wizard's picked
+    // Processor/Memory/Storage. No attribute → no properties, unchanged
+    // for every other Add button (PLP cards, plain PDPs).
+    var lineItem = { id: parseInt(variantId, 10), quantity: addQty };
+    var propsRaw = btn.getAttribute('data-pm-add-properties');
+    if (propsRaw) {
+      try {
+        var props = JSON.parse(propsRaw);
+        if (props && typeof props === 'object') lineItem.properties = props;
+      } catch (e) {}
+    }
+
     fetch('/cart/add.js', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-      body: JSON.stringify({ items: [{ id: parseInt(variantId, 10), quantity: addQty }] })
+      body: JSON.stringify({ items: [lineItem] })
     })
       .then(function (r) {
         return r.json().then(function (data) { return { ok: r.ok, data: data }; });

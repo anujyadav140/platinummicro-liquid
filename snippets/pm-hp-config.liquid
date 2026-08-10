@@ -1,0 +1,99 @@
+{%- comment -%}
+  PM — HP procurement data panel. v5 (info card only).
+
+  HISTORY: v2 accordion → v3 stepped wizard (care packs + accessories from
+  assets/pm-hp-data.json, the OLD 18-SKU dataset) → v4 info-only → v3.1
+  restored as "Support & add-ons" → v5 REMOVED THE OLD-DATA WIZARD FOR GOOD
+  (2026-08-07, Anuj): the consolidated HP import carries hardware config as
+  real variant options, and THE configurator is now the variant-driven
+  stepped wizard in `snippets/pm-hp-wizard.liquid` (rendered where the
+  native option dropdowns were, driving them hidden). The old care-pack/
+  accessory wizard UI is archived at
+  Downloads/pm-hp-config-WIZARD-BACKUP.liquid if ever wanted as an add-ons
+  panel again.
+
+  WHAT THIS RENDERS: the compact procurement data card (UNSPSC, origin,
+  lifecycle, base warranty, sustainability + TAA note) into the
+  [data-pm-hp-info] mount under Specifications.
+
+  DATA: assets/pm-hp-data.json (ships with the theme, keyed by variant SKU) —
+  no metafields on the critical path. Renders nothing on non-HP products.
+  Debug: append ?hpdebug=1 to the URL.
+  Param: product (required)
+{%- endcomment -%}
+
+{%- assign _v = product.selected_or_first_available_variant | default: product.variants.first -%}
+{%- assign _sku = _v.sku | upcase -%}
+
+<div data-pm-hp-root
+     data-sku="{{ _sku | escape }}"
+     data-url="{{ 'pm-hp-data.json' | asset_url }}"></div>
+
+<style>
+  .pmhp-scope{--pmhp-navy:var(--pm-navy-deep,#0d2340);--pmhp-line:var(--pm-ink-200,#e4e7ec);--pmhp-line2:var(--pm-ink-100,#eef0f3);--pmhp-mut:var(--pm-ink-400,#667085);--pmhp-faint:var(--pm-ink-300,#98a2b3);--pmhp-paper:var(--pm-paper,#f6f4ef);margin:18px 0 0;color:var(--pmhp-navy);font-size:14px;line-height:1.45;font-family:var(--pm-font-body,inherit)}
+  .pmhp-scope:empty{margin:0}
+  .pmhp-scope *{box-sizing:border-box}
+  .pmhp-card{border:1px solid var(--pmhp-line);border-radius:14px;background:#fff;margin:0 0 14px;overflow:hidden;box-shadow:var(--pm-shadow-sm,0 1px 2px rgba(16,24,40,.05))}
+  .pmhp-head{display:flex;align-items:center;gap:8px;padding:13px 15px 11px;border-bottom:1px solid var(--pmhp-line2);flex-wrap:wrap}
+  .pmhp-chip{background:var(--pmhp-navy);color:#fff;font-size:10px;font-weight:800;letter-spacing:.08em;padding:4px 7px;border-radius:5px}
+  .pmhp-title{font-weight:700;font-size:13.5px}
+  .pmhp-part{margin-left:auto;color:var(--pmhp-faint);font-size:11.5px}
+  .pmhp-rows{margin:0;padding:2px 0}
+  .pmhp-row{display:flex;gap:12px;padding:8px 14px;border-bottom:1px dashed var(--pmhp-line2);margin:0}
+  .pmhp-row:last-child{border-bottom:0}
+  .pmhp-row dt{flex:0 0 118px;color:var(--pmhp-mut);font-size:11.5px;letter-spacing:.02em;padding-top:1px}
+  .pmhp-row dd{margin:0;font-weight:600;font-size:13px;overflow-wrap:anywhere}
+  .pmhp-note{padding:9px 14px;background:var(--pmhp-paper);border-top:1px solid var(--pmhp-line);color:var(--pmhp-mut);font-size:11.5px;margin:0}
+</style>
+
+<script>
+(function () {
+  'use strict';
+  var root = document.querySelector('[data-pm-hp-root]');
+  if (!root) return;
+  var SKU = (root.getAttribute('data-sku') || '').trim().toUpperCase();
+  var debug = /[?&]hpdebug=1/.test(location.search);
+  if (!SKU) { if (debug) root.textContent = 'HP debug: product has no variant SKU'; return; }
+
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+
+  fetch(root.getAttribute('data-url'), { credentials: 'omit' })
+    .then(function (r) { if (!r.ok) throw new Error('data HTTP ' + r.status); return r.json(); })
+    .then(function (all) {
+      var d = all[SKU];
+      if (!d) {
+        // PM catalog SKUs are sometimes prefixed/mangled — contains-match the base part number
+        var ks = Object.keys(all);
+        for (var i = 0; i < ks.length; i++) if (SKU.indexOf(ks[i]) !== -1) { d = all[ks[i]]; break; }
+      }
+      if (!d) { if (debug) root.textContent = 'HP debug: no data for "' + SKU + '" (' + Object.keys(all).length + ' SKUs loaded)'; return; }
+      render(d);
+    })
+    .catch(function (e) { if (debug) root.textContent = 'HP debug: ' + e.message; });
+
+  function render(d) {
+    /* ── procurement data card (mounts under Specifications via [data-pm-hp-info]) ── */
+    var info = '<div class="pmhp-card">'
+      +  '<div class="pmhp-head"><span class="pmhp-chip">HP</span><span class="pmhp-title">Procurement data</span>'
+      +  '<span class="pmhp-part">Part ' + esc(d.sku) + (d.plc ? ' &middot; ' + esc(d.plc) : '') + '</span></div>'
+      +  '<dl class="pmhp-rows">';
+    if (d.unspsc) info += '<div class="pmhp-row"><dt>UNSPSC</dt><dd>' + esc(d.unspsc) + '</dd></div>';
+    if (d.origin) info += '<div class="pmhp-row"><dt>Country of origin</dt><dd>' + esc(d.origin) + '</dd></div>';
+    if (d.warranty_txt) info += '<div class="pmhp-row"><dt>Base warranty</dt><dd>' + esc(d.warranty_txt) + '</dd></div>';
+    if (d.energy_star || d.co2e) info += '<div class="pmhp-row"><dt>Sustainability</dt><dd>' + (d.energy_star ? 'ENERGY STAR certified' : '') + (d.co2e ? (d.energy_star ? ' &middot; ' : '') + esc(d.co2e) + ' kg CO2e' : '') + '</dd></div>';
+    info += '</dl>';
+    if (d.origin) info += '<p class="pmhp-note">Origin as supplied by HP. TAA applies to federal / GSA sales, not to OMNIA, PEPPM or CMAS by default.</p>';
+    info += '</div>';
+
+    var infoMount = document.querySelector('[data-pm-hp-info]');
+    root.classList.add('pmhp-scope');
+    if (infoMount) {
+      infoMount.classList.add('pmhp-scope');
+      infoMount.innerHTML = info;
+      root.innerHTML = '';
+    } else {
+      root.innerHTML = info;
+    }
+  }
+})();
+</script>
