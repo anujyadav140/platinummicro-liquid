@@ -138,13 +138,23 @@
       .then(function (res) {
         btn.dataset.busy = '0';
         if (!res.ok) {
-          // Over the inventory cap → lock the button. NOTE: /cart/add.js still
-          // PARTIAL-adds up to the cap on a 422, so refresh badges + drawer
-          // (silently — a non-opening source) to reflect whatever did get added.
-          if (lbl) lbl.textContent = orig || 'Add';
-          setMaxed(btn, true);
-          syncMaxed();
+          // A rejected /cart/add.js does NOT always mean "inventory cap reached" —
+          // it can also mean a bad/unpurchasable variant, a draft/unavailable
+          // product, or any other Shopify-side refusal. Blindly locking the
+          // button as "Already in cart" for every failure was misleading (that
+          // label is only true for a genuine cap). Instead: refresh from the
+          // REAL cart (syncMaxed) and let IT decide whether this is truly a cap
+          // — and if it isn't, surface Shopify's own error text so the real
+          // reason is visible instead of a wrong guess.
+          btn.disabled = false;
+          var errMsg = (res.data && (res.data.description || res.data.message)) || '';
+          if (errMsg) console.error('[PmAddToCart] /cart/add.js rejected:', errMsg, res.data);
+          syncMaxed(); // re-checks the real cart; only THIS can legitimately lock the button
           document.dispatchEvent(new CustomEvent('pm:cart-changed', { detail: { source: 'cap' } }));
+          if (lbl && !btn.classList.contains('is-maxed')) {
+            lbl.textContent = errMsg ? errMsg.slice(0, 44) : 'Could not add — try again';
+            setTimeout(function () { if (lbl && !btn.classList.contains('is-maxed')) lbl.textContent = orig || 'Add'; }, 4000);
+          }
           return;
         }
         if (lbl) lbl.textContent = 'Added';
