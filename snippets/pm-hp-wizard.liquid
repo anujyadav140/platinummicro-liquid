@@ -1,26 +1,115 @@
 {%- comment -%}
-  PM — HP hardware configurator wizard (variant-driven). v1.1.
+  PM — HP hardware configurator wizard (metafield-driven). v3.4.
 
-  THE configurator for the consolidated HP products: OG stepped-wizard UI
-  (pips, navy done-checks, terracotta current step, paper footer) whose steps
-  are the product's REAL variant options. Drives the hidden native
-  <select data-pm-pdp-option> elements (dispatching `change`) so the PDP's
-  existing variant-switch JS keeps doing all page sync.
+  v3.4 (Anuj): two close-bugs. (1) On close the pips/checkmarks used to
+  vanish a beat AFTER the modal — the old close flipped the `hidden`
+  attribute on a setTimeout that raced the opacity transition. Fixed by
+  making open/close purely class-driven: opacity + visibility +
+  pointer-events all transition together on .is-open, no display/`hidden`
+  toggle at all. (2) The floating navy X blended into the site's navy nav
+  bar — moved it INTO the white title header (right side) as a circular
+  navy-on-white button (fills navy on hover), so it always stands out.
 
-  v1.1 (Anuj):
-  · PRICE DELTAS on every option card — "+$300.00 / −$150.00" vs the current
-    build, computed on the FULL repaired combo (variant prices; shows ±$0
-    only as blank until real prices land, then lights up automatically).
-  · COMPACT: two-column option grid when values are short (CPU/Memory),
-    single column for long values; tighter paddings; single-row footer
-    (price block + Continue side by side) — roughly halves the card height
-    so the buy-box stops stretching the page.
+  v3.3 (Anuj): "Configure Your System" is now a large full-width TITLE bar
+  across the top of the whole modal (its heading), with the two-column
+  media+config row below it. Modal a touch wider (1000px). The qty stepper
+  MOVED out of the footer into the body — it renders below the Review list
+  ("below Graphics"), so the footer's primary button stays ONE consistent
+  full-width size on every step (Next and Add to Cart share identical
+  treatment; the button no longer changes size when you reach Review).
 
-  Steps = one per option (choices filtered to combos that exist, later picks
-  auto-repaired) + Review (summary, Add-build-to-cart → clicks
-  [data-pm-pdp-add], Request-a-quote → clicks the PDP quote button).
-  Preselects the current variant. Init waits for DOMContentLoaded because
-  the #pm-pdp-variants island renders below this snippet.
+  v3.2 (Anuj): the Review step is now the checkout point — Next is REPLACED
+  by a qty stepper (− N +) + a terracotta "Add to Cart". Clicking it REUSES
+  the PDP's own tested add path: sets #pm-pdp-qty to the chosen quantity,
+  then clicks the real [data-pm-pdp-add] (which already holds the resolved
+  variant + this wizard's data-pm-add-properties), then closes the modal so
+  the cart drawer takes over. No new cart/fetch code. Qty is capped at the
+  same data-max-qty the PDP uses, so it can never exceed stock. Only shown
+  when a real cart button exists (in stock); otherwise Review just keeps
+  Previous. One line item of the configured SKU × N.
+
+  v3.1 (Anuj): bigger + more spacious, and NO dropdowns anywhere — every
+  axis renders as selectable cards now (Anuj: dropdowns are boring / less
+  obvious; max ~6 values per axis, so a scrollable card list is fine). The
+  old "5+ values collapse to a <select>" branch is gone. Modal widened to
+  940px, media column 320px, all paddings/cards/fonts scaled up so the
+  bigger frame doesn't read empty. The left media panel gained a live
+  "Your build" summary (every axis + its current pick; dimmed until
+  reached, rust dot on the active step, navy once past) — fills the panel
+  and mirrors the reference's running-configuration block. Each step also
+  got a "Select your <Axis>" hint line above the cards.
+
+  v3.0 (Anuj): full modal redesign, modeled on the structure of a real BTO
+  configurator screenshot (HPE's "Customize Your Product") — but PM colors
+  throughout, not HPE's teal/green. Two-column layout: LEFT is a .hpw-media
+  panel with the product's actual photo/vendor/title (from data-product-*
+  attributes on the root div); RIGHT is the same configurator (.hpw-config
+  wraps the existing head/body/foot). Collapses to a single column (image
+  strip on top) below 760px.
+
+  v2.3 (Anuj): two more from the v2.2 screenshot — (1) Customize had no
+  visible border and went invisible-text-on-hover: the --hpw-* CSS vars
+  only resolve inside [data-pm-hpw]'s subtree, and the trigger lives
+  outside it once moved next to Add to Cart, so var(--hpw-navy) with no
+  fallback was silently invalid — fixed by pointing straight at the global
+  --pm-navy-deep token with a hardcoded fallback. (2) No gap above the
+  button row: PM's real spacing lives on .pm-pdp__cta:first-of-type
+  (20px) / .pm-pdp__cta-row (10px, flex, child-neutralization) — reused
+  those classes instead of a bespoke .hpw-cta-row reimplementation, which
+  is also just more consistent with the rest of the page.
+
+  v2.2 (Anuj): Customize + Add to Cart now sit SIDE BY SIDE (both moved
+  into a shared .hpw-cta-row, Customize left / Add to Cart right) instead
+  of stacked. Also: the 4 restructured products (see v2.0 note below)
+  were missing real inventory — productSet had created their variants
+  with 0 quantity, and pm-instock.liquid deliberately requires a real
+  positive tracked quantity (ignores inventoryPolicy CONTINUE on purpose,
+  per its own header comment) before it'll render Add to Cart at all —
+  so the button was silently absent. Fixed by setting quantity 100 /
+  tracked / CONTINUE on every variant across all 4 products (API-side,
+  not a template change).
+
+  v2.1 (Anuj): was always-inline in the buy-box — now lives behind a
+  "Customize" button inserted right next to the real Add to Cart button
+  (found via the existing [data-pm-pdp-add] selector, so this stays fully
+  self-contained in this snippet — pm-product-detail.liquid untouched).
+  Clicking it opens the SAME wizard card in a centered modal (backdrop,
+  Escape/backdrop-click/X to close, basic focus handling). HP.com's own
+  BTO customize page has 12+ categories (OS, dual/triple M.2 slots, RAID,
+  networking, optical drive, keyboard...) — that's their WebSphere Commerce
+  direct-storefront system, which PM has no access to. Hermes only exposes
+  Processor/Memory/Storage/Graphics, so that's the ceiling here; the modal
+  makes the most of what we actually have, it can't manufacture data we
+  don't.
+
+  ARCHITECTURE CHANGE from v1.x: the product's real Shopify variant option
+  is now a single hidden "Configuration" axis whose value IS the HP SKU
+  (Option1 Value = Variant SKU, always identical by construction — see
+  HANDOFF-CONFIGURATOR.md). The wizard's real Processor/Memory/Storage/
+  Graphics steps come from the product.metafields.hp_hermes.configurator JSON
+  metafield instead of product.options_with_values. Why: Shopify caps a
+  product at 3 real options, but some HP lines (Z2 Mini, EliteDesk 8 SFF)
+  genuinely vary on 4 independent attributes, and Anuj was explicit that
+  splitting/merging axes to fit that cap wasn't acceptable — "we can
+  create our own custom solution" instead. This is that solution: the
+  wizard resolves a real SKU from the metafield's {axes, configs} data,
+  then sets the ONE hidden native <select data-pm-pdp-option="0"> to that
+  SKU and dispatches `change`, so the PDP's existing variant-switch JS
+  still does all price/image/availability/cart-button sync — untouched.
+
+  metafield shape: { axes: { "Processor": [...], "Memory": [...], ... },
+  configs: [ { sku, attributes: { "Processor": "...", ... }, ... }, ... ] }.
+  The matrix is SPARSE (not every axis combination is a real HP SKU) —
+  liveValues()/repairFrom() filter/snap exactly like v1.x did, just
+  matching against `configs[].attributes` instead of Shopify variants.
+
+  v1.7 UI carried forward unchanged: pips (navy done-checks, terracotta
+  current step), Previous/Next footer (Next disables, doesn't disappear,
+  on the final Review step), price deltas per option (blank until real
+  TD SYNNEX pricing lands in Variant Price, then lights up automatically),
+  adaptive dropdown-vs-cards per step, no in-wizard "add to cart" (the
+  page's own real Add to Cart button is already correct by Review), no
+  duplicate "Request a quote" (the PDP already has its own).
 
   Caller gates rendering (HP + tag B2G + real options). Scoped hpw- styles.
   ES5 only. Param: product (required)
@@ -28,20 +117,15 @@
 
 {%- assign _wv = product.selected_or_first_available_variant | default: product.variants.first -%}
 
-<div data-pm-hpw>
-  <script type="application/json" data-pm-hpw-options>
-    [
-      {%- assign _first = true -%}
-      {%- for option in product.options_with_values -%}
-        {%- assign _odn = option.name | downcase -%}
-        {%- unless _odn contains 'bundle' -%}
-          {%- unless _first -%},{%- endunless -%}
-          {%- assign _first = false -%}
-          {"pos": {{ forloop.index0 }}, "name": {{ option.name | json }}, "values": {{ option.values | json }}, "selected": {{ option.selected_value | json }}}
-        {%- endunless -%}
-      {%- endfor -%}
-    ]
-  </script>
+<div data-pm-hpw
+  data-current-sku="{{ _wv.sku | escape }}"
+  data-product-title="{{ product.title | escape }}"
+  data-product-vendor="{{ product.vendor | escape }}"
+  data-product-image="{{ product.featured_image | image_url: width: 700 | escape }}"
+  data-product-image-alt="{{ product.featured_image.alt | default: product.title | escape }}">
+  {%- if product.metafields.hp_hermes.configurator -%}
+    <script type="application/json" data-pm-hpw-config>{{ product.metafields.hp_hermes.configurator.value | json }}</script>
+  {%- endif -%}
 </div>
 
 <style>
@@ -49,55 +133,129 @@
   [data-pm-hpw] *{box-sizing:border-box}
   [data-pm-hpw] button{font-family:inherit}
   .hpw-card{border:1px solid var(--hpw-line);border-radius:14px;background:#fff;overflow:hidden;box-shadow:var(--pm-shadow-sm,0 1px 2px rgba(16,24,40,.05))}
-  .hpw-head{padding:11px 13px 9px;border-bottom:1px solid var(--hpw-line2)}
-  .hpw-title{display:flex;align-items:center;gap:7px;font-weight:700;font-size:13px}
-  .hpw-title svg{color:var(--hpw-rust);flex:none}
-  .hpw-pips{display:flex;align-items:center;margin-top:9px}
-  .hpw-pip{flex:0 0 24px;width:24px;height:24px;border-radius:50%;border:2px solid var(--hpw-line);background:#fff;color:var(--hpw-faint);font-size:11px;font-weight:800;display:grid;place-items:center;cursor:pointer;padding:0;transition:all .14s ease}
+  /* modal card = a column: a full-width TITLE header on top ("Configure Your
+     System", the heading for the whole modal), then a two-column row below
+     (product media left / configurator right). Height bounded; the header
+     is fixed, the columns row flexes and each column scrolls internally. */
+  .hpw-modal .hpw-card{display:flex;flex-direction:column;max-height:min(90vh,820px)}
+  .hpw-modal-header{flex:none;display:flex;align-items:center;gap:11px;padding:20px 26px;border-bottom:1px solid var(--hpw-line2)}
+  .hpw-modal-header > svg{color:var(--hpw-rust);flex:none;width:24px;height:24px}
+  .hpw-modal-title{font-size:23px;font-weight:800;color:var(--hpw-navy);line-height:1.1;letter-spacing:-.01em}
+  .hpw-cols{flex:1;display:flex;min-height:0}
+  .hpw-media{background:var(--hpw-paper);padding:26px;display:flex;flex-direction:column;border-right:1px solid var(--hpw-line2);flex:0 0 320px;overflow-y:auto}
+  .hpw-media-img{width:100%;aspect-ratio:1;object-fit:contain;background:#fff;border:1px solid var(--hpw-line2);border-radius:12px;padding:14px}
+  .hpw-media-vendor{margin-top:18px;display:inline-flex;align-self:flex-start;background:var(--hpw-pale);color:var(--hpw-rust);font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;padding:4px 10px;border-radius:99px}
+  .hpw-media-title{margin-top:9px;font-size:16px;font-weight:700;color:var(--hpw-navy);line-height:1.35}
+  /* live "Your build" summary — fills the left panel, updates as you pick,
+     mirrors the reference's running configuration block */
+  .hpw-build{margin-top:20px;padding-top:18px;border-top:1px solid var(--hpw-line2)}
+  .hpw-build-h{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--hpw-mut);margin-bottom:10px}
+  .hpw-build-list{list-style:none;margin:0;padding:0}
+  .hpw-build-li{padding:8px 0;border-bottom:1px dashed var(--hpw-line);transition:opacity .14s}
+  .hpw-build-li:last-child{border-bottom:0}
+  .hpw-build-li.is-pending{opacity:.45}
+  .hpw-build-k{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--hpw-faint)}
+  .hpw-build-k .hpw-build-dot{width:6px;height:6px;border-radius:50%;background:var(--hpw-line);flex:none}
+  .hpw-build-li.is-set .hpw-build-dot{background:var(--hpw-navy)}
+  .hpw-build-li.is-active .hpw-build-dot{background:var(--hpw-rust);box-shadow:0 0 0 3px var(--hpw-pale)}
+  .hpw-build-v{display:block;margin-top:3px;font-size:12.5px;font-weight:650;color:var(--hpw-ink);line-height:1.35}
+  @media (max-width:760px){
+    .hpw-cols{flex-direction:column}
+    .hpw-modal-header{padding:16px 18px}
+    .hpw-modal-title{font-size:19px}
+    .hpw-media{flex:0 0 auto;flex-direction:row;align-items:center;gap:14px;border-right:0;border-bottom:1px solid var(--hpw-line2);padding:16px;overflow:visible}
+    .hpw-media-img{width:64px;height:64px;flex:none;padding:6px}
+    .hpw-media-vendor{margin-top:0}
+    .hpw-media-title{margin-top:0;font-size:14px}
+    .hpw-build{display:none} /* the pips + step title already track progress on mobile */
+  }
+  .hpw-config{min-width:0;flex:1;display:flex;flex-direction:column;overflow:hidden}
+  .hpw-head{flex:none;padding:20px 24px 16px}
+  .hpw-pips{display:flex;align-items:center}
+  .hpw-pip{flex:0 0 28px;width:28px;height:28px;border-radius:50%;border:2px solid var(--hpw-line);background:#fff;color:var(--hpw-faint);font-size:12px;font-weight:800;display:grid;place-items:center;cursor:pointer;padding:0;transition:all .14s ease}
   .hpw-pip:hover{border-color:var(--hpw-faint)}
   .hpw-pip.is-done{background:var(--hpw-navy);border-color:var(--hpw-navy);color:#fff}
   .hpw-pip.is-now{background:var(--hpw-rust);border-color:var(--hpw-rust);color:#fff;box-shadow:0 0 0 3px var(--hpw-pale)}
-  .hpw-pipline{flex:1 1 6px;height:2px;background:var(--hpw-line);margin:0 3px;min-width:5px}
-  .hpw-stepname{margin-top:7px;font-size:11.5px;font-weight:600;color:var(--pm-ink-600,#475467)}
-  .hpw-body{padding:9px 12px 3px;max-height:252px;overflow-y:auto;overscroll-behavior:contain}
-  .hpw-list{display:grid;grid-template-columns:1fr;gap:6px;margin:0 0 6px}
+  .hpw-pipline{flex:1 1 6px;height:2px;background:var(--hpw-line);margin:0 4px;min-width:6px}
+  /* eyebrow + big title (STEP N — small terracotta label / large navy
+     category name), matching the reference's clear step labeling instead
+     of the old single small "Step N of N · X" line */
+  .hpw-stepname{margin-top:18px}
+  .hpw-step-eyebrow{display:block;font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--hpw-rust)}
+  .hpw-step-title{display:block;font-size:24px;font-weight:800;color:var(--hpw-navy);margin-top:4px;line-height:1.15}
+  .hpw-step-hint{margin:16px 0 12px;font-size:12.5px;font-weight:600;color:var(--hpw-mut)}
+  .hpw-body{flex:1;min-height:0;padding:6px 24px 8px;overflow-y:auto;overscroll-behavior:contain}
+  .hpw-list{display:grid;grid-template-columns:1fr;gap:10px;margin:0 0 8px}
   .hpw-list.hpw-cols{grid-template-columns:1fr 1fr}
-  .hpw-opt{display:flex;align-items:center;gap:8px;width:100%;margin:0;padding:8px 10px;background:#fff;border:1.5px solid var(--hpw-line);border-radius:9px;cursor:pointer;text-align:left;transition:border-color .12s,background .12s}
+  .hpw-opt{display:flex;align-items:center;gap:13px;width:100%;margin:0;padding:16px 16px;background:#fff;border:1.5px solid var(--hpw-line);border-radius:11px;cursor:pointer;text-align:left;transition:border-color .12s,background .12s,box-shadow .12s}
   .hpw-opt:hover{border-color:var(--hpw-faint);background:var(--hpw-paper)}
-  .hpw-opt.is-on{border-color:var(--hpw-rust);background:var(--hpw-pale)}
-  .hpw-radio{flex:none;width:15px;height:15px;border-radius:50%;border:2px solid var(--hpw-faint);transition:all .12s}
-  .hpw-opt.is-on .hpw-radio{border-color:var(--hpw-rust);box-shadow:inset 0 0 0 3px var(--hpw-rust)}
+  .hpw-opt.is-on{border-color:var(--hpw-rust);background:var(--hpw-pale);box-shadow:0 0 0 1px var(--hpw-rust)}
+  .hpw-radio{flex:none;width:19px;height:19px;border-radius:50%;border:2px solid var(--hpw-faint);transition:all .12s}
+  .hpw-opt.is-on .hpw-radio{border-color:var(--hpw-rust);box-shadow:inset 0 0 0 4px var(--hpw-rust)}
   .hpw-opt-txt{flex:1;min-width:0}
-  .hpw-opt-label{display:block;font-size:12.5px;line-height:1.3;color:var(--hpw-ink);font-weight:550;overflow-wrap:anywhere}
-  .hpw-d{display:block;font-size:10.5px;font-weight:700;color:var(--hpw-mut);margin-top:1px}
+  .hpw-opt-label{display:block;font-size:14px;line-height:1.35;color:var(--hpw-ink);font-weight:600;overflow-wrap:anywhere}
+  .hpw-d{display:block;font-size:12px;font-weight:700;color:var(--hpw-mut);margin-top:3px}
   .hpw-d.is-up{color:var(--hpw-rust)}
   .hpw-opt.is-on .hpw-d{color:var(--hpw-rust)}
-  /* 5+ values collapse into a dropdown to keep the card short */
-  .hpw-selwrap{position:relative;margin:0 0 6px}
-  .hpw-sel{appearance:none;-webkit-appearance:none;width:100%;padding:10px 34px 10px 12px;border:1.5px solid var(--hpw-line);border-radius:9px;font-family:inherit;font-size:13px;font-weight:600;color:var(--hpw-ink);background:#fff;cursor:pointer;line-height:1.3}
-  .hpw-sel:hover{border-color:var(--hpw-faint)}
-  .hpw-sel:focus{outline:none;border-color:var(--hpw-rust);box-shadow:0 0 0 3px var(--hpw-pale)}
-  .hpw-selwrap svg{position:absolute;right:12px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--hpw-mut)}
   .hpw-rev{list-style:none;margin:0 0 6px;padding:0}
-  .hpw-rev li{display:flex;align-items:baseline;gap:8px;padding:6px 2px;font-size:12.5px;border-bottom:1px dashed var(--hpw-line2)}
+  .hpw-rev li{display:flex;align-items:baseline;gap:10px;padding:12px 2px;font-size:14px;border-bottom:1px dashed var(--hpw-line2)}
   .hpw-rev li:last-child{border-bottom:0}
-  .hpw-rev .hpw-li-k{flex:0 0 96px;color:var(--hpw-faint);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em}
-  .hpw-rev b{font-weight:650;color:var(--hpw-ink)}
-  .hpw-foot{padding:9px 12px 11px;border-top:1px solid var(--hpw-line2);background:var(--hpw-paper)}
-  .hpw-footrow{display:flex;align-items:center;gap:10px}
-  .hpw-price-wrap{flex:1;min-width:0}
-  .hpw-price-label{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--hpw-mut)}
-  .hpw-price-val{font-size:19px;font-weight:800;color:var(--hpw-navy);line-height:1.15}
-  .hpw-price-sku{font-size:10.5px;color:var(--hpw-mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .hpw-cta{flex:none;background:var(--hpw-rust);color:#fff;border:0;border-radius:9px;padding:10px 16px;font-size:12.5px;font-weight:700;cursor:pointer;transition:filter .12s;white-space:nowrap}
-  .hpw-cta:hover{filter:brightness(.93)}
-  .hpw-cta2{display:block;width:100%;margin-top:8px;background:#fff;color:var(--hpw-navy);border:1.5px solid var(--hpw-line);border-radius:9px;padding:9px;font-size:12.5px;font-weight:700;cursor:pointer;transition:border-color .12s}
-  .hpw-cta2:hover{border-color:var(--hpw-rust);color:var(--hpw-rust)}
-  .hpw-cta2[hidden]{display:none}
-  .hpw-backrow{display:flex;align-items:center;margin-top:7px}
-  .hpw-back{background:none;border:0;padding:2px 0;color:var(--hpw-mut);font-size:11.5px;font-weight:600;cursor:pointer}
-  .hpw-back:hover{color:var(--hpw-rust)}
-  .hpw-back[hidden]{display:none}
+  .hpw-rev .hpw-li-k{flex:0 0 116px;color:var(--hpw-faint);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+  .hpw-rev b{font-weight:650;color:var(--hpw-ink);line-height:1.35}
+  /* Quantity row — lives in the BODY on the Review step, below the build
+     summary (not crammed into the footer), so the footer's primary button
+     stays one consistent full-width size across every step. */
+  .hpw-qtyrow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:18px 0 4px;padding:16px;border:1.5px solid var(--hpw-line);border-radius:12px;background:var(--hpw-paper)}
+  .hpw-qtyrow-label{font-size:14px;font-weight:700;color:var(--hpw-navy)}
+  .hpw-qty{flex:none;display:inline-flex;align-items:center;border:1.5px solid var(--hpw-line);border-radius:10px;overflow:hidden;background:#fff}
+  .hpw-qty-btn{width:42px;height:44px;border:0;background:#fff;color:var(--hpw-navy);font-size:20px;font-weight:700;cursor:pointer;line-height:1;transition:background .12s}
+  .hpw-qty-btn:hover{background:var(--hpw-paper)}
+  .hpw-qty-btn:disabled{opacity:.35;cursor:not-allowed}
+  .hpw-qty-val{min-width:44px;text-align:center;font-size:16px;font-weight:700;color:var(--hpw-ink);font-variant-numeric:tabular-nums}
+  .hpw-foot{flex:none;padding:16px 24px 20px;border-top:1px solid var(--hpw-line2);background:var(--hpw-paper)}
+  .hpw-navrow{display:flex;align-items:center;gap:10px}
+  .hpw-navbtn{border-radius:10px;padding:14px 22px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;transition:filter .12s,border-color .12s,opacity .12s}
+  .hpw-prev{flex:none;background:#fff;color:var(--hpw-navy);border:1.5px solid var(--hpw-line)}
+  .hpw-prev:hover{border-color:var(--hpw-faint)}
+  .hpw-prev[hidden]{display:none}
+  /* Next and Add-to-Cart are the SAME button treatment (flex:1, terracotta) —
+     the primary action fills the row identically on every step, so it never
+     visibly changes size when you reach Review. */
+  .hpw-next,.hpw-addcart{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--hpw-rust);color:#fff;border:0}
+  .hpw-next:hover,.hpw-addcart:hover{filter:brightness(.93)}
+  .hpw-next[hidden],.hpw-addcart[hidden]{display:none}
+  .hpw-addcart svg{flex:none}
+  /* trigger sits BESIDE the real Add to Cart button, both wrapped in PM's
+     OWN existing .pm-pdp__cta-row (the same class the Datasheet+Email row
+     already uses — same gap/flex/child-neutralization mechanics, real PM
+     button sizing/padding/radius via .pm-pdp__cta, instead of a bespoke
+     reimplementation). .pm-pdp__cta-row's own margin-top is 10px, tuned for
+     when it's NOT the first thing in the stack; this row IS first (right
+     after Quantity), which normally means the standalone-button 20px rule
+     (.pm-pdp__cta:first-of-type) — that selector doesn't match a *row*
+     though, so it's set explicitly here.
+     Colors: outside [data-pm-hpw]'s subtree once moved via JS, so the
+     --hpw-* aliases don't resolve (scoped to that div's descendants) — go
+     straight to the global PM tokens with hardcoded fallbacks instead. */
+  .hpw-cta-row{margin-top:20px}
+  .hpw-trigger{background:#fff;color:var(--pm-navy-deep,#0d2340);border-color:var(--pm-navy-deep,#0d2340);transition:background .12s,color .12s}
+  .hpw-trigger:hover{background:var(--pm-navy-deep,#0d2340);color:#fff}
+  .hpw-trigger svg{flex:none}
+  /* modal: backdrop + centered dialog holding the exact same wizard card —
+     wide enough for the two-column media+config layout above */
+  /* opacity + visibility + pointer-events ALL transition together, so open
+     and close are one coordinated fade — nothing (like the pips) lingers a
+     beat after the modal is gone, and no display/`hidden` toggle to race it */
+  .hpw-backdrop{position:fixed;inset:0;background:rgba(13,35,64,.55);z-index:9998;display:flex;align-items:center;justify-content:center;padding:16px;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .17s ease,visibility .17s ease;overflow-y:auto}
+  .hpw-backdrop.is-open{opacity:1;visibility:visible;pointer-events:auto}
+  .hpw-modal{position:relative;width:100%;max-width:1000px;margin:auto;transform:translateY(10px);transition:transform .17s ease}
+  .hpw-backdrop.is-open .hpw-modal{transform:translateY(0)}
+  /* close button lives in the header (right side), on the white bar — a
+     circular navy-outlined button that reads clearly against white and
+     never blends with the site's navy nav bar the way a floating navy X did */
+  .hpw-modal-header .hpw-close{margin-left:auto;flex:none;width:34px;height:34px;border-radius:50%;border:1.5px solid var(--hpw-line);background:#fff;color:var(--hpw-navy);display:grid;place-items:center;cursor:pointer;transition:background .12s,border-color .12s,color .12s}
+  .hpw-modal-header .hpw-close:hover{background:var(--hpw-navy);border-color:var(--hpw-navy);color:#fff}
+  body.hpw-modal-open{overflow:hidden}
 </style>
 
 <script>
@@ -109,13 +267,18 @@
   function init() {
   var root = document.querySelector('[data-pm-hpw]');
   if (!root) return;
-  var optsEl = root.querySelector('[data-pm-hpw-options]');
+  var cfgEl = root.querySelector('[data-pm-hpw-config]');
   var varsEl = document.getElementById('pm-pdp-variants');
-  if (!optsEl || !varsEl) return;
+  if (!cfgEl || !varsEl) return;
 
-  var OPTS = [], VARS = [];
-  try { OPTS = JSON.parse(optsEl.textContent); VARS = JSON.parse(varsEl.textContent); } catch (e) { return; }
-  if (!OPTS.length || !VARS.length) return;
+  var CONFIG = null, VARS = [];
+  try { CONFIG = JSON.parse(cfgEl.textContent); VARS = JSON.parse(varsEl.textContent); } catch (e) { return; }
+  if (!CONFIG || !CONFIG.axes || !CONFIG.configs || !CONFIG.configs.length || !VARS.length) return;
+
+  var AXES = [];
+  for (var _k in CONFIG.axes) { if (CONFIG.axes.hasOwnProperty(_k)) AXES.push(_k); }
+  var CONFIGS = CONFIG.configs;
+  if (!AXES.length) return;
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function money(cents) {
@@ -123,68 +286,82 @@
     catch (e) { return '$' + (cents / 100).toFixed(2); }
   }
 
-  var N = OPTS.length + 1; /* option steps + Review */
-  var step = 0;
-  var sel = OPTS.map(function (o) { return o.selected; }); /* preselect current variant */
+  function configForSku(sku) {
+    for (var i = 0; i < CONFIGS.length; i++) { if (CONFIGS[i].sku === sku) return CONFIGS[i]; }
+    return null;
+  }
+  function variantForSku(sku) {
+    for (var i = 0; i < VARS.length; i++) { if (VARS[i].sku === sku) return VARS[i]; }
+    return null;
+  }
+  function configFor(selArr) {
+    for (var i = 0; i < CONFIGS.length; i++) {
+      var c = CONFIGS[i], ok = true;
+      for (var k = 0; k < AXES.length; k++) { if (c.attributes[AXES[k]] !== selArr[k]) { ok = false; break; } }
+      if (ok) return c;
+    }
+    return null;
+  }
 
-  function variantFor(selArr) {
-    var m = VARS.filter(function (v) {
-      for (var i = 0; i < OPTS.length; i++) {
-        if (v['option' + (OPTS[i].pos + 1)] !== selArr[i]) return false;
-      }
-      return true;
-    });
-    return m[0] || null;
-  }
-  function currentVariant() { return variantFor(sel); }
-  /* values of option i that exist given picks on steps < i */
+  var N = AXES.length + 1; /* axis steps + Review */
+  var step = 0;
+  var initialSku = root.getAttribute('data-current-sku');
+  var initialConfig = configForSku(initialSku) || CONFIGS[0];
+  var sel = AXES.map(function (axisName) { return initialConfig.attributes[axisName]; }); /* preselect current build */
+
+  function currentConfig() { return configFor(sel); }
+  function currentVariant() { var c = currentConfig(); return c ? variantForSku(c.sku) : null; }
+  /* values of axis i that exist given picks on steps < i */
   function liveValues(i, selArr) {
-    var pool = VARS.filter(function (v) {
+    var pool = CONFIGS.filter(function (c) {
       for (var k = 0; k < i; k++) {
-        if (selArr[k] != null && v['option' + (OPTS[k].pos + 1)] !== selArr[k]) return false;
+        if (selArr[k] != null && c.attributes[AXES[k]] !== selArr[k]) return false;
       }
       return true;
     });
-    return OPTS[i].values.filter(function (val) {
-      return pool.some(function (v) { return v['option' + (OPTS[i].pos + 1)] === val; });
+    var seen = {}, out = [];
+    (CONFIG.axes[AXES[i]] || []).forEach(function (val) {
+      if (!seen[val] && pool.some(function (c) { return c.attributes[AXES[i]] === val; })) { seen[val] = 1; out.push(val); }
     });
+    return out;
   }
-  /* repair later picks in selArr so the combo stays a real variant */
+  /* repair later picks in selArr so the combo stays a real config */
   function repairFrom(i, selArr) {
-    for (var k = i + 1; k < OPTS.length; k++) {
+    for (var k = i + 1; k < AXES.length; k++) {
       var live = liveValues(k, selArr);
       if (live.indexOf(selArr[k]) === -1) selArr[k] = live[0] || null;
     }
   }
-  /* full repaired-combo price if option `step` were set to `val` */
+  /* full repaired-combo price if axis `stepIdx` were set to `val` */
   function priceIf(stepIdx, val) {
     var trial = sel.slice();
     trial[stepIdx] = val;
     repairFrom(stepIdx, trial);
-    var v = variantFor(trial);
+    var c = configFor(trial);
+    var v = c ? variantForSku(c.sku) : null;
     return v && typeof v.price === 'number' ? v.price : null;
   }
-  /* push the combo into the hidden native selects → PDP sync JS does the rest */
+  /* push the resolved SKU into the ONE hidden native select → PDP sync JS
+     does the rest (price/image/availability/cart-button all update) */
   function syncSelects() {
-    OPTS.forEach(function (o, i) {
-      var s = document.querySelector('[data-pm-pdp-option="' + o.pos + '"]');
-      if (s && sel[i] != null && s.value !== sel[i]) {
-        s.value = sel[i];
-        var ev; try { ev = new Event('change', { bubbles: true }); } catch (e) { ev = document.createEvent('Event'); ev.initEvent('change', true, true); }
-        s.dispatchEvent(ev);
-      }
-    });
-    /* Add to Cart should remember the build: stash the picked options as cart
+    var c = currentConfig();
+    var s = document.querySelector('[data-pm-pdp-option="0"]');
+    if (s && c && s.value !== c.sku) {
+      s.value = c.sku;
+      var ev; try { ev = new Event('change', { bubbles: true }); } catch (e) { ev = document.createEvent('Event'); ev.initEvent('change', true, true); }
+      s.dispatchEvent(ev);
+    }
+    /* Add to Cart should remember the build: stash the picked axes as cart
        line-item properties (pm-add-to-cart.js reads data-pm-add-properties).
        The cart drawer already renders any line's `properties` as a
        "Configured build" accordion (built for the bundle configurator) — this
        just feeds it the same shape, so no cart-side changes were needed. */
     if (addBtn) {
-      var v = currentVariant();
-      if (v) {
+      if (c) {
         var props = {};
-        OPTS.forEach(function (o, i) { if (sel[i] != null) props[o.name] = sel[i]; });
-        if (typeof v.price === 'number') props['Configured total'] = money(v.price);
+        AXES.forEach(function (axisName, i) { if (sel[i] != null) props[axisName] = sel[i]; });
+        var v = variantForSku(c.sku);
+        if (v && typeof v.price === 'number') props['Configured total'] = money(v.price);
         addBtn.setAttribute('data-pm-add-properties', JSON.stringify(props));
       } else {
         addBtn.removeAttribute('data-pm-add-properties');
@@ -194,81 +371,213 @@
 
   var gear = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>';
   var check = '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>';
+  var xicon = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+
+  var prodTitle = root.getAttribute('data-product-title') || '';
+  var prodVendor = root.getAttribute('data-product-vendor') || '';
+  var prodImage = root.getAttribute('data-product-image') || '';
+  var prodImageAlt = root.getAttribute('data-product-image-alt') || prodTitle;
 
   var card = document.createElement('div');
   card.className = 'hpw-card';
   card.innerHTML =
-    '<div class="hpw-head">'
-    + '<div class="hpw-title">' + gear + 'Configure your system</div>'
+    /* full-width TITLE header — the heading for the whole modal; close
+       button lives HERE (on the white header), never floating over the
+       site's navy nav bar where a navy X would blend in */
+    '<div class="hpw-modal-header">' + gear + '<span class="hpw-modal-title">Configure Your System</span>'
+    + '<button type="button" class="hpw-close" data-close aria-label="Close">' + xicon + '</button></div>'
+    + '<div class="hpw-cols">'
+    /* left: real product media — same photo/title/vendor as the PDP */
+    + '<div class="hpw-media">'
+    + (prodImage ? '<img class="hpw-media-img" src="' + esc(prodImage) + '" alt="' + esc(prodImageAlt) + '" loading="lazy">' : '')
+    + (prodVendor ? '<div class="hpw-media-vendor">' + esc(prodVendor) + '</div>' : '')
+    + (prodTitle ? '<div class="hpw-media-title">' + esc(prodTitle) + '</div>' : '')
+    + '<div class="hpw-build"><div class="hpw-build-h">Your build</div><ul class="hpw-build-list" data-build></ul></div>'
+    + '</div>'
+    /* right: the interactive configurator (per-step pips/title/body/footer) */
+    + '<div class="hpw-config">'
+    + '<div class="hpw-head">'
     + '<div class="hpw-pips" data-pips></div>'
     + '<div class="hpw-stepname" data-stepname></div>'
     + '</div>'
     + '<div class="hpw-body" data-body></div>'
     + '<div class="hpw-foot">'
-    + '<div class="hpw-footrow">'
-    + '<div class="hpw-price-wrap">'
-    + '<div class="hpw-price-label">Configured price</div>'
-    + '<div class="hpw-price-val" data-price>&mdash;</div>'
-    + '<div class="hpw-price-sku" data-psku></div>'
+    + '<div class="hpw-navrow">'
+    + '<button type="button" class="hpw-navbtn hpw-prev" data-prev hidden>&larr; Previous</button>'
+    + '<button type="button" class="hpw-navbtn hpw-next" data-next>Next &rarr;</button>'
+    + '<button type="button" class="hpw-navbtn hpw-addcart" data-addcart hidden>Add to Cart</button>'
     + '</div>'
-    + '<button type="button" class="hpw-cta" data-cta>Continue &rarr;</button>'
     + '</div>'
-    + '<button type="button" class="hpw-cta2" data-cta2 hidden>Request a quote for this build</button>'
-    + '<div class="hpw-backrow"><button type="button" class="hpw-back" data-back hidden>&larr; Back</button></div>'
+    + '</div>'
     + '</div>';
-  root.appendChild(card);
+
+  /* modal: backdrop + dialog wrapping the same card — opened via a
+     "Customize" trigger inserted right next to the real Add to Cart
+     button (found by its existing stable [data-pm-pdp-add] selector, so
+     this whole feature stays self-contained in this one snippet — no
+     changes needed to pm-product-detail.liquid). */
+  var backdrop = document.createElement('div');
+  backdrop.className = 'hpw-backdrop';
+  backdrop.setAttribute('role', 'dialog');
+  backdrop.setAttribute('aria-modal', 'true');
+  backdrop.setAttribute('aria-label', 'Configure your system');
+  var modal = document.createElement('div');
+  modal.className = 'hpw-modal';
+  modal.appendChild(card);
+  backdrop.appendChild(modal);
+  root.appendChild(backdrop);
+  var closeBtn = card.querySelector('[data-close]'); /* now inside the header */
+
+  var addBtn = document.querySelector('[data-pm-pdp-add]');
+  var trigger = document.createElement('button');
+  trigger.type = 'button';
+  /* pm-pdp__cta = PM's real button base (sizing/padding/radius/font);
+     hpw-trigger = just the navy color override on top of it */
+  trigger.className = 'pm-pdp__cta hpw-trigger';
+  trigger.innerHTML = gear + 'Customize';
+  if (addBtn && addBtn.parentNode) {
+    /* Customize sits BESIDE Add to Cart, on the left — wrap both in PM's
+       own .pm-pdp__cta-row (Datasheet+Email already uses this exact
+       pattern), inserted at Add to Cart's original spot, Add to Cart
+       moved into it. addBtn already carries .pm-pdp__cta from the Liquid
+       markup, so .pm-pdp__cta-row's child-neutralization rule picks it up
+       automatically — nothing to change on addBtn itself. */
+    var ctaRow = document.createElement('div');
+    ctaRow.className = 'pm-pdp__cta-row hpw-cta-row';
+    addBtn.parentNode.insertBefore(ctaRow, addBtn);
+    ctaRow.appendChild(trigger);
+    ctaRow.appendChild(addBtn);
+  } else {
+    root.parentNode.insertBefore(trigger, root); /* defensive fallback if the cart button ever isn't there yet */
+  }
+
+  var lastFocused = null;
+  /* Open/close is driven PURELY by the is-open class (opacity + visibility +
+     pointer-events all transition together — see CSS). No display/`hidden`
+     toggling: the old setTimeout that flipped `hidden` after the fade raced
+     the transition and left the pips/checkmarks painting a beat AFTER the
+     modal had already gone. The backdrop just stays in the DOM, invisible
+     and non-interactive (visibility:hidden + pointer-events:none) until
+     is-open flips everything on/off in one coordinated transition. */
+  function openModal() {
+    lastFocused = document.activeElement;
+    backdrop.classList.add('is-open');
+    document.body.classList.add('hpw-modal-open');
+    if (closeBtn) closeBtn.focus();
+    document.addEventListener('keydown', onKeydown);
+  }
+  function closeModal() {
+    backdrop.classList.remove('is-open');
+    document.body.classList.remove('hpw-modal-open');
+    document.removeEventListener('keydown', onKeydown);
+    if (lastFocused && lastFocused.focus) lastFocused.focus();
+  }
+  function onKeydown(e) { if (e.key === 'Escape') closeModal(); }
+
+  trigger.addEventListener('click', openModal);
+  closeBtn.addEventListener('click', closeModal);
+  backdrop.addEventListener('click', function (e) { if (e.target === backdrop) closeModal(); });
 
   var pipsEl = card.querySelector('[data-pips]'), nameEl = card.querySelector('[data-stepname]'),
-      bodyEl = card.querySelector('[data-body]'), priceEl = card.querySelector('[data-price]'),
-      pskuEl = card.querySelector('[data-psku]'), ctaEl = card.querySelector('[data-cta]'),
-      cta2El = card.querySelector('[data-cta2]'), backEl = card.querySelector('[data-back]');
-  var addBtn = document.querySelector('[data-pm-pdp-add]');
-  var quoteBtn = document.querySelector('button[aria-label^="Request a quote"], button[aria-label^="Request a Quote"]');
+      bodyEl = card.querySelector('[data-body]'), prevEl = card.querySelector('[data-prev]'),
+      nextEl = card.querySelector('[data-next]'), buildEl = card.querySelector('[data-build]'),
+      addCartEl = card.querySelector('[data-addcart]');
+  var cartIcon = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>';
+  addCartEl.innerHTML = cartIcon + 'Add to Cart';
+
+  /* qty for the review-step Add to Cart. The qty control lives in the BODY
+     (rendered below the build summary on the review step), NOT the footer.
+     The actual add REUSES the PDP's own tested handler: we set the PDP qty
+     input then click the real [data-pm-pdp-add] button (which already
+     carries the resolved variant + data-pm-add-properties this wizard set).
+     No new cart/fetch code — one line item of the configured SKU, qty N. */
+  var qty = 1;
+  function maxQty() {
+    var m = addBtn ? parseInt(addBtn.getAttribute('data-max-qty'), 10) : NaN;
+    return (!isNaN(m) && m > 0) ? m : 999;
+  }
+  function qtyRowHtml() {
+    /* only shown on review, and only when there's a real cart button */
+    if (!addBtn) return '';
+    var max = maxQty();
+    return '<div class="hpw-qtyrow">'
+      + '<span class="hpw-qtyrow-label">Quantity</span>'
+      + '<div class="hpw-qty" data-qty>'
+      + '<button type="button" class="hpw-qty-btn" data-qty-dec aria-label="Decrease quantity"' + (qty <= 1 ? ' disabled' : '') + '>&minus;</button>'
+      + '<span class="hpw-qty-val" data-qty-val aria-live="polite">' + qty + '</span>'
+      + '<button type="button" class="hpw-qty-btn" data-qty-inc aria-label="Increase quantity"' + (qty >= max ? ' disabled' : '') + '>+</button>'
+      + '</div></div>';
+  }
+  function updateQtyUi() {
+    var vEl = bodyEl.querySelector('[data-qty-val]'), dEl = bodyEl.querySelector('[data-qty-dec]'), iEl = bodyEl.querySelector('[data-qty-inc]');
+    if (vEl) vEl.textContent = qty;
+    if (dEl) dEl.disabled = qty <= 1;
+    if (iEl) iEl.disabled = qty >= maxQty();
+  }
+  /* the PDP already has its own always-visible Request a Quote button —
+     the wizard doesn't need a second one duplicating it on the review step */
+
+  /* left-panel live "Your build" summary — every axis + its current pick,
+     dimmed until reached, rust dot on the step you're on, navy once past.
+     Values are always present (the wizard preselects the current variant),
+     so this is a real running config, not placeholders. */
+  function renderBuild() {
+    if (!buildEl) return;
+    var h = '', reviewing = (step === N - 1);
+    AXES.forEach(function (axisName, i) {
+      var state = reviewing || i < step ? 'is-set' : (i === step ? 'is-active is-set' : 'is-pending');
+      h += '<li class="hpw-build-li ' + state + '">'
+        + '<span class="hpw-build-k"><span class="hpw-build-dot" aria-hidden="true"></span>' + esc(axisName) + '</span>'
+        + '<span class="hpw-build-v">' + esc(sel[i] == null ? '—' : sel[i]) + '</span>'
+        + '</li>';
+    });
+    buildEl.innerHTML = h;
+  }
 
   function renderPips() {
     var h = '', i;
     for (i = 0; i < N; i++) {
       if (i > 0) h += '<span class="hpw-pipline" aria-hidden="true"></span>';
       var cls = i < step ? ' is-done' : (i === step ? ' is-now' : '');
-      var lbl = i < OPTS.length ? OPTS[i].name : 'Review';
+      var lbl = i < AXES.length ? AXES[i] : 'Review';
       h += '<button type="button" class="hpw-pip' + cls + '" data-pip="' + i + '" aria-label="Step ' + (i + 1) + ': ' + esc(lbl) + '"' + (i === step ? ' aria-current="step"' : '') + '>'
         + (i < step ? check : (i + 1)) + '</button>';
     }
     pipsEl.innerHTML = h;
   }
 
-  function renderFoot() {
-    var v = currentVariant();
-    priceEl.textContent = v && typeof v.price === 'number' ? money(v.price) : '—';
-    pskuEl.textContent = v && v.sku ? 'SKU ' + v.sku : '';
+  /* Previous/Next on option steps. On the final Review step, Next is
+     REPLACED by a qty stepper + terracotta "Add to Cart" (only when a real
+     PDP cart button exists — i.e. the product is in stock; otherwise nothing
+     to add, leave just Previous). Previous stays throughout so you can go
+     back and change the build. */
+  function renderNav() {
     var last = step === N - 1;
-    if (last) {
-      ctaEl.innerHTML = 'Add build to cart';
-      ctaEl.hidden = !addBtn;
-      cta2El.hidden = !quoteBtn;
-    } else {
-      ctaEl.innerHTML = 'Continue &rarr;';
-      ctaEl.hidden = false;
-      cta2El.hidden = true;
-    }
-    backEl.hidden = step === 0;
+    prevEl.hidden = step === 0;
+    /* on Review, Next is replaced by Add to Cart (same size/treatment, so
+       the primary button never visibly changes). Add to Cart only when a
+       real PDP cart button exists (in stock). */
+    nextEl.hidden = last;
+    addCartEl.hidden = !(last && !!addBtn);
   }
 
   function renderStep() {
     var h = '';
     if (step === N - 1) {
-      nameEl.textContent = 'Step ' + N + ' of ' + N + ' · Review your build';
+      nameEl.innerHTML = '<span class="hpw-step-eyebrow">Step ' + N + ' of ' + N + '</span><span class="hpw-step-title">Review your build</span>';
       h = '<ul class="hpw-rev">';
-      OPTS.forEach(function (o, i) {
-        h += '<li><span class="hpw-li-k">' + esc(o.name) + '</span><b>' + esc(sel[i] == null ? '—' : sel[i]) + '</b></li>';
+      AXES.forEach(function (axisName, i) {
+        h += '<li><span class="hpw-li-k">' + esc(axisName) + '</span><b>' + esc(sel[i] == null ? '—' : sel[i]) + '</b></li>';
       });
       h += '</ul>';
+      h += qtyRowHtml(); /* qty control sits here in the body, below the build */
     } else {
-      var o = OPTS[step];
-      nameEl.textContent = 'Step ' + (step + 1) + ' of ' + N + ' · ' + o.name;
+      var axisName = AXES[step];
+      nameEl.innerHTML = '<span class="hpw-step-eyebrow">Step ' + (step + 1) + ' of ' + N + '</span><span class="hpw-step-title">' + esc(axisName) + '</span>';
       var live = liveValues(step, sel);
-      var cur = currentVariant();
-      var curPrice = cur && typeof cur.price === 'number' ? cur.price : null;
+      var curPrice = null;
+      var curVariant = currentVariant();
+      if (curVariant && typeof curVariant.price === 'number') curPrice = curVariant.price;
       function deltaOf(val) {
         if (curPrice == null || sel[step] === val) return null;
         var p = priceIf(step, val);
@@ -276,37 +585,30 @@
         var diff = p - curPrice;
         return diff === 0 ? null : diff;
       }
-      if (live.length > 4) {
-        /* many values → dropdown (deltas ride along in the option label) */
-        h = '<div class="hpw-selwrap"><select class="hpw-sel" data-selstep aria-label="' + esc(o.name) + '">';
-        live.forEach(function (val) {
-          var diff = deltaOf(val);
-          var sfx = diff == null ? '' : '  (' + (diff > 0 ? '+' : '−') + money(Math.abs(diff)) + ')';
-          h += '<option value="' + esc(val) + '"' + (sel[step] === val ? ' selected' : '') + '>' + esc(val) + esc(sfx) + '</option>';
-        });
-        h += '</select><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg></div>';
-      } else {
-        /* few values → radio cards, two columns when every value is short */
-        var cols = live.every(function (v) { return v.length <= 16; });
-        h = '<div class="hpw-list' + (cols ? ' hpw-cols' : '') + '">';
-        live.forEach(function (val) {
-          var on = sel[step] === val;
-          var diff = deltaOf(val), d = '';
-          if (diff != null) d = '<span class="hpw-d' + (diff > 0 ? ' is-up' : '') + '">' + (diff > 0 ? '+' : '&minus;') + money(Math.abs(diff)) + '</span>';
-          h += '<button type="button" class="hpw-opt' + (on ? ' is-on' : '') + '" data-val="' + esc(val) + '" aria-pressed="' + (on ? 'true' : 'false') + '">'
-            + '<span class="hpw-radio" aria-hidden="true"></span>'
-            + '<span class="hpw-opt-txt"><span class="hpw-opt-label">' + esc(val) + '</span>' + d + '</span>'
-            + '</button>';
-        });
-        h += '</div>';
-      }
+      /* ALWAYS selectable cards now — no dropdowns (Anuj: they're boring /
+         less obvious). Max real value-count per axis is ~6, so a scrollable
+         card list is fine. Two columns only when every value is short
+         (Memory-style "1 x 16 GB"); long spec strings get full-width rows. */
+      h = '<div class="hpw-step-hint">Select your ' + esc(axisName) + '</div>';
+      var cols = live.every(function (v) { return v.length <= 16; });
+      h += '<div class="hpw-list' + (cols ? ' hpw-cols' : '') + '">';
+      live.forEach(function (val) {
+        var on = sel[step] === val;
+        var diff = deltaOf(val), d = '';
+        if (diff != null) d = '<span class="hpw-d' + (diff > 0 ? ' is-up' : '') + '">' + (diff > 0 ? '+' : '&minus;') + money(Math.abs(diff)) + '</span>';
+        h += '<button type="button" class="hpw-opt' + (on ? ' is-on' : '') + '" data-val="' + esc(val) + '" aria-pressed="' + (on ? 'true' : 'false') + '">'
+          + '<span class="hpw-radio" aria-hidden="true"></span>'
+          + '<span class="hpw-opt-txt"><span class="hpw-opt-label">' + esc(val) + '</span>' + d + '</span>'
+          + '</button>';
+      });
+      h += '</div>';
     }
     bodyEl.innerHTML = h;
     bodyEl.scrollTop = 0;
-    renderFoot();
+    renderNav();
   }
 
-  function paint() { renderPips(); renderStep(); }
+  function paint() { renderPips(); renderStep(); renderBuild(); }
   paint();
   syncSelects(); /* align page with the preselected combo */
 
@@ -315,34 +617,36 @@
     if (pip) { step = parseInt(pip.getAttribute('data-pip'), 10) || 0; paint(); return; }
 
     var opt = e.target.closest('[data-val]');
-    if (opt && step < OPTS.length) {
+    if (opt && step < AXES.length) {
       sel[step] = opt.getAttribute('data-val');
       repairFrom(step, sel);
       syncSelects();
-      /* deltas are relative to the new pick — re-render the step (lists are
-         short here; the grid rarely scrolls) */
-      renderStep();
+      renderStep();   /* refresh the highlighted pick in the right panel */
+      renderBuild();  /* and the running summary in the left panel */
       return;
     }
 
-    if (e.target.closest('[data-back]')) { if (step > 0) { step--; paint(); } return; }
+    if (e.target.closest('[data-prev]')) { if (step > 0) { step--; paint(); } return; }
 
-    if (e.target.closest('[data-cta]')) {
-      if (step < N - 1) { step++; paint(); }
-      else if (addBtn) { addBtn.click(); }
+    if (e.target.closest('[data-next]')) { if (step < N - 1) { step++; paint(); } return; }
+
+    if (e.target.closest('[data-qty-dec]')) { if (qty > 1) { qty--; updateQtyUi(); } return; }
+    if (e.target.closest('[data-qty-inc]')) { if (qty < maxQty()) { qty++; updateQtyUi(); } return; }
+
+    if (e.target.closest('[data-addcart]')) {
+      if (!addBtn) return;
+      /* make sure the hidden native select really is on the resolved SKU
+         (it is, from syncSelects on each pick — belt-and-suspenders), push
+         the chosen qty into the PDP's own qty input, then trigger the REAL
+         Add to Cart button. It reads #pm-pdp-qty + data-pm-add-properties
+         (set by syncSelects) and does the tested /cart/add.js flow. */
+      syncSelects();
+      var pdpQty = document.getElementById('pm-pdp-qty');
+      if (pdpQty) { pdpQty.value = qty; try { pdpQty.dispatchEvent(new Event('change', { bubbles: true })); } catch (e2) {} }
+      addBtn.click();
+      closeModal(); /* let the cart drawer (opened on pm:cart-changed) take over */
       return;
     }
-    if (e.target.closest('[data-cta2]')) { if (quoteBtn) quoteBtn.click(); return; }
-  });
-
-  /* dropdown steps (5+ values) pick via change */
-  root.addEventListener('change', function (e) {
-    var s = e.target.closest('.hpw-sel[data-selstep]');
-    if (!s || step >= OPTS.length) return;
-    sel[step] = s.value;
-    repairFrom(step, sel);
-    syncSelects();
-    renderStep(); /* refresh deltas + footer for the new baseline */
   });
   }
 })();

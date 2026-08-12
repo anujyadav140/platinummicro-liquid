@@ -1556,11 +1556,22 @@
       var orig = label ? label.textContent : '';
       if (label) label.textContent = 'Adding…';
 
+      // Not every qty>1 add is a bundle: e.g. the HP configurator wizard
+      // sets data-pm-add-properties (its picked Processor/Memory/Storage/
+      // Graphics) then clicks this SAME button at whatever qty the shopper
+      // chose. Without this fallback, this handler's stopImmediatePropagation
+      // above silently swallows the click before pm-add-to-cart.js's own
+      // (properties-aware) handler ever sees it, and the build gets lost.
+      var wizProps = null;
+      if (!pick) {
+        var wizPropsRaw = addBtn.getAttribute('data-pm-add-properties');
+        if (wizPropsRaw) { try { wizProps = JSON.parse(wizPropsRaw); } catch (e3) {} }
+      }
       var items = [
         {
           id: parseInt(addBtn.getAttribute('data-variant-id'), 10),
           quantity: n,
-          properties: pick ? { '_bundle': 'base', '_bundle_addon_sku': pick.sku } : undefined
+          properties: pick ? { '_bundle': 'base', '_bundle_addon_sku': pick.sku } : (wizProps || undefined)
         }
       ];
       if (pick) {
