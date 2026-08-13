@@ -921,6 +921,35 @@
   transition: color var(--pm-dur-fast);
 }
 .pm-pdp__specs-toggle:hover { color: var(--pm-navy-deep); }
+
+/* HP grouped spec sheet — reuses .pm-pdp__specs/.pm-pdp__spec-row exactly
+   (same bordered zebra table), just labeled and stacked per section instead
+   of one flat truncated list. No toggle: the grouping already makes a long
+   sheet scannable. */
+.pm-pdp__specsheet { margin-top: 20px; }
+.pm-pdp__specsheet-group { margin-top: 22px; }
+.pm-pdp__specsheet-group:first-child { margin-top: 0; }
+.pm-pdp__specsheet-group-h {
+  margin: 0 0 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--pm-tan);
+}
+.pm-pdp__specsheet .pm-pdp__specs { margin-top: 0; }
+
+/* "Show N more sections" — collapsed by default, pure CSS (no JS): the
+   checkbox is a DOM-earlier sibling of the extra groups AND the label
+   (hidden, so it takes no layout space — visual order stays groups-then-
+   toggle even though the input is first in the markup). */
+.pm-pdp__specsheet-group.is-extra { display: none; }
+.pm-pdp__specsheet-toggle-input:checked ~ .pm-pdp__specsheet-group.is-extra { display: block; }
+.pm-pdp__specsheet-toggle-label { margin-top: 14px; }
+.pm-pdp__specsheet-toggle-label .pm-pdp__specsheet-toggle-less { display: none; }
+.pm-pdp__specsheet-toggle-input:checked ~ .pm-pdp__specsheet-toggle-label .pm-pdp__specsheet-toggle-more { display: none; }
+.pm-pdp__specsheet-toggle-input:checked ~ .pm-pdp__specsheet-toggle-label .pm-pdp__specsheet-toggle-less { display: inline; }
+.pm-pdp__specsheet-toggle-input:checked ~ .pm-pdp__specsheet-toggle-label svg { transform: rotate(180deg); }
 .pm-pdp__specs-toggle svg { transition: transform 0.16s var(--pm-ease-standard); }
 /* A11y: raise the specs toggle to a >=44px tap target on touch devices. */
 @media (pointer: coarse) {

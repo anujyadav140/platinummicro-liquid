@@ -113,6 +113,20 @@
   {%- endif -%}
 {%- endfor -%}
 
+{%- comment -%}
+  ── HP grouped spec sheet (hp_hermes.spec_sheet) ──
+  HP SLED products (the configurator-driven imports) carry a curated,
+  HP.com-style GROUPED sheet — [{group, rows:[{label,value}]}] — built by
+  hp-hermes's curate-specs script, with the picker-owned sections
+  (Processor/Memory & Storage/Graphics) already stripped so it never
+  contradicts the wizard's live selection (see HANDOFF-CONFIGURATOR.md §4b).
+  When present, this REPLACES the generic flat pm-pdp-specs-build table for
+  just this product — every other product's specs are completely untouched.
+{%- endcomment -%}
+{%- assign _hp_spec_sheet = product.metafields.hp_hermes.spec_sheet.value -%}
+{%- assign _has_hp_specsheet = false -%}
+{%- if _hp_spec_sheet and _hp_spec_sheet.size > 0 -%}{%- assign _has_hp_specsheet = true -%}{%- endif -%}
+
 <main class="pm-pdp">
   {%- comment -%}
     ── PDF datasheet payload ──
@@ -409,7 +423,7 @@
             the markup entirely is safe.
           {%- endcomment -%}
           {%- if _instock -%}
-          <div class="pm-pdp__glance" data-pm-pdp-glance{% if _features.size == 0 and _spec_count == 0 %} hidden{% endif %}>
+          <div class="pm-pdp__glance" data-pm-pdp-glance{% if _features.size == 0 and _spec_count == 0 and _has_hp_specsheet == false %} hidden{% endif %}>
             <div class="pm-pdp__glance-eyebrow" data-pm-pdp-glance-eyebrow>
               {%- if _features.size > 0 -%}Key features{%- else -%}At a glance{%- endif -%}
             </div>
@@ -423,6 +437,21 @@
                       <span>{{ _ft | escape }}</span>
                     </li>
                   {%- endif -%}
+                {%- endfor -%}
+              {%- elsif _has_hp_specsheet -%}
+                {%- assign _shown = 0 -%}
+                {%- for _section in _hp_spec_sheet -%}
+                  {%- if _shown >= 4 -%}{%- break -%}{%- endif -%}
+                  {%- for _row in _section.rows -%}
+                    {%- if _shown >= 4 -%}{%- break -%}{%- endif -%}
+                    {%- if _row.label != blank and _row.value != blank -%}
+                      <li>
+                        <span class="pm-pdp__glance-dot" aria-hidden="true"></span>
+                        <span><strong>{{ _row.label }}:</strong> {{ _row.value }}</span>
+                      </li>
+                      {%- assign _shown = _shown | plus: 1 -%}
+                    {%- endif -%}
+                  {%- endfor -%}
                 {%- endfor -%}
               {%- else -%}
                 {%- assign _shown = 0 -%}
@@ -882,11 +911,64 @@
 
         {%- comment -%}
           ── Specifications (narrower, right) ──
-          Server-side render uses metafields when available. When they
-          aren't (Hydrogen ships specs in a separate sidecar JSON, not
-          metafields), JS hydrates this section from the bundled
-          pm-product-specs.json asset using `data-pm-pdp-handle`.
+          HP grouped sheet takes priority (server-rendered, static, no JS —
+          see _has_hp_specsheet above). Otherwise: server-side render uses
+          metafields when available; when they aren't (Hydrogen ships specs
+          in a separate sidecar JSON, not metafields), JS hydrates this
+          section from the bundled pm-product-specs.json asset using
+          `data-pm-pdp-handle`. The two paths never both render.
         {%- endcomment -%}
+        {%- if _has_hp_specsheet -%}
+        <div class="pm-pdp__specs-col">
+          <div class="pm-pdp__specs-head">
+            <h2 class="pm-pdp__h2">Specifications</h2>
+          </div>
+          {%- comment -%}
+            Truncate by GROUP, not row — cutting a group off mid-list would
+            show a header with only some of its specs, which reads as
+            broken. First 3 groups visible, rest behind a "Show N more"
+            toggle. Pure CSS checkbox-hack (no JS): the input must be a
+            DOM-earlier sibling of both the extra groups and the label for
+            `~` to reach them, but `hidden` removes it from layout so the
+            visual order (groups, then the toggle) is unaffected.
+          {%- endcomment -%}
+          {%- assign _sheet_group_count = 0 -%}
+          {%- for _section in _hp_spec_sheet -%}{%- if _section.rows.size > 0 -%}{%- assign _sheet_group_count = _sheet_group_count | plus: 1 -%}{%- endif -%}{%- endfor -%}
+          {%- assign _sheet_visible_groups = 3 -%}
+          <div class="pm-pdp__specsheet">
+            {%- if _sheet_group_count > _sheet_visible_groups -%}
+              <input type="checkbox" id="pm-specsheet-toggle-{{ product.id }}" class="pm-pdp__specsheet-toggle-input" hidden>
+            {%- endif -%}
+            {%- assign _gi = 0 -%}
+            {%- for _section in _hp_spec_sheet -%}
+              {%- if _section.rows.size > 0 -%}
+                {%- assign _gi = _gi | plus: 1 -%}
+                <div class="pm-pdp__specsheet-group{% if _gi > _sheet_visible_groups %} is-extra{% endif %}">
+                  <h3 class="pm-pdp__specsheet-group-h">{{ _section.group }}</h3>
+                  <div class="pm-pdp__specs">
+                    {%- for _row in _section.rows -%}
+                      {%- if _row.label != blank and _row.value != blank -%}
+                        <div class="pm-pdp__spec-row">
+                          <dt class="pm-pdp__spec-key">{{ _row.label }}</dt>
+                          <dd class="pm-pdp__spec-val">{{ _row.value }}</dd>
+                        </div>
+                      {%- endif -%}
+                    {%- endfor -%}
+                  </div>
+                </div>
+              {%- endif -%}
+            {%- endfor -%}
+            {%- if _sheet_group_count > _sheet_visible_groups -%}
+              {%- assign _sheet_extra_groups = _sheet_group_count | minus: _sheet_visible_groups -%}
+              <label for="pm-specsheet-toggle-{{ product.id }}" class="pm-pdp__specs-toggle pm-pdp__specsheet-toggle-label">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25"><polyline points="6 9 12 15 18 9"/></svg>
+                <span class="pm-pdp__specsheet-toggle-more">Show {{ _sheet_extra_groups }} more section{% if _sheet_extra_groups != 1 %}s{% endif %}</span>
+                <span class="pm-pdp__specsheet-toggle-less">Show fewer specs</span>
+              </label>
+            {%- endif -%}
+          </div>
+        </div>
+        {%- else -%}
         <div
           class="pm-pdp__specs-col"
           data-pm-pdp-handle="{{ product.handle }}"
@@ -955,6 +1037,7 @@
             within one business day.
           </p>
         </div>
+        {%- endif -%}
       </div>
     </div>
   </section>
