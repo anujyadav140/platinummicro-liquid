@@ -1,5 +1,34 @@
 {%- comment -%}
-  PM — HP hardware configurator wizard (metafield-driven). v3.4.
+  PM — HP hardware configurator wizard (metafield-driven). v3.5.
+
+  v3.5 (Anuj: "can this page have the total price of the config ...it is
+  only fair"): Review step gained a Total row (unit price × qty, below the
+  qty stepper, live on every option pick and every qty +/-). Also fixed a
+  latent bug this surfaced: most HP SKUs aren't priced yet, so an unpriced
+  variant's real Shopify price is `0`, not absent — code that only checked
+  `typeof price === 'number'` treated that 0 as usable, so the per-option
+  price deltas on steps 1-N could show a delta that was really just the
+  OTHER option's full price, and the Review step's "Configured total" cart
+  property could read $0.00. New `realPrice()` helper (usable = number AND
+  > 0) is now the one gate every price read in this file goes through;
+  unpriced configs show "Pricing by quote" (same language as the real PDP's
+  own quote-only price block) instead of a number. (Anuj follow-up: "Total"
+  first shipped as a small uppercase eyebrow — matched it to "Quantity"'s
+  style instead, same 14px/700/navy `.hpw-qtyrow-label` treatment, so the
+  two stacked rows read as one consistent pair. Also: the "$unit × N"
+  caption was barely visible — was `--hpw-faint` (#98a2b3, meant for
+  all-caps micro-labels like the Review list's key column, not body text on
+  white), now `--hpw-mut` (#667085, same tone as the step hint line). Anuj,
+  once more: "just get rid of all the greys, replace it with orange of STEP
+  6 OF 6" — every grey LABEL text (`--hpw-mut`/`--hpw-faint`) is now
+  `--hpw-rust`, matching the step eyebrow: "Your build" header + its axis
+  key labels, "Select your X" hint, Review list's key column, the total
+  row's × N caption. Deliberately NOT touched: the price-delta text
+  (`.hpw-d`) — its default/mut vs `.is-up`/rust pair is how the wizard
+  already signals "this option costs less" vs "costs more"; making both
+  rust would erase that distinction, which reads as a different ask than
+  "the greys are ugly." Also left borders/hover states/pip default color
+  alone (structural, not label text) — flag if those should go too.
 
   v3.4 (Anuj): two close-bugs. (1) On close the pips/checkmarks used to
   vanish a beat AFTER the modal — the old close flipped the `hidden`
@@ -149,12 +178,12 @@
   /* live "Your build" summary — fills the left panel, updates as you pick,
      mirrors the reference's running configuration block */
   .hpw-build{margin-top:20px;padding-top:18px;border-top:1px solid var(--hpw-line2)}
-  .hpw-build-h{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--hpw-mut);margin-bottom:10px}
+  .hpw-build-h{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--hpw-rust);margin-bottom:10px}
   .hpw-build-list{list-style:none;margin:0;padding:0}
   .hpw-build-li{padding:8px 0;border-bottom:1px dashed var(--hpw-line);transition:opacity .14s}
   .hpw-build-li:last-child{border-bottom:0}
   .hpw-build-li.is-pending{opacity:.45}
-  .hpw-build-k{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--hpw-faint)}
+  .hpw-build-k{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--hpw-rust)}
   .hpw-build-k .hpw-build-dot{width:6px;height:6px;border-radius:50%;background:var(--hpw-line);flex:none}
   .hpw-build-li.is-set .hpw-build-dot{background:var(--hpw-navy)}
   .hpw-build-li.is-active .hpw-build-dot{background:var(--hpw-rust);box-shadow:0 0 0 3px var(--hpw-pale)}
@@ -183,7 +212,7 @@
   .hpw-stepname{margin-top:18px}
   .hpw-step-eyebrow{display:block;font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--hpw-rust)}
   .hpw-step-title{display:block;font-size:24px;font-weight:800;color:var(--hpw-navy);margin-top:4px;line-height:1.15}
-  .hpw-step-hint{margin:16px 0 12px;font-size:12.5px;font-weight:600;color:var(--hpw-mut)}
+  .hpw-step-hint{margin:16px 0 12px;font-size:12.5px;font-weight:600;color:var(--hpw-rust)}
   .hpw-body{flex:1;min-height:0;padding:6px 24px 8px;overflow-y:auto;overscroll-behavior:contain}
   .hpw-list{display:grid;grid-template-columns:1fr;gap:10px;margin:0 0 8px}
   .hpw-list.hpw-cols{grid-template-columns:1fr 1fr}
@@ -200,7 +229,7 @@
   .hpw-rev{list-style:none;margin:0 0 6px;padding:0}
   .hpw-rev li{display:flex;align-items:baseline;gap:10px;padding:12px 2px;font-size:14px;border-bottom:1px dashed var(--hpw-line2)}
   .hpw-rev li:last-child{border-bottom:0}
-  .hpw-rev .hpw-li-k{flex:0 0 116px;color:var(--hpw-faint);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
+  .hpw-rev .hpw-li-k{flex:0 0 116px;color:var(--hpw-rust);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
   .hpw-rev b{font-weight:650;color:var(--hpw-ink);line-height:1.35}
   /* Quantity row — lives in the BODY on the Review step, below the build
      summary (not crammed into the footer), so the footer's primary button
@@ -212,6 +241,15 @@
   .hpw-qty-btn:hover{background:var(--hpw-paper)}
   .hpw-qty-btn:disabled{opacity:.35;cursor:not-allowed}
   .hpw-qty-val{min-width:44px;text-align:center;font-size:16px;font-weight:700;color:var(--hpw-ink);font-variant-numeric:tabular-nums}
+  /* Total row — same card treatment as Quantity above it, but white (not
+     paper) so it reads as the summary/result rather than another input,
+     and an eyebrow label so the number does the talking. */
+  .hpw-totalrow{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:10px 0 4px;padding:16px;border:1.5px solid var(--hpw-line);border-radius:12px;background:#fff}
+  .hpw-totalrow-label{display:flex;flex-direction:column;gap:3px;font-size:14px;font-weight:700;color:var(--hpw-navy)}
+  .hpw-totalrow-sub{font-size:11px;font-weight:600;letter-spacing:0;text-transform:none;color:var(--hpw-rust)}
+  .hpw-totalrow-val{font-size:22px;font-weight:800;color:var(--hpw-ink);letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+  .hpw-totalrow--quote{background:var(--hpw-pale);border-color:transparent}
+  .hpw-totalrow--quote .hpw-totalrow-quote{font-size:13.5px;font-weight:700;color:var(--hpw-rust)}
   .hpw-foot{flex:none;padding:16px 24px 20px;border-top:1px solid var(--hpw-line2);background:var(--hpw-paper)}
   .hpw-navrow{display:flex;align-items:center;gap:10px}
   .hpw-navbtn{border-radius:10px;padding:14px 22px;font-size:14px;font-weight:700;cursor:pointer;white-space:nowrap;transition:filter .12s,border-color .12s,opacity .12s}
@@ -285,6 +323,15 @@
     try { return new Intl.NumberFormat(undefined, { style: 'currency', currency: (window.Shopify && Shopify.currency && Shopify.currency.active) || 'USD' }).format(cents / 100); }
     catch (e) { return '$' + (cents / 100).toFixed(2); }
   }
+  /* Most HP SKUs aren't priced yet (real Variant Price lands per-SKU over
+     time — see hp-hermes/TD SYNNEX pipeline), so an unpriced variant's
+     Shopify price is a real `0`, not absent. Treating that 0 as a usable
+     number (typeof 0 === 'number') is how a stale version of this file
+     used to compute deltas/totals against it — producing a delta that's
+     really just the OTHER option's full price, or a "Configured total" of
+     literally $0.00. realPrice() is the one place "is this price usable"
+     is decided; every price read in this file goes through it. */
+  function realPrice(v) { return (v && typeof v.price === 'number' && v.price > 0) ? v.price : null; }
 
   function configForSku(sku) {
     for (var i = 0; i < CONFIGS.length; i++) { if (CONFIGS[i].sku === sku) return CONFIGS[i]; }
@@ -339,17 +386,32 @@
     repairFrom(stepIdx, trial);
     var c = configFor(trial);
     var v = c ? variantForSku(c.sku) : null;
-    return v && typeof v.price === 'number' ? v.price : null;
+    return realPrice(v);
   }
   /* push the resolved SKU into the ONE hidden native select → PDP sync JS
-     does the rest (price/image/availability/cart-button all update) */
+     does the rest (price/image/availability/cart-button all update).
+     FIX (Anuj: "are all the data accurate... can u integrate add to cart"):
+     Option1 Value is NOT always the bare SKU — the v2 G9 import generates a
+     full attribute-summary string (only suffixed "— SKU" when needed to
+     dedupe), so assigning the bare SKU to a <select> whose real <option
+     value> is that longer string matches nothing: selectedIndex silently
+     becomes -1, the change listener's variant lookup fails, and the real
+     Add to Cart button keeps whatever variant was set at page load —
+     wrong item added, no error anywhere. Resolve the REAL option1 string
+     from the same #pm-pdp-variants data this file already trusts, and set
+     THAT — correct regardless of whether a product's Option1 happens to be
+     a bare SKU or not. */
   function syncSelects() {
     var c = currentConfig();
     var s = document.querySelector('[data-pm-pdp-option="0"]');
-    if (s && c && s.value !== c.sku) {
-      s.value = c.sku;
-      var ev; try { ev = new Event('change', { bubbles: true }); } catch (e) { ev = document.createEvent('Event'); ev.initEvent('change', true, true); }
-      s.dispatchEvent(ev);
+    if (s && c) {
+      var _v = variantForSku(c.sku);
+      var optVal = (_v && typeof _v.option1 === 'string') ? _v.option1 : c.sku;
+      if (s.value !== optVal) {
+        s.value = optVal;
+        var ev; try { ev = new Event('change', { bubbles: true }); } catch (e) { ev = document.createEvent('Event'); ev.initEvent('change', true, true); }
+        s.dispatchEvent(ev);
+      }
     }
     /* Add to Cart should remember the build: stash the picked axes as cart
        line-item properties (pm-add-to-cart.js reads data-pm-add-properties).
@@ -361,7 +423,8 @@
         var props = {};
         AXES.forEach(function (axisName, i) { if (sel[i] != null) props[axisName] = sel[i]; });
         var v = variantForSku(c.sku);
-        if (v && typeof v.price === 'number') props['Configured total'] = money(v.price);
+        var vp = realPrice(v);
+        if (vp != null) props['Configured total'] = money(vp);
         addBtn.setAttribute('data-pm-add-properties', JSON.stringify(props));
       } else {
         addBtn.removeAttribute('data-pm-add-properties');
@@ -513,6 +576,32 @@
     if (vEl) vEl.textContent = qty;
     if (dEl) dEl.disabled = qty <= 1;
     if (iEl) iEl.disabled = qty >= maxQty();
+    /* total depends on qty (and its "$unit × N" caption only appears once
+       qty > 1) — simplest correct fix is re-rendering the whole row rather
+       than patching two separate spans in sync. */
+    var trEl = bodyEl.querySelector('[data-totalrow]');
+    if (trEl) trEl.outerHTML = totalRowHtml();
+  }
+  /* Total for the build actually about to be added to cart — unit price
+     (of the currently resolved SKU) × qty, live-updated on every option
+     pick and every qty +/-. Anuj: showing the axis list with no price
+     anywhere on Review wasn't fair to whoever's about to click Add to
+     Cart. Falls back to quote language (matching the real PDP's own
+     "Pricing by quote" block, pm-product-detail.liquid) instead of a
+     misleading $0.00 when this exact config has no TD SYNNEX price yet. */
+  function totalRowHtml() {
+    if (!addBtn) return '';
+    var unit = realPrice(currentVariant());
+    if (unit == null) {
+      return '<div class="hpw-totalrow hpw-totalrow--quote" data-totalrow>'
+        + '<span class="hpw-totalrow-label">Total</span>'
+        + '<span class="hpw-totalrow-quote">Pricing by quote</span>'
+        + '</div>';
+    }
+    return '<div class="hpw-totalrow" data-totalrow>'
+      + '<span class="hpw-totalrow-label">Total' + (qty > 1 ? '<span class="hpw-totalrow-sub">' + money(unit) + ' &times; ' + qty + '</span>' : '') + '</span>'
+      + '<span class="hpw-totalrow-val">' + money(unit * qty) + '</span>'
+      + '</div>';
   }
   /* the PDP already has its own always-visible Request a Quote button —
      the wizard doesn't need a second one duplicating it on the review step */
@@ -571,13 +660,12 @@
       });
       h += '</ul>';
       h += qtyRowHtml(); /* qty control sits here in the body, below the build */
+      h += totalRowHtml(); /* and the total for that qty, right below it */
     } else {
       var axisName = AXES[step];
       nameEl.innerHTML = '<span class="hpw-step-eyebrow">Step ' + (step + 1) + ' of ' + N + '</span><span class="hpw-step-title">' + esc(axisName) + '</span>';
       var live = liveValues(step, sel);
-      var curPrice = null;
-      var curVariant = currentVariant();
-      if (curVariant && typeof curVariant.price === 'number') curPrice = curVariant.price;
+      var curPrice = realPrice(currentVariant());
       function deltaOf(val) {
         if (curPrice == null || sel[step] === val) return null;
         var p = priceIf(step, val);

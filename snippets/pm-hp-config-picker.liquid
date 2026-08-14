@@ -1,0 +1,386 @@
+{%- comment -%}
+  PM — HP config picker (tag-gated alternative to pm-hp-wizard.liquid). v1.2.
+
+  v1.2 (Anuj: "why cant u just add them to the cart? instead of
+  autoscrolling up and then asking user to click add to cart... less
+  clicks and less time wasted. also like the customize button
+  implementation, show the details of the build as a dropdown too"):
+  v1.1's scroll-to-and-pulse-the-real-button was a half-measure — replaced
+  with a genuine one-click add. Picking a card/row now: syncs the hidden
+  select (unchanged), stamps `data-pm-add-properties` with the SAME shape
+  the wizard already uses (every axis + "Configured total"), then clicks
+  the real [data-pm-pdp-add] button itself — same proven /cart/add.js path
+  the wizard's own Review-step Add to Cart already runs on, so the cart
+  drawer's existing "Configured build" accordion (pm-cart-drawer.js) shows
+  the same per-axis breakdown for picker-added lines as it already does
+  for wizard-added ones — no cart-side changes needed, just feeding it the
+  same properties shape. Card/row CTA now reads "Add to Cart →", flips to
+  "In your cart ✓" for whichever config was actually just added (tracked
+  separately from "is this the current page variant" — those can diverge
+  right after page load, before anything's been added yet). Repeat-clicking
+  the same card adds another unit on purpose — Add to Cart is additive, the
+  cart drawer opening on every add is the confirmation/undo surface.
+  Dropped the scroll+pulse entirely — there's no second button to point at
+  anymore. (Anuj follow-up: "dont use green, make the add to cart buttons
+  platinum micro orange" — CTA is rust by default now (matches the real
+  Add to Cart button), navy once added, same done/current colors the
+  wizard's step pips already use. No green left on the CTA.)
+
+  Anuj: "make sure in the Product we can create a tag which basically can
+  switch the ui/ux from having a customize button to this config picker
+  cards / tabs". Caller (pm-product-detail.liquid) sets _hp_config_picker
+  true only when a product already qualifies for the wizard (HP + tag B2G +
+  real options) AND is additionally tagged "Config Picker" — remove that
+  tag to fall straight back to the Customize-button wizard, no code change
+  either way. Renders full-width below the whole buy area (not squeezed
+  into the buy-box column) per HANDOFF-CONFIG-PICKER-UI.md.
+
+  Why this exists instead of extending the wizard: every axis-configurator
+  product resolves to real, individually-priced HP SKUs with no per-
+  component price-delta data (no "+$50 for more RAM" — see
+  feedback_no_price_estimation, Anuj: "leave gaps unpriced"), so a running
+  total per component pick isn't possible. Instead this lets the shopper
+  pick a whole real, already-priced machine directly: 3 featured cards
+  (Value = cheapest, Most popular = best-stocked, Pro = priciest) plus a
+  "Show N more" list of the rest — never a config without a confirmed real
+  Shopify variant price (same realPrice() > 0 gate as the wizard).
+
+  Data: reads the SAME product.metafields.hp_hermes.configurator JSON the
+  wizard reads (own copy of the script-tag payload here, since the wizard
+  snippet isn't rendered on this code path) plus the shared #pm-pdp-variants
+  island for real price/id. Stock badge (In stock / Made to order) needs a
+  real distributor qty, which variant.inventory_quantity does NOT carry —
+  it's a flat placeholder (100) on every dropship SKU — so `configs[].qty`
+  was baked into the metafield once via scratchpad/bake-qty-into-
+  configurator.cjs, sourced from the same TD SYNNEX pull already used to
+  price these variants. Purely additive key; the wizard ignores it.
+
+  Picking a card/row does NOT reimplement price/cart math — it pushes the
+  resolved SKU into the same hidden native <select data-pm-pdp-option="0">
+  the wizard drives and dispatches `change` (so the PDP's existing variant-
+  switch JS does all price/image/availability/cart-button sync, untouched),
+  then clicks the real [data-pm-pdp-add] button itself — same /cart/add.js
+  path, same qty stepper, same everything. ES5 only, matching the wizard.
+
+  Caller gates rendering. Scoped pm-cfgpick- styles + [data-pm-cfgpicker]
+  custom properties (own aliases, since the wizard's --hpw-* vars are
+  scoped to its own root div, which doesn't render on this path).
+  Param: product (required)
+{%- endcomment -%}
+
+{%- assign _cfgp_wv = product.selected_or_first_available_variant | default: product.variants.first -%}
+
+<section class="pm-pdp__longblock" data-pm-cfgpicker hidden data-current-sku="{{ _cfgp_wv.sku | escape }}">
+  <div class="pm-container pm-pdp__longblock-inner">
+    <h2 class="pm-pdp__h2">Choose a configuration</h2>
+    <p class="pm-cfgpick-hint" data-cfgpick-hint>Click a build below to add it straight to your cart.</p>
+    <div class="pm-cfgpick-cards" data-cfgpick-cards></div>
+    <details class="pm-cfgpick-more" data-cfgpick-more hidden>
+      <summary class="pm-cfgpick-more-summary">
+        <span data-cfgpick-more-label>Show more configurations</span>
+        <svg class="pm-cfgpick-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+      </summary>
+      <div class="pm-cfgpick-rows" data-cfgpick-rows></div>
+    </details>
+  </div>
+  {%- if product.metafields.hp_hermes.configurator -%}
+    <script type="application/json" data-pm-cfgpicker-config>{{ product.metafields.hp_hermes.configurator.value | json }}</script>
+  {%- endif -%}
+</section>
+
+<style>
+[data-pm-cfgpicker]{
+  --cfgp-navy:var(--pm-navy-deep,#0D2340);
+  --cfgp-rust:var(--pm-terracotta,#A63D2F);
+  --cfgp-pale:var(--pm-terracotta-pale,#F7EBE9);
+  --cfgp-line:var(--pm-ink-200,#E4E7EC);
+  --cfgp-ink:var(--pm-ink-800,#1D2939);
+  --cfgp-mut:var(--pm-ink-500,#667085);
+  --cfgp-paper:var(--pm-paper,#FBFAF7);
+  --cfgp-ok:var(--pm-success,#2F7D5B);
+  --cfgp-ok-bg:var(--pm-success-bg,#E8F3EC);
+  --cfgp-warn:var(--pm-warning,#B5781F);
+  --cfgp-warn-bg:var(--pm-warning-bg,#FAF1DF);
+}
+[data-pm-cfgpicker][hidden]{display:none}
+[data-pm-cfgpicker] *{box-sizing:border-box}
+[data-pm-cfgpicker] button{font-family:inherit}
+
+.pm-cfgpick-hint{margin:6px 0 0;font-size:13px;font-weight:600;color:var(--cfgp-mut)}
+.pm-cfgpick-hint strong{color:var(--cfgp-navy);font-weight:800}
+
+.pm-cfgpick-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-top:16px}
+.pm-cfgpick-card{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;padding:20px;background:#fff;border:1.5px solid var(--cfgp-line);border-radius:14px;cursor:pointer;transition:border-color .12s,background .12s,box-shadow .12s}
+.pm-cfgpick-card:hover{border-color:var(--cfgp-rust)}
+.pm-cfgpick-card.is-active{border-color:var(--cfgp-rust);background:var(--cfgp-pale);box-shadow:0 0 0 1px var(--cfgp-rust)}
+.pm-cfgpick-tier{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--cfgp-rust)}
+.pm-cfgpick-price{font-size:22px;font-weight:800;color:var(--cfgp-navy);letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.pm-cfgpick-spec{font-size:13px;font-weight:600;color:var(--cfgp-mut);line-height:1.4}
+.pm-cfgpick-badge{display:inline-flex;align-items:center;margin-top:2px;padding:3px 10px;border-radius:99px;font-size:11.5px;font-weight:700}
+.pm-cfgpick-badge--in{color:var(--cfgp-ok);background:var(--cfgp-ok-bg)}
+.pm-cfgpick-badge--made{color:var(--cfgp-warn);background:var(--cfgp-warn-bg)}
+/* explicit "this is the action" affordance — cards used to read as passive
+   info tiles with no visible next-step; this makes picking feel like
+   pressing a real Add to Cart button. Anuj: "dont use green, make the add
+   to cart buttons platinum micro orange" — rust (the same token the real
+   Add to Cart button up top uses) for the actionable state, navy for
+   "done" once added, same done/current pairing the wizard's own step pips
+   already use — no green anywhere. is-added is its OWN state (not tied to
+   is-active) — right after page load the default card IS is-active but
+   nothing's been added yet, so the two must be able to disagree. */
+.pm-cfgpick-pick-cta{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-top:8px;padding:10px 14px;border-radius:9px;background:var(--cfgp-rust);color:#fff;font-size:12.5px;font-weight:700;transition:background .12s,filter .12s}
+.pm-cfgpick-card:hover .pm-cfgpick-pick-cta{filter:brightness(.93)}
+.pm-cfgpick-pick-cta.is-added{background:var(--cfgp-navy)}
+.pm-cfgpick-pick-cta svg{transition:transform .15s ease;flex:none}
+.pm-cfgpick-card:hover .pm-cfgpick-pick-cta svg{transform:translateX(3px)}
+.pm-cfgpick-row-cta{flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--cfgp-rust);color:#fff;transition:background .12s,filter .12s}
+.pm-cfgpick-row:hover .pm-cfgpick-row-cta{filter:brightness(.93)}
+.pm-cfgpick-row-cta.is-added{background:var(--cfgp-navy)}
+
+.pm-cfgpick-more{margin-top:14px;border:1.5px solid var(--cfgp-line);border-radius:12px;overflow:hidden}
+.pm-cfgpick-more[hidden]{display:none}
+.pm-cfgpick-more-summary{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px;cursor:pointer;list-style:none;font-size:13.5px;font-weight:700;color:var(--cfgp-navy);user-select:none}
+.pm-cfgpick-more-summary::-webkit-details-marker{display:none}
+.pm-cfgpick-chev{transition:transform .15s ease;flex:none}
+.pm-cfgpick-more[open] .pm-cfgpick-chev{transform:rotate(180deg)}
+.pm-cfgpick-rows{border-top:1px solid var(--cfgp-line)}
+.pm-cfgpick-row{display:flex;align-items:center;gap:12px;width:100%;padding:12px 16px;background:#fff;border:0;border-bottom:1px dashed var(--cfgp-line);cursor:pointer;text-align:left;transition:background .12s}
+.pm-cfgpick-row:last-child{border-bottom:0}
+.pm-cfgpick-row:hover{background:var(--cfgp-paper)}
+.pm-cfgpick-row.is-active{background:var(--cfgp-pale)}
+.pm-cfgpick-row-spec{flex:1;min-width:0;font-size:13px;font-weight:600;color:var(--cfgp-ink)}
+.pm-cfgpick-row-price{flex:none;font-size:14px;font-weight:800;color:var(--cfgp-navy);font-variant-numeric:tabular-nums}
+</style>
+
+<script>
+(function () {
+  'use strict';
+  if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
+
+  function init() {
+    var root = document.querySelector('[data-pm-cfgpicker]');
+    if (!root) return;
+    var cfgEl = root.querySelector('[data-pm-cfgpicker-config]');
+    var varsEl = document.getElementById('pm-pdp-variants');
+    if (!cfgEl || !varsEl) return;
+
+    var CONFIG = null, VARS = [];
+    try { CONFIG = JSON.parse(cfgEl.textContent); VARS = JSON.parse(varsEl.textContent); } catch (e) { return; }
+    if (!CONFIG || !CONFIG.axes || !CONFIG.configs || !CONFIG.configs.length || !VARS.length) return;
+
+    var AXES = [];
+    for (var _k in CONFIG.axes) { if (CONFIG.axes.hasOwnProperty(_k)) AXES.push(_k); }
+    var SPEC_AXES = [];
+    for (var _a = 0; _a < AXES.length; _a++) { if (!/^os$/i.test(AXES[_a])) SPEC_AXES.push(AXES[_a]); }
+    if (!AXES.length) return;
+
+    function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+    function money(cents) {
+      try { return new Intl.NumberFormat(undefined, { style: 'currency', currency: (window.Shopify && Shopify.currency && Shopify.currency.active) || 'USD' }).format(cents / 100); }
+      catch (e) { return '$' + (cents / 100).toFixed(2); }
+    }
+    /* same gate as pm-hp-wizard.liquid: an unpriced variant's real Shopify
+       price is `0`, not absent — never treat that as a usable price */
+    function realPrice(v) { return (v && typeof v.price === 'number' && v.price > 0) ? v.price : null; }
+    function variantForSku(sku) {
+      for (var i = 0; i < VARS.length; i++) { if (VARS[i].sku === sku) return VARS[i]; }
+      return null;
+    }
+    /* reverse of the above — needed because the hidden select's real value
+       is option1 (see pickAndAdd()), not necessarily the bare sku, so any
+       code reacting to the select's OWN change events (below) must translate
+       back to a sku before touching currentSku, or card/row active-state
+       matching (keyed on sku) silently stops working after the first pick */
+    function skuForOption1(val) {
+      for (var i = 0; i < VARS.length; i++) { if (VARS[i].option1 === val) return VARS[i].sku; }
+      return val;
+    }
+
+    /* "AMD Ryzen™ 5 8600G (up to 5.0 GHz ...)" -> "Ryzen 5 8600G"
+       "2 x 16 GB" -> "32GB" (total capacity, not module count)
+       "512 GB PCIe® Gen4 NVMe™ TLC M.2 SSD" -> "512GB"
+       "AMD Radeon™ RX 6300 Graphics (2 GB GDDR6 dedicated)" -> "Radeon RX 6300" */
+    function shortSpec(raw) {
+      var s = String(raw == null ? '' : raw).trim();
+      var ram = /^(\d+)\s*x\s*(\d+)\s*GB$/i.exec(s);
+      if (ram) return (Number(ram[1]) * Number(ram[2])) + 'GB';
+      var sto = /^(\d+(?:\.\d+)?)\s*(GB|TB)\b/i.exec(s);
+      if (sto && /SSD|HDD|NVMe|eMMC/i.test(s)) return sto[1] + sto[2].toUpperCase();
+      s = s.replace(/\b(AMD|Intel|NVIDIA)\b\s*/gi, '').replace(/[™®]/g, '');
+      s = s.replace(/\s*\([^)]*\)\s*$/, '');
+      s = s.replace(/\s+Graphics$/i, '');
+      return s.trim();
+    }
+    function specLine(attrs) {
+      var parts = [];
+      for (var i = 0; i < SPEC_AXES.length; i++) {
+        var v = attrs[SPEC_AXES[i]];
+        if (v) parts.push(shortSpec(v));
+      }
+      return parts.join(' · ');
+    }
+
+    /* real, confirmed-price configs only — never list an estimate */
+    var priced = [];
+    for (var i = 0; i < CONFIG.configs.length; i++) {
+      var c = CONFIG.configs[i];
+      var v = variantForSku(c.sku);
+      var price = realPrice(v);
+      if (price == null) continue;
+      priced.push({ sku: c.sku, price: price, qty: (typeof c.qty === 'number' ? c.qty : 0), attributes: c.attributes, variantId: v.id });
+    }
+    if (!priced.length) return; /* nothing confirmed — leave the section hidden, same fail-closed posture as the wizard */
+
+    var byPrice = priced.slice().sort(function (a, b) { return a.price - b.price; });
+    var valueCfg = byPrice[0];
+    var proCfg = byPrice[byPrice.length - 1];
+    var seen = {}; seen[valueCfg.sku] = true; seen[proCfg.sku] = true;
+    var remaining = priced.filter(function (c) { return !seen[c.sku]; });
+    var popularCfg = null;
+    if (remaining.length) {
+      popularCfg = remaining.slice().sort(function (a, b) { return b.qty - a.qty; })[0];
+      seen[popularCfg.sku] = true;
+    }
+    if (proCfg.sku === valueCfg.sku) proCfg = null; /* only one distinct confirmed config total */
+
+    var featured = [];
+    if (valueCfg) featured.push({ tier: 'Value', cfg: valueCfg });
+    if (popularCfg) featured.push({ tier: 'Most popular', cfg: popularCfg });
+    if (proCfg) featured.push({ tier: 'Pro', cfg: proCfg });
+    var rest = priced.filter(function (c) { return !seen[c.sku]; });
+
+    var cardsEl = root.querySelector('[data-cfgpick-cards]');
+    var moreEl = root.querySelector('[data-cfgpick-more]');
+    var rowsEl = root.querySelector('[data-cfgpick-rows]');
+    var moreLabelEl = root.querySelector('[data-cfgpick-more-label]');
+    var selectEl = document.querySelector('[data-pm-pdp-option="0"]');
+    var currentSku = root.getAttribute('data-current-sku');
+    var lastAddedSku = null; /* distinct from currentSku — set only once a card/row actually triggers a real add */
+
+    function badgeHtml(qty) {
+      return qty > 0
+        ? '<span class="pm-cfgpick-badge pm-cfgpick-badge--in">In stock</span>'
+        : '<span class="pm-cfgpick-badge pm-cfgpick-badge--made">Made to order</span>';
+    }
+    var ARROW_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+    var CHECK_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
+    /* explicit "click here to add this" affordance instead of a silent
+       whole-card click target — flips to a checkmark once THAT config was
+       actually just added (added !== is-active: right after page load the
+       default card is active but nothing's been added yet) */
+    function pickCtaHtml(added) {
+      return '<span class="pm-cfgpick-pick-cta' + (added ? ' is-added' : '') + '"><span>' + (added ? 'In your cart' : 'Add to Cart') + '</span>' + (added ? CHECK_SVG : ARROW_SVG) + '</span>';
+    }
+    function rowCtaHtml(added) {
+      return '<span class="pm-cfgpick-row-cta' + (added ? ' is-added' : '') + '">' + (added ? CHECK_SVG : ARROW_SVG) + '</span>';
+    }
+    function cardHtml(item) {
+      var isCurrent = item.cfg.sku === currentSku;
+      var wasAdded = item.cfg.sku === lastAddedSku;
+      return '<button type="button" class="pm-cfgpick-card' + (isCurrent ? ' is-active' : '') + '" data-cfgpick-pick data-sku="' + esc(item.cfg.sku) + '">'
+        + '<span class="pm-cfgpick-tier">' + esc(item.tier) + '</span>'
+        + '<span class="pm-cfgpick-price">' + money(item.cfg.price) + '</span>'
+        + '<span class="pm-cfgpick-spec">' + esc(specLine(item.cfg.attributes)) + '</span>'
+        + badgeHtml(item.cfg.qty)
+        + pickCtaHtml(wasAdded)
+        + '</button>';
+    }
+    function rowHtml(cfg) {
+      var isCurrent = cfg.sku === currentSku;
+      var wasAdded = cfg.sku === lastAddedSku;
+      return '<button type="button" class="pm-cfgpick-row' + (isCurrent ? ' is-active' : '') + '" data-cfgpick-pick data-sku="' + esc(cfg.sku) + '">'
+        + '<span class="pm-cfgpick-row-spec">' + esc(specLine(cfg.attributes)) + '</span>'
+        + '<span class="pm-cfgpick-row-price">' + money(cfg.price) + '</span>'
+        + badgeHtml(cfg.qty)
+        + rowCtaHtml(wasAdded)
+        + '</button>';
+    }
+    function updateHint() {
+      var hintEl = root.querySelector('[data-cfgpick-hint]');
+      if (!hintEl) return;
+      if (!lastAddedSku) { hintEl.innerHTML = 'Click a build below to add it straight to your cart.'; return; }
+      var added = null;
+      for (var i = 0; i < priced.length; i++) { if (priced[i].sku === lastAddedSku) { added = priced[i]; break; } }
+      hintEl.innerHTML = added
+        ? '<strong>' + money(added.price) + '</strong> added to your cart — pick another build to add more.'
+        : 'Click a build below to add it straight to your cart.';
+    }
+    function render() {
+      cardsEl.innerHTML = featured.map(cardHtml).join('');
+      if (rest.length) {
+        moreEl.hidden = false;
+        rowsEl.innerHTML = rest.map(rowHtml).join('');
+        if (moreLabelEl) moreLabelEl.textContent = 'Show ' + rest.length + ' more configuration' + (rest.length === 1 ? '' : 's');
+      } else {
+        moreEl.hidden = true;
+      }
+      updateHint();
+    }
+
+    /* Same shape pm-hp-wizard.liquid's syncSelects() stamps onto
+       data-pm-add-properties: every axis value + "Configured total". The
+       cart drawer (pm-cart-drawer.js) already renders any line's real
+       Shopify `properties` as a "Configured build" accordion — built for
+       the wizard, reused as-is here, no cart-side change needed. */
+    function buildPropsFor(cfgEntry) {
+      var props = {};
+      for (var i = 0; i < AXES.length; i++) {
+        var v = cfgEntry.attributes[AXES[i]];
+        if (v != null) props[AXES[i]] = v;
+      }
+      props['Configured total'] = money(cfgEntry.price);
+      return props;
+    }
+    /* Anuj: "why cant u just add them to the cart? instead of autoscrolling
+       up and asking the user to click add to cart... less clicks and less
+       time wasted." One click now does the whole job: push the resolved
+       SKU into the ONE hidden native select (same mechanism as
+       pm-hp-wizard's syncSelects — Option1 Value is NOT always the bare
+       SKU on the v2 G9 import, so resolve the REAL option1 string from
+       VARS rather than assuming it), stamp the build breakdown onto
+       data-pm-add-properties, then click the REAL [data-pm-pdp-add]
+       button — the exact same /cart/add.js path the wizard's own Review
+       step already runs on (qty stepper, stock cap, "Adding…"/"Added"
+       label, cart-drawer-opens-on-success — none of that is reimplemented
+       here). Deliberately no early-return on "already the current sku" —
+       Add to Cart is additive, re-clicking the same build should add
+       another one, not silently no-op. */
+    function pickAndAdd(sku) {
+      var cfgEntry = null;
+      for (var i = 0; i < priced.length; i++) { if (priced[i].sku === sku) { cfgEntry = priced[i]; break; } }
+      if (!cfgEntry) return;
+      currentSku = sku;
+      if (selectEl) {
+        var v = variantForSku(sku);
+        var optVal = (v && typeof v.option1 === 'string') ? v.option1 : sku;
+        if (selectEl.value !== optVal) {
+          selectEl.value = optVal;
+          var ev; try { ev = new Event('change', { bubbles: true }); } catch (e) { ev = document.createEvent('Event'); ev.initEvent('change', true, true); }
+          selectEl.dispatchEvent(ev);
+        }
+      }
+      var addBtn = document.querySelector('[data-pm-pdp-add]');
+      if (addBtn) addBtn.setAttribute('data-pm-add-properties', JSON.stringify(buildPropsFor(cfgEntry)));
+      lastAddedSku = sku;
+      render();
+      if (addBtn && !addBtn.disabled) addBtn.click();
+    }
+    function onPick(e) {
+      var btn = e.target.closest ? e.target.closest('[data-cfgpick-pick]') : null;
+      if (!btn) return;
+      pickAndAdd(btn.getAttribute('data-sku'));
+    }
+    cardsEl.addEventListener('click', onPick);
+    rowsEl.addEventListener('click', onPick);
+    if (selectEl) {
+      selectEl.addEventListener('change', function () {
+        var sku = skuForOption1(selectEl.value);
+        if (sku !== currentSku) { currentSku = sku; render(); }
+      });
+    }
+
+    render();
+    root.hidden = false;
+  }
+})();
+</script>

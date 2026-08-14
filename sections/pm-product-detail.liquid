@@ -241,6 +241,25 @@
       {%- assign _hp_wizard = true -%}
     {%- endif -%}
     {%- comment -%}
+      ── Config Picker tag gate ── same hardware-configurator products as
+      _hp_wizard above, but products tagged "Config Picker" get the inline
+      tiered card picker (snippets/pm-hp-config-picker.liquid — full-width,
+      no modal, rendered below the whole buy area) INSTEAD of the
+      Customize-button + modal wizard. Anuj: "create a tag which can switch
+      the ui/ux from having a customize button to this config picker
+      cards". Toggle per product by adding/removing the tag in admin — zero
+      code change either way, and untagged HP products keep the wizard
+      exactly as before.
+    {%- endcomment -%}
+    {%- assign _hp_config_picker = false -%}
+    {%- if _hp_wizard and product.tags contains 'Config Picker' -%}
+      {%- assign _hp_config_picker = true -%}
+      {%- assign _hp_wizard = false -%}
+    {%- endif -%}
+    {%- comment -%} either custom HP experience hides the native option dropdown and shares the "Available" avail copy — see _hp_wizard's original comment above the avail label further down {%- endcomment -%}
+    {%- assign _hp_custom_ui = false -%}
+    {%- if _hp_wizard or _hp_config_picker -%}{%- assign _hp_custom_ui = true -%}{%- endif -%}
+    {%- comment -%}
       ── HP procurement data card (UNSPSC / origin / warranty / sustainability) ──
       Anuj: don't display this at all. Independent of _hp_wizard — the card and
       the configurator used to share one snippet (pm-hp-config.liquid) and one
@@ -606,8 +625,8 @@
             {%- endfor -%}
             {%- if _hp_wizard -%}{%- render 'pm-hp-wizard', product: product -%}{%- endif -%}
             {%- if _visible_opt_count > 0 -%}
-            <div class="pm-pdp__options" id="pm-pdp-options"{% if _hp_wizard %} hidden{% endif %}>
-              {%- comment -%} hidden when the HP wizard owns the UI — the selects stay as the variant-switch source of truth {%- endcomment -%}
+            <div class="pm-pdp__options" id="pm-pdp-options"{% if _hp_custom_ui %} hidden{% endif %}>
+              {%- comment -%} hidden when the HP wizard or config picker owns the UI — the selects stay as the variant-switch source of truth {%- endcomment -%}
               {%- for option in product.options_with_values -%}
                 {%- assign _odn = option.name | downcase -%}
                 {%- unless _odn contains 'bundle' -%}
@@ -633,9 +652,9 @@
           {%- assign _dropship = false -%}
           {%- if product.tags contains 'HP-SLED-2026' or product.tags contains 'dropship' -%}{%- assign _dropship = true -%}{%- endif -%}
           {%- if _instock -%}
-            <div class="pm-pdp__avail pm-pdp__avail--in" data-pm-pdp-avail{% if _dropship %} data-dropship{% endif %}{% if _hp_wizard %} data-hp-wizard{% endif %}>
-              {%- comment -%} Show the real count whenever there's a tracked qty > 0 — not only DENY — so variants flipped to CONTINUE (Shopify inventory-desync workaround) still show "N in stock". The special configure-your-system HP products say "Available" instead (Anuj) — scoped to _hp_wizard only, everything else unchanged. {%- endcomment -%}
-              {%- if _hp_wizard -%}
+            <div class="pm-pdp__avail pm-pdp__avail--in" data-pm-pdp-avail{% if _dropship %} data-dropship{% endif %}{% if _hp_custom_ui %} data-hp-wizard{% endif %}>
+              {%- comment -%} Show the real count whenever there's a tracked qty > 0 — not only DENY — so variants flipped to CONTINUE (Shopify inventory-desync workaround) still show "N in stock". The special configure-your-system HP products say "Available" instead (Anuj) — scoped to _hp_custom_ui (wizard OR config picker), everything else unchanged. {%- endcomment -%}
+              {%- if _hp_custom_ui -%}
                 Available
               {%- elsif _dropship == false and _v.inventory_management == 'shopify' and _stock and _stock > 0 -%}
                 {{ _stock }} in stock
@@ -815,6 +834,9 @@
 
     </div>
   </div>
+
+  {%- comment -%} ── Config Picker — full-width "Choose a configuration" band, replaces the Customize modal for tagged products only (see _hp_config_picker above) ── {%- endcomment -%}
+  {%- if _hp_config_picker -%}{%- render 'pm-hp-config-picker', product: product -%}{%- endif -%}
 
   {%- comment -%}
     ── Recommendations mount — built once, placed by stock state ──
