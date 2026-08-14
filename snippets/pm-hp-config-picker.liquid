@@ -1,5 +1,40 @@
 {%- comment -%}
-  PM — HP config picker (tag-gated alternative to pm-hp-wizard.liquid). v1.2.
+  PM — HP config picker (tag-gated alternative to pm-hp-wizard.liquid). v1.5.
+
+  v1.5 (Anuj: "why do u treat the whole card as an Add to Cart button? ...
+  i only want add to cart to be triggered when add to cart button is
+  clicked"): the click TARGET was too broad, not the click BEHAVIOR (v1.4's
+  one-click-add stays exactly as-is) — clicking a card's price/spec/badge
+  area was adding to cart same as clicking the visible pill. Fixed by making
+  the card itself (cardHtml) a plain non-interactive div and moving
+  data-cfgpick-pick/data-sku onto the pill (pickCtaHtml), which is now a
+  real nested <button> — only clicking that button fires pickAndAdd. Rows
+  deliberately NOT changed: their CTA is a 26px circle, and shrinking a
+  dense list's click target down to that would be a real usability
+  regression the cards don't have (their pill already spans the full card
+  width). Hover feedback on the pill (darken, arrow nudge) now triggers
+  from hovering the pill itself, not the whole card, to match.
+
+  v1.4 (Anuj, immediately after v1.3 shipped: "NAH I WANT THEM TO BE ADD TO
+  CART AND INITIATE ADD TO CART PROCESS! RN THEY DO NOT!"): reverted v1.3's
+  select-only click back to one-click add — same as v1.2. Card/row click
+  stages the build (hidden select + data-pm-add-properties) then clicks the
+  real [data-pm-pdp-add] button itself, same as v1.2. CTA copy and hint text
+  reverted to "Add to Cart" framing accordingly. One thing kept from v1.3
+  because it's a strict improvement regardless of click-vs-select: v1.2 used
+  to mark lastAddedSku ("In your cart" checkmark) synchronously the instant
+  the button was clicked, which would lie if the real /cart/add.js call then
+  failed (stock cap etc). v1.4 still only flips it on a CONFIRMED
+  pm:cart-changed success (source 'pcard' or 'pdp').
+
+  v1.3 (Anuj, after using v1.2 live: "when i click on any of these cards
+  please do not add to cart them... only add to cart them when user clicks
+  on add to cart button"): browsing/comparing a few rows was silently
+  adding one cart line per click — the "less clicks" win from v1.2 turned
+  into an accidental multi-add footgun in practice. Cards/rows only SELECTed
+  (sync the hidden variant select + stamp data-pm-add-properties on the real
+  [data-pm-pdp-add] button) — no auto-click. Reverted in v1.4 above, one
+  message later — Anuj wanted the click to actually fire the add after all.
 
   v1.2 (Anuj: "why cant u just add them to the cart? instead of
   autoscrolling up and then asking user to click add to cart... less
@@ -29,11 +64,12 @@
   Anuj: "make sure in the Product we can create a tag which basically can
   switch the ui/ux from having a customize button to this config picker
   cards / tabs". Caller (pm-product-detail.liquid) sets _hp_config_picker
-  true only when a product already qualifies for the wizard (HP + tag B2G +
-  real options) AND is additionally tagged "Config Picker" — remove that
-  tag to fall straight back to the Customize-button wizard, no code change
-  either way. Renders full-width below the whole buy area (not squeezed
-  into the buy-box column) per HANDOFF-CONFIG-PICKER-UI.md.
+  true only when a product already qualifies for the wizard (real options +
+  tag "B2G" or "Customize" — vendor-agnostic) AND is additionally tagged
+  "Config Picker" — remove that tag to fall straight back to the
+  Customize-button wizard, no code change either way. Renders full-width
+  below the whole buy area (not squeezed into the buy-box column) per
+  HANDOFF-CONFIG-PICKER-UI.md.
 
   Why this exists instead of extending the wizard: every axis-configurator
   product resolves to real, individually-priced HP SKUs with no per-
@@ -110,7 +146,7 @@
 .pm-cfgpick-hint strong{color:var(--cfgp-navy);font-weight:800}
 
 .pm-cfgpick-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;margin-top:16px}
-.pm-cfgpick-card{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;padding:20px;background:#fff;border:1.5px solid var(--cfgp-line);border-radius:14px;cursor:pointer;transition:border-color .12s,background .12s,box-shadow .12s}
+.pm-cfgpick-card{display:flex;flex-direction:column;align-items:flex-start;gap:6px;text-align:left;padding:20px;background:#fff;border:1.5px solid var(--cfgp-line);border-radius:14px;transition:border-color .12s,background .12s,box-shadow .12s}
 .pm-cfgpick-card:hover{border-color:var(--cfgp-rust)}
 .pm-cfgpick-card.is-active{border-color:var(--cfgp-rust);background:var(--cfgp-pale);box-shadow:0 0 0 1px var(--cfgp-rust)}
 .pm-cfgpick-tier{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--cfgp-rust)}
@@ -128,11 +164,11 @@
    already use — no green anywhere. is-added is its OWN state (not tied to
    is-active) — right after page load the default card IS is-active but
    nothing's been added yet, so the two must be able to disagree. */
-.pm-cfgpick-pick-cta{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-top:8px;padding:10px 14px;border-radius:9px;background:var(--cfgp-rust);color:#fff;font-size:12.5px;font-weight:700;transition:background .12s,filter .12s}
-.pm-cfgpick-card:hover .pm-cfgpick-pick-cta{filter:brightness(.93)}
+.pm-cfgpick-pick-cta{display:flex;align-items:center;justify-content:center;gap:7px;width:100%;margin-top:8px;padding:10px 14px;border:0;border-radius:9px;background:var(--cfgp-rust);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;transition:background .12s,filter .12s}
+.pm-cfgpick-pick-cta:hover{filter:brightness(.93)}
 .pm-cfgpick-pick-cta.is-added{background:var(--cfgp-navy)}
 .pm-cfgpick-pick-cta svg{transition:transform .15s ease;flex:none}
-.pm-cfgpick-card:hover .pm-cfgpick-pick-cta svg{transform:translateX(3px)}
+.pm-cfgpick-pick-cta:hover svg{transform:translateX(3px)}
 .pm-cfgpick-row-cta{flex:none;display:grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--cfgp-rust);color:#fff;transition:background .12s,filter .12s}
 .pm-cfgpick-row:hover .pm-cfgpick-row-cta{filter:brightness(.93)}
 .pm-cfgpick-row-cta.is-added{background:var(--cfgp-navy)}
@@ -255,7 +291,7 @@
     var moreLabelEl = root.querySelector('[data-cfgpick-more-label]');
     var selectEl = document.querySelector('[data-pm-pdp-option="0"]');
     var currentSku = root.getAttribute('data-current-sku');
-    var lastAddedSku = null; /* distinct from currentSku — set only once a card/row actually triggers a real add */
+    var lastAddedSku = null; /* distinct from currentSku — set only once the real Add to Cart button confirms a successful add */
 
     function badgeHtml(qty) {
       return qty > 0
@@ -264,12 +300,21 @@
     }
     var ARROW_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
     var CHECK_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
-    /* explicit "click here to add this" affordance instead of a silent
-       whole-card click target — flips to a checkmark once THAT config was
-       actually just added (added !== is-active: right after page load the
-       default card is active but nothing's been added yet) */
-    function pickCtaHtml(added) {
-      return '<span class="pm-cfgpick-pick-cta' + (added ? ' is-added' : '') + '"><span>' + (added ? 'In your cart' : 'Add to Cart') + '</span>' + (added ? CHECK_SVG : ARROW_SVG) + '</span>';
+    /* Anuj: "why do u treat the whole card as an Add to Cart button? ...
+       i only want add to cart to be triggered when add to cart button is
+       clicked". The card itself (title/price/spec/badge) is now a plain
+       non-interactive div — ONLY the pill below is a real <button>
+       carrying data-cfgpick-pick/data-sku, so clicking the price or spec
+       text no longer adds anything. Rows are intentionally left as
+       whole-row buttons: their CTA is a small 26px circle, and shrinking
+       the click target down to just that on a dense list would be a real
+       usability regression the cards don't have (their pill already spans
+       the full card width). Flips to a checkmark once THAT config was
+       actually added via this same button (added !== is-active: right
+       after page load the default card is active but nothing's been added
+       yet). */
+    function pickCtaHtml(sku, added) {
+      return '<button type="button" class="pm-cfgpick-pick-cta' + (added ? ' is-added' : '') + '" data-cfgpick-pick data-sku="' + esc(sku) + '"><span>' + (added ? 'In your cart' : 'Add to Cart') + '</span>' + (added ? CHECK_SVG : ARROW_SVG) + '</button>';
     }
     function rowCtaHtml(added) {
       return '<span class="pm-cfgpick-row-cta' + (added ? ' is-added' : '') + '">' + (added ? CHECK_SVG : ARROW_SVG) + '</span>';
@@ -277,13 +322,13 @@
     function cardHtml(item) {
       var isCurrent = item.cfg.sku === currentSku;
       var wasAdded = item.cfg.sku === lastAddedSku;
-      return '<button type="button" class="pm-cfgpick-card' + (isCurrent ? ' is-active' : '') + '" data-cfgpick-pick data-sku="' + esc(item.cfg.sku) + '">'
+      return '<div class="pm-cfgpick-card' + (isCurrent ? ' is-active' : '') + '">'
         + '<span class="pm-cfgpick-tier">' + esc(item.tier) + '</span>'
         + '<span class="pm-cfgpick-price">' + money(item.cfg.price) + '</span>'
         + '<span class="pm-cfgpick-spec">' + esc(specLine(item.cfg.attributes)) + '</span>'
         + badgeHtml(item.cfg.qty)
-        + pickCtaHtml(wasAdded)
-        + '</button>';
+        + pickCtaHtml(item.cfg.sku, wasAdded)
+        + '</div>';
     }
     function rowHtml(cfg) {
       var isCurrent = cfg.sku === currentSku;
@@ -295,15 +340,16 @@
         + rowCtaHtml(wasAdded)
         + '</button>';
     }
+    var DEFAULT_HINT = 'Click a build below to add it straight to your cart.';
     function updateHint() {
       var hintEl = root.querySelector('[data-cfgpick-hint]');
       if (!hintEl) return;
-      if (!lastAddedSku) { hintEl.innerHTML = 'Click a build below to add it straight to your cart.'; return; }
+      if (!lastAddedSku) { hintEl.innerHTML = DEFAULT_HINT; return; }
       var added = null;
       for (var i = 0; i < priced.length; i++) { if (priced[i].sku === lastAddedSku) { added = priced[i]; break; } }
       hintEl.innerHTML = added
         ? '<strong>' + money(added.price) + '</strong> added to your cart — pick another build to add more.'
-        : 'Click a build below to add it straight to your cart.';
+        : DEFAULT_HINT;
     }
     function render() {
       cardsEl.innerHTML = featured.map(cardHtml).join('');
@@ -331,20 +377,17 @@
       props['Configured total'] = money(cfgEntry.price);
       return props;
     }
-    /* Anuj: "why cant u just add them to the cart? instead of autoscrolling
-       up and asking the user to click add to cart... less clicks and less
-       time wasted." One click now does the whole job: push the resolved
-       SKU into the ONE hidden native select (same mechanism as
-       pm-hp-wizard's syncSelects — Option1 Value is NOT always the bare
-       SKU on the v2 G9 import, so resolve the REAL option1 string from
-       VARS rather than assuming it), stamp the build breakdown onto
-       data-pm-add-properties, then click the REAL [data-pm-pdp-add]
-       button — the exact same /cart/add.js path the wizard's own Review
-       step already runs on (qty stepper, stock cap, "Adding…"/"Added"
-       label, cart-drawer-opens-on-success — none of that is reimplemented
-       here). Deliberately no early-return on "already the current sku" —
-       Add to Cart is additive, re-clicking the same build should add
-       another one, not silently no-op. */
+    /* Anuj (v1.3 → v1.4, immediate reversal): "NAH I WANT THEM TO BE ADD TO
+       CART AND INITIATE ADD TO CART PROCESS! RN THEY DO NOT!" — back to one
+       click doing the whole job. Stage the build (sync the hidden select —
+       Option1 Value is NOT always the bare SKU on the v2 G9 import, so
+       resolve the REAL option1 string from VARS rather than assuming it —
+       and stamp data-pm-add-properties), then click the REAL
+       [data-pm-pdp-add] button itself, same as v1.2. Kept from v1.3 though:
+       lastAddedSku/"In your cart" now only flips on the pm:cart-changed
+       listener below confirming a genuine success, instead of assuming the
+       click always works — v1.2 marked it added optimistically, which was
+       wrong if the real /cart/add.js call failed (stock cap, etc). */
     function pickAndAdd(sku) {
       var cfgEntry = null;
       for (var i = 0; i < priced.length; i++) { if (priced[i].sku === sku) { cfgEntry = priced[i]; break; } }
@@ -361,7 +404,6 @@
       }
       var addBtn = document.querySelector('[data-pm-pdp-add]');
       if (addBtn) addBtn.setAttribute('data-pm-add-properties', JSON.stringify(buildPropsFor(cfgEntry)));
-      lastAddedSku = sku;
       render();
       if (addBtn && !addBtn.disabled) addBtn.click();
     }
@@ -378,6 +420,19 @@
         if (sku !== currentSku) { currentSku = sku; render(); }
       });
     }
+    /* lastAddedSku (drives the "In your cart" checkmark) only flips on a
+       CONFIRMED /cart/add.js success for the real button — source 'pcard'
+       (assets/pm-add-to-cart.js, the qty=1 path) or 'pdp' (this section's
+       own inline qty>1/bundle handler). Every other pm:cart-changed source
+       (drawer qty/remove, Quotify's separate quote cart, the paused HPE
+       flow) is NOT this config being added, so it's ignored — otherwise
+       e.g. removing an unrelated cart line would falsely check this card. */
+    document.addEventListener('pm:cart-changed', function (e) {
+      var src = e.detail && e.detail.source;
+      if (src !== 'pcard' && src !== 'pdp') return;
+      lastAddedSku = currentSku;
+      render();
+    });
 
     render();
     root.hidden = false;

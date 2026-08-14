@@ -230,14 +230,31 @@
     {%- endcomment -%}
     {%- assign _hp_enabled = true -%}
     {%- comment -%}
-      ── HP hardware wizard gate ── the consolidated HP import (tag B2G) carries
-      hardware config as REAL variant options, so those PDPs swap the native
+      ── HP hardware wizard gate ── vendor-agnostic on purpose: any product
+      carrying REAL variant options plus either tag below swaps the native
       option dropdowns for the stepped wizard (snippets/pm-hp-wizard.liquid).
       The hidden selects stay in the DOM as the source of truth — the wizard
       drives them, the existing variant-switch JS below stays untouched.
+
+      Two tags both qualify (either is enough, no vendor check):
+        - "B2G"       — the original consolidated HP Inc import.
+        - "Customize" — general-purpose opt-in for any future product/vendor
+          (e.g. HPE) that gets a hp_hermes.configurator metafield. Anuj:
+          "make it so vendor does not exactly need to be an HP product...
+          add a tag called customize so our store knows this product can be
+          customizable."
+      Both wizard and config-picker snippets already fail closed (render
+      nothing) when hp_hermes.configurator is missing/empty, so tagging a
+      product "Customize" ahead of its real config data landing is safe —
+      it just stays invisible until the data shows up.
     {%- endcomment -%}
+    {%- comment -%} Liquid's {% if %} has no parens for grouping, so the "either tag" OR is resolved into its own flag first, then ANDed with the other two gates below. {%- endcomment -%}
+    {%- assign _hp_wizard_tag_ok = false -%}
+    {%- if product.tags contains 'B2G' or product.tags contains 'Customize' -%}
+      {%- assign _hp_wizard_tag_ok = true -%}
+    {%- endif -%}
     {%- assign _hp_wizard = false -%}
-    {%- if _hp_enabled and product.vendor == 'HP' and product.tags contains 'B2G' and product.has_only_default_variant == false -%}
+    {%- if _hp_enabled and product.has_only_default_variant == false and _hp_wizard_tag_ok -%}
       {%- assign _hp_wizard = true -%}
     {%- endif -%}
     {%- comment -%}
@@ -248,8 +265,8 @@
       Customize-button + modal wizard. Anuj: "create a tag which can switch
       the ui/ux from having a customize button to this config picker
       cards". Toggle per product by adding/removing the tag in admin — zero
-      code change either way, and untagged HP products keep the wizard
-      exactly as before.
+      code change either way, and any wizard-eligible product without this
+      tag keeps the Customize-button wizard exactly as before.
     {%- endcomment -%}
     {%- assign _hp_config_picker = false -%}
     {%- if _hp_wizard and product.tags contains 'Config Picker' -%}
