@@ -1,0 +1,55 @@
+{%- comment -%}
+  PM — DGX Spark Showcase, product-page panel
+  Caller (sections/pm-product-detail.liquid) renders this only when
+  product.tags contains 'DGX Spark' — see that gate for the fail-closed
+  behavior on every other product. Pulls the other systems in the DGX
+  Spark Ecosystem collection (dgx-spark-ecosystem), skips the current
+  product, and reuses the exact same carousel as the homepage section —
+  same "just a showcase" card treatment, no comparison table. The
+  standalone stacking cable is intentionally NOT in this collection (only
+  the 2-unit bundle that already includes one is), so it never appears
+  here as a singular item.
+
+  Ordering matches the homepage: AVAILABLE (in-stock) products first, then
+  made-to-order — two passes over the collection, current product excluded.
+
+  Param: product (required) — the current PDP's product, excluded from its
+  own "other configurations" list.
+{%- endcomment -%}
+{%- assign _family = collections['dgx-spark-ecosystem'] -%}
+{%- if _family -%}
+  {%- comment -%} count OTHER members (excludes the current product) for the "/ N" counter {%- endcomment -%}
+  {%- assign _other_count = 0 -%}
+  {%- for p in _family.products -%}
+    {%- unless p.id == product.id -%}{%- assign _other_count = _other_count | plus: 1 -%}{%- endunless -%}
+  {%- endfor -%}
+
+  {%- if _other_count > 0 -%}
+    <section class="pm-pdp__longblock pm-dgxsc-pdp">
+      <div class="pm-container pm-pdp__longblock-inner">
+        <h2 class="pm-pdp__h2">Other DGX Spark configurations</h2>
+        <p class="pm-dgxsc-pdp__hint">Same GB10 chip and 128GB memory across every brand below — differs on storage, chassis, and support.</p>
+        {%- capture _slides -%}
+          {%- for _pass in (1..2) -%}
+            {%- for p in _family.products -%}
+              {%- unless p.id == product.id -%}
+                {%- assign _show = false -%}
+                {%- if _pass == 1 and p.available -%}{%- assign _show = true -%}{%- endif -%}
+                {%- unless p.available -%}{%- if _pass == 2 -%}{%- assign _show = true -%}{%- endif -%}{%- endunless -%}
+                {%- if _show -%}
+                  {%- render 'pm-dgx-showcase-slide',
+                    product: p,
+                    spec_1: 'GB10 Grace Blackwell',
+                    spec_2: '128GB unified memory',
+                    spec_3: 'NVIDIA AI software stack'
+                  -%}
+                {%- endif -%}
+              {%- endunless -%}
+            {%- endfor -%}
+          {%- endfor -%}
+        {%- endcapture -%}
+        {%- render 'pm-dgx-showcase-carousel', slides_html: _slides, slide_count: _other_count, id_suffix: 'pdp' -%}
+      </div>
+    </section>
+  {%- endif -%}
+{%- endif -%}

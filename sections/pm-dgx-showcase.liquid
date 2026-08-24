@@ -1,0 +1,122 @@
+{%- comment -%}
+  PM — DGX Spark Showcase (homepage)
+  Full-width hero carousel for the NVIDIA DGX Spark ecosystem lineup — one
+  product per slide, background photo + navy overlay (same treatment as
+  pm-hero-banner), shared spec-highlight pills (all DGX Spark systems run
+  the same GB10 chip / 128GB memory per the reseller strategy brief), a
+  floating quick-price card, and prev/next + slide-counter controls.
+  Modeled on the sister site AAAwave's "Featured Items" AI-computer slider
+  (Anuj-provided screenshots), reskinned to PM's navy/terracotta tokens —
+  Anuj: "just a showcase buddy... it is almost like a promo isnt it?"
+
+  Block-based with a native product picker per slide (not a hardcoded SKU
+  list), so Anuj can add/remove/reorder DGX Spark systems — or point a
+  slide at any other product entirely — from the theme editor with zero
+  code changes, same philosophy as every other pm-* homepage section.
+  Position in the page (like every section) is dragged in the editor;
+  default placement is above pm-card-section ("Industries we serve") per
+  Anuj's ask, set once in templates/index.json's `order`.
+
+  Rendering itself is shared with the product-page version
+  (snippets/pm-dgx-pdp-showcase.liquid) via pm-dgx-showcase-slide.liquid +
+  pm-dgx-showcase-carousel.liquid — one visual component, two entry points.
+{%- endcomment -%}
+<section
+  class="pm-dgxsc"
+  style="
+    {%- if section.settings.padding_top != blank %}--dgxsc-pt:{{ section.settings.padding_top }}px;{% endif -%}
+    {%- if section.settings.padding_bottom != blank %}--dgxsc-pb:{{ section.settings.padding_bottom }}px;{% endif -%}
+  "
+>
+  <div class="pm-container">
+    {%- if section.settings.eyebrow != blank or section.settings.title != blank -%}
+      <div class="pm-dgxsc__head">
+        {%- if section.settings.eyebrow != blank -%}<div class="pm-section-eyebrow">{{ section.settings.eyebrow }}</div>{%- endif -%}
+        {%- if section.settings.title != blank -%}<h2 class="pm-dgxsc__title">{{ section.settings.title }}</h2>{%- endif -%}
+      </div>
+    {%- endif -%}
+
+    {%- comment -%}
+      Available-first ordering — Anuj: "make sure the AVAILABLE orders are
+      listed first... then made-to-order... so we satiate demand better and
+      POPULAR AI COMPUTERS ARE LISTED FIRST." Two render passes over the
+      SAME editor block order: pass 1 emits in-stock products, pass 2 emits
+      the rest, so relative curation is preserved within each group and the
+      split re-sorts itself as real stock changes (no manual reordering).
+      (Liquid {% if %} has no parens, so the pass/availability test is
+      resolved into a plain boolean per block rather than a compound and/or.)
+    {%- endcomment -%}
+    {%- assign _slide_count = 0 -%}
+    {%- for block in section.blocks -%}
+      {%- if block.settings.product != blank -%}{%- assign _slide_count = _slide_count | plus: 1 -%}{%- endif -%}
+    {%- endfor -%}
+
+    {%- if _slide_count > 0 -%}
+      {%- capture _slides -%}
+        {%- for _pass in (1..2) -%}
+          {%- for block in section.blocks -%}
+            {%- if block.settings.product != blank -%}
+              {%- assign _show = false -%}
+              {%- if _pass == 1 and block.settings.product.available -%}{%- assign _show = true -%}{%- endif -%}
+              {%- unless block.settings.product.available -%}{%- if _pass == 2 -%}{%- assign _show = true -%}{%- endif -%}{%- endunless -%}
+              {%- if _show -%}
+                {%- render 'pm-dgx-showcase-slide',
+                  product: block.settings.product,
+                  eyebrow: block.settings.eyebrow,
+                  headline: block.settings.headline,
+                  cta_label: block.settings.cta_label,
+                  youtube_id: block.settings.youtube_id,
+                  video: block.settings.video,
+                  transparent_image: block.settings.transparent_image,
+                  spec_1: section.settings.spec_1,
+                  spec_2: section.settings.spec_2,
+                  spec_3: section.settings.spec_3
+                -%}
+              {%- endif -%}
+            {%- endif -%}
+          {%- endfor -%}
+        {%- endfor -%}
+      {%- endcapture -%}
+      {%- render 'pm-dgx-showcase-carousel', slides_html: _slides, slide_count: _slide_count, id_suffix: 'home' -%}
+    {%- endif -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "PM — DGX Spark Showcase",
+  "tag": "section",
+  "settings": [
+    { "type": "header", "content": "Content" },
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "PERSONAL AI SUPERCOMPUTERS" },
+    { "type": "text", "id": "title",   "label": "Title",   "default": "NVIDIA DGX Spark AI Computers" },
+
+    { "type": "header", "content": "Shared spec highlights", "info": "Every DGX Spark system runs the same GB10 chip and 128GB unified memory, so these 3 pills show on every slide instead of being set per-product." },
+    { "type": "text", "id": "spec_1", "label": "Spec 1", "default": "128GB unified memory" },
+    { "type": "text", "id": "spec_2", "label": "Spec 2", "default": "Up to 1 PetaFLOP FP4" },
+    { "type": "text", "id": "spec_3", "label": "Spec 3", "default": "NVIDIA AI software stack" },
+
+    { "type": "header", "content": "Section spacing" },
+    { "type": "range", "id": "padding_top",    "label": "Padding top",    "min": 0, "max": 160, "step": 4, "unit": "px", "default": 64 },
+    { "type": "range", "id": "padding_bottom", "label": "Padding bottom", "min": 0, "max": 160, "step": 4, "unit": "px", "default": 64 }
+  ],
+  "blocks": [
+    {
+      "type": "slide",
+      "name": "Product slide",
+      "settings": [
+        { "type": "product", "id": "product", "label": "Product" },
+        { "type": "text", "id": "eyebrow",   "label": "Eyebrow override",  "info": "Defaults to the product's vendor (e.g. GIGABYTE)." },
+        { "type": "text", "id": "headline",  "label": "Headline override", "info": "Defaults to the product title." },
+        { "type": "text", "id": "cta_label", "label": "Button label",     "default": "Shop" },
+        { "type": "video", "id": "video", "label": "Uploaded video (recommended)", "info": "Self-hosted video for this slide's spotlight — plays muted on loop as an ambient preview, with a 'Watch with sound' control for full playback. Takes priority over the YouTube ID below. Upload here or in Settings → Files (MP4 / H.264, 1080p; keep under ~200 MB for a fast upload). No YouTube branding, no cookies, adaptive on supported browsers." },
+        { "type": "text", "id": "youtube_id", "label": "YouTube video ID (fallback)", "info": "Used only when no uploaded video is set above. Use just the ID — e.g. for youtube.com/watch?v=47jaQXtiyw4 enter 47jaQXtiyw4." },
+        { "type": "image_picker", "id": "transparent_image", "label": "Transparent product image (video slides only)", "info": "Used on video slides (uploaded video or YouTube). The catalog photo is a flattened white-background JPEG, so it's faked onto the slide with a light tile + blend trick. Upload a real cutout with a transparent background here to replace that with the real thing." }
+      ]
+    }
+  ],
+  "presets": [
+    { "name": "PM — DGX Spark Showcase" }
+  ]
+}
+{% endschema %}

@@ -22,6 +22,32 @@
 {%- capture _isc -%}{%- render 'pm-instock', product: product -%}{%- endcapture -%}
 {%- assign _instock = false -%}{%- if _isc contains 'true' -%}{%- assign _instock = true -%}{%- endif -%}
 
+{%- comment -%}
+  DGX Spark systems carry a REAL list price and are sold on allocation, so even
+  when a variant is 0-stock (routed to the quote flow) we still show the price —
+  a $4k system shouldn't read "Pricing by quote" with no number. Scoped to the
+  `DGX Spark` tag so genuinely price-on-request products elsewhere are untouched.
+{%- endcomment -%}
+{%- assign _is_dgx = false -%}
+{%- if product.tags contains 'DGX Spark' -%}{%- assign _is_dgx = true -%}{%- endif -%}
+
+{%- comment -%}
+  Availability must track the SELECTED variant, not the product. pm-instock (line 22)
+  answers "does ANY variant have stock?" — right for single-variant products, but on a
+  multi-variant DGX system it lets an out-of-stock variant (e.g. HP 1TB, inv 0 / DENY)
+  borrow an in-stock sibling's "In stock" badge (the 4TB's 8 units). The price/SKU already
+  follow _v; availability was the one field still reading product-wide. For DGX only,
+  re-scope _instock to _v — same tracked-and-positive rule as pm-instock, just applied to
+  the selected variant — so the buy box (availability, price/quote, Add-to-Cart, qty cap)
+  reflects exactly what the dropdown has selected. Non-DGX (incl. dropship) is untouched.
+{%- endcomment -%}
+{%- if _is_dgx -%}
+  {%- assign _instock = false -%}
+  {%- if _v.inventory_management == 'shopify' and _v.inventory_quantity and _v.inventory_quantity > 0 -%}
+    {%- assign _instock = true -%}
+  {%- endif -%}
+{%- endif -%}
+
 {%- comment -%} ── MPN: prefer metafield, fall back to SKU so the line never goes empty ── {%- endcomment -%}
 {%- assign _mpn = product.metafields.custom.mpn | default: product.metafields.specs.mpn -%}
 {%- if _mpn == blank -%}
@@ -103,7 +129,7 @@
   namespaces; emits an encoded "name ~~KV~~ value ~~ROW~~ …" stream that
   we split into pairs for rendering rows + at-a-glance bullets.
 {%- endcomment -%}
-{%- capture _specs_encoded -%}{%- render 'pm-pdp-specs-build', product: product -%}{%- endcapture -%}
+{%- capture _specs_encoded -%}{%- render 'pm-pdp-specs-build', product: product, variant: _v -%}{%- endcapture -%}
 {%- assign _spec_pairs = _specs_encoded | split: '~~ROW~~' -%}
 {%- assign _spec_count = 0 -%}
 {%- for pair in _spec_pairs -%}
@@ -408,8 +434,14 @@
             </div>
           {%- else -%}
             <div class="pm-pdp__price-block pm-pdp__price-block--quote">
-              <div class="pm-pdp__price-quote">Pricing by quote</div>
-              <div class="pm-pdp__price-quote-sub">Request a quote for current pricing &amp; availability.</div>
+              {%- if _is_dgx and _v.price > 0 -%}
+                {%- comment -%} DGX systems: show the real per-variant list price even out of stock. Reloads per variant, so it tracks the Storage/Model pick. Quote CTA stays (0-stock allocation items are quote/backorder). {%- endcomment -%}
+                <div class="pm-pdp__price" id="pm-pdp-price">{{ _v.price | money }}</div>
+                <div class="pm-pdp__price-quote-sub">Sold on allocation — request a quote for volume pricing &amp; lead time.</div>
+              {%- else -%}
+                <div class="pm-pdp__price-quote">Pricing by quote</div>
+                <div class="pm-pdp__price-quote-sub">Request a quote for current pricing &amp; availability.</div>
+              {%- endif -%}
               {%- comment -%}
                 "Need it sooner?" — anchors to the alternatives rail, which
                 quote-only products render right below the buy area (see the
@@ -642,8 +674,15 @@
             {%- endfor -%}
             {%- if _hp_wizard -%}{%- render 'pm-hp-wizard', product: product -%}{%- endif -%}
             {%- if _visible_opt_count > 0 -%}
-            <div class="pm-pdp__options" id="pm-pdp-options"{% if _hp_custom_ui %} hidden{% endif %}>
-              {%- comment -%} hidden when the HP wizard or config picker owns the UI — the selects stay as the variant-switch source of truth {%- endcomment -%}
+            <div class="pm-pdp__options" id="pm-pdp-options"{% if _hp_custom_ui %} hidden{% endif %}{% unless _hp_custom_ui or _has_bundle_variants %} data-pm-variant-reload{% endunless %}>
+              {%- comment -%}
+                hidden when the HP wizard or config picker owns the UI — the selects stay as the variant-switch source of truth.
+                data-pm-variant-reload marks a PLAIN variant product (not a bundle, not an HP wizard/config product): on these,
+                changing the dropdown reloads to the selected variant's ?variant= URL so EVERY server-rendered field updates
+                (SKU, MPN, UPC/barcode, price, availability, quote form) — the in-place JS below only refreshes SKU/price/image/
+                avail, which left MPN + UPC stale (and merged systems like the DGX Spark lineup carry a different MPN + UPC per
+                variant). Bundle / HP-custom products are excluded so their in-place variant mapping keeps working.
+              {%- endcomment -%}
               {%- for option in product.options_with_values -%}
                 {%- assign _odn = option.name | downcase -%}
                 {%- unless _odn contains 'bundle' -%}
@@ -854,6 +893,15 @@
 
   {%- comment -%} ── Config Picker — full-width "Choose a configuration" band, replaces the Customize modal for tagged products only (see _hp_config_picker above) ── {%- endcomment -%}
   {%- if _hp_config_picker -%}{%- render 'pm-hp-config-picker', product: product -%}{%- endif -%}
+
+  {%- comment -%}
+    ── DGX Spark family showcase — "Other DGX Spark configurations" band,
+    tag-gated same pattern as the HP wizard above. Fails closed: renders
+    nothing unless the product carries the "DGX Spark" tag AND the
+    dgx-spark-ecosystem collection actually has more than 1 member (itself),
+    so a lone/unlinked product never shows an empty carousel.
+  {%- endcomment -%}
+  {%- if product.tags contains 'DGX Spark' -%}{%- render 'pm-dgx-pdp-showcase', product: product -%}{%- endif -%}
 
   {%- comment -%}
     ── Recommendations mount — built once, placed by stock state ──
@@ -1301,6 +1349,21 @@
           return chosen.every(function (c, i) { return v['option' + (i + 1)] === c; });
         });
         if (!match) return;
+
+        // Plain variant products (flagged data-pm-variant-reload server-side —
+        // i.e. not a bundle and not the HP wizard/config UI) reload to the
+        // chosen variant's URL so EVERY server-rendered field reflects it:
+        // SKU, MPN, UPC/barcode, price, availability, the quote form. The
+        // in-place updates below only cover SKU/price/image/avail and would
+        // otherwise leave MPN + UPC showing the first variant's values (the
+        // merged DGX Spark systems carry a distinct MPN + UPC per variant).
+        var optsBox = document.getElementById('pm-pdp-options');
+        if (optsBox && optsBox.hasAttribute('data-pm-variant-reload') && match.id) {
+          var vUrl = new URL(window.location.href);
+          vUrl.searchParams.set('variant', match.id);
+          window.location.href = vUrl.href;
+          return;
+        }
 
         // Update SKU + price
         var skuEl = document.getElementById('pm-pdp-sku');

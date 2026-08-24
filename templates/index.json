@@ -49,6 +49,100 @@
         "returns_url": ""
       }
     },
+    "pm-dgx-showcase": {
+      "type": "pm-dgx-showcase",
+      "blocks": {
+        "slide-asus-1tb": {
+          "type": "slide",
+          "settings": {
+            "product": "asus-ascent-gx10-gg0010bn-ai-computer-arm-cortex-x925-128gb-lpddr5x-1tb-nvme-ssd-nvidia-gb10-grace-blackwell-dgx-os",
+            "eyebrow": "",
+            "headline": "ASUS Ascent GX10",
+            "cta_label": "Shop",
+            "video": "shopify://files/videos/YTDown.com_YouTube_ASUS-Ascent-GX10-ASUS-Desktop-AI-Superco_Media_47jaQXtiyw4_002_720p.mp4",
+            "youtube_id": "47jaQXtiyw4",
+            "transparent_image": "shopify://shop_images/512mn_LKArL._AC_UF894_1000_QL80_AIweblab1381794_T1_-removebg-preview.png"
+          }
+        },
+        "slide-bundle": {
+          "type": "slide",
+          "settings": {
+            "product": "nvidia-940-54242-0000-100-2-dgx-spark-bundle-1-connecting-cable-gb10-grace-blackwell-128gb-lpddr5x-4tb-nvme-ssd-wifi-7",
+            "eyebrow": "TWO-UNIT CLUSTER BUNDLE",
+            "headline": "",
+            "cta_label": "Shop the bundle",
+            "video": "shopify://files/videos/YTDown.com_YouTube_NVIDIA-DGX-Spark-A-Grace-Blackwell-AI-Su_Media_kZRMshaNrSA_002_720p.mp4",
+            "youtube_id": "kZRMshaNrSA",
+            "transparent_image": "shopify://shop_images/61h-fLOcrKL._AC_UF894_1000_QL80_-removebg-preview.png"
+          }
+        },
+        "slide-gigabyte": {
+          "type": "slide",
+          "settings": {
+            "product": "gigabyte-atagb10-9000-ai-top-atom-personal-ai-supercomputer-nvidia-gb10-blackwell-128gb-lpddr5x-4tb-m2-ssd-dgx-os-black",
+            "eyebrow": "",
+            "headline": "",
+            "cta_label": "Shop",
+            "video": "shopify://files/videos/YTDown.com_YouTube_GIGABYTE-AI-TOP-ATOM-Your-Personal-AI-Su_Media_8i2-OmegBfY_002_720p.mp4",
+            "youtube_id": "8i2-OmegBfY",
+            "transparent_image": "shopify://shop_images/product.png"
+          }
+        },
+        "slide-pny": {
+          "type": "slide",
+          "settings": {
+            "product": "pny-nvdgxspark-pb-nvidia-dgx-spark-gb10-grace-blackwell-128gb-lpddr5x-4tb-nvme-m2-ssd-10gbe-wifi-7-bluetooth-5-3",
+            "eyebrow": "",
+            "headline": "",
+            "cta_label": "Shop",
+            "video": "shopify://files/videos/YTDown.com_YouTube_See-What-s-Possible-with-NVIDIA-DGX-Spar_Media_c7pLgZzZcho_002_720p.mp4",
+            "youtube_id": "c7pLgZzZcho",
+            "transparent_image": "shopify://shop_images/pny_nvdgxspark_pb_nvidia_dgx_spark_ai_1938749-removebg-preview.png"
+          }
+        },
+        "slide-hp-4tb": {
+          "type": "slide",
+          "settings": {
+            "product": "hp-cz2v8ut-aba-zgx-nano-g1n-ai-station-nvidia-gb10-processor-128gb-4tb-ssd-nvidia-blackwell-gpu-gigabit-ethernet",
+            "eyebrow": "",
+            "headline": "HP ZGX Nano G1n",
+            "cta_label": "Shop",
+            "video": "shopify://files/videos/YTDown.com_YouTube_HP-ZGX-Nano-G1n-AI-Station_Media_YuGqBc-vlng_002_720p.mp4",
+            "youtube_id": "YuGqBc-vlng",
+            "transparent_image": "shopify://shop_images/hp-zgx-nano-ai-station-black-licorice-left-facing-shadow-1-mob.avif"
+          }
+        },
+        "slide-msi-12s": {
+          "type": "slide",
+          "settings": {
+            "product": "msi-edgexpert12s-ai-supercomputer-mini-desktop-arm-20-core-128-gb-4tb-wifi-7-nvidia-blackwell-graphics-dgx-os-black",
+            "eyebrow": "",
+            "headline": "MSI EdgeXpert",
+            "cta_label": "Shop",
+            "video": "shopify://files/videos/YTDown.com_YouTube_MSI-EdgeXpert-Transforming-AI-Developmen_Media_MF3GOzWNhBo_002_720p.mp4",
+            "youtube_id": "MF3GOzWNhBo",
+            "transparent_image": "shopify://shop_images/83-151-801-03-removebg-preview.png"
+          }
+        }
+      },
+      "block_order": [
+        "slide-asus-1tb",
+        "slide-bundle",
+        "slide-gigabyte",
+        "slide-pny",
+        "slide-hp-4tb",
+        "slide-msi-12s"
+      ],
+      "settings": {
+        "eyebrow": "PERSONAL AI SUPERCOMPUTERS",
+        "title": "NVIDIA DGX Spark AI Computers",
+        "spec_1": "128GB unified memory",
+        "spec_2": "Up to 1 PetaFLOP FP4",
+        "spec_3": "NVIDIA AI software stack",
+        "padding_top": 64,
+        "padding_bottom": 64
+      }
+    },
     "pm-card-section": {
       "type": "pm-card-section",
       "blocks": {
@@ -386,6 +480,7 @@
   "order": [
     "pm-hero-banner",
     "pm-account-strip",
+    "pm-dgx-showcase",
     "pm-card-section",
     "pm-promotion-card",
     "pm-brand-wall",

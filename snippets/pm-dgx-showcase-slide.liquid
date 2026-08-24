@@ -1,0 +1,158 @@
+{%- comment -%}
+  PM — DGX Spark Showcase, single slide (v3 — compact; video = ambient bg)
+  Shared by sections/pm-dgx-showcase.liquid (homepage) and
+  snippets/pm-dgx-pdp-showcase.liquid (product page). One slide markup,
+  two callers.
+
+  TWO slide modes:
+   • Product slide (default) — split editorial stage: dark navy panel
+     (copy/specs/price) beside a bright spotlight where the white-bg catalog
+     cutout floats via mix-blend-mode:multiply. Chosen because the real PM
+     images are cutouts on pure white; full-bleed-with-overlay would render
+     a darkened white box.
+   • Video slide (video OR youtube_id set) — split stage: product image +
+     copy on the left panel, a looping video in the right media zone. Two
+     backends: a SELF-HOSTED video (block setting `video`) renders a native
+     <video> — autoplay/muted/loop ambient + a "Watch with sound" control
+     (the hybrid player, wired by the carousel JS via data-dgxsc-nativevideo);
+     or a YouTube id renders a chrome-less looping iframe (data-dgxsc-bgvideo)
+     as a fallback. `video` wins when both are set. Anuj: "make it compact and
+     sexy and sleek and cool."
+
+  Params:
+    product      (required) — the product object for this slide
+    eyebrow      (optional) — defaults to product.vendor (upcased)
+    headline     (optional) — defaults to product.title
+    cta_label    (optional) — defaults to "Shop"
+    youtube_id   (optional) — turns the slide into video mode (YouTube fallback)
+    video        (optional) — self-hosted Shopify video; PREFERRED over
+                  youtube_id. Native <video> hybrid player (muted-autoplay
+                  ambient + a "Watch with sound" control). Either triggers video mode.
+    transparent_image (optional) — real cutout with a transparent background
+                  (admin image_picker), used on video slides instead of the
+                  catalog photo. The catalog shot is an opaque white-bg JPEG,
+                  so without this it's faked via a light tile + multiply-blend;
+                  Anuj (round 11): "i will MANUALLY PROVIDE IMAGES WITH
+                  TRANSPARENT BGs" — when supplied, skip the fakery entirely
+                  and render the real thing (see _thumb_clean below).
+    spec_1/2/3   (optional) — shared spec chips (all DGX Spark systems share
+                  the GB10 chip / 128GB memory per the brief)
+{%- endcomment -%}
+{%- if product != blank -%}
+  {%- assign _thumb = product.featured_image | image_url: width: 160 -%}
+  {%- assign _hero = product.featured_image | image_url: width: 900 -%}
+
+  {%- comment -%}
+    Card title = a clean short name, not the full 100-char catalog title.
+    Precedence: explicit block/caller override (headline) → the product's
+    admin-editable `custom.dgx_short_title` metafield → full title as a
+    last resort. Anuj: "make sure the title in these cards are just the
+    title of the product and not a long ass name." Editable per product in
+    admin (metafield definition "DGX short title") or per slide in the
+    theme editor (headline override) — no code change either way.
+  {%- endcomment -%}
+  {%- assign _headline = headline | default: product.metafields.custom.dgx_short_title.value | default: product.title -%}
+
+  {%- comment -%}
+    Spec chips — ACCURATE, PER-PRODUCT, not the old shared/copy-pasted set.
+    Anuj: "u r scamming the customers with these SAME COPY PASTED tabs...
+    have accurate information." Source of truth = each product's own
+    `custom.dgx_specs` list metafield ([storage, memory, feature] — e.g.
+    "1TB NVMe SSD" vs "4TB NVMe SSD" now actually differ per card), edited
+    in admin. Falls back to the section's shared spec_1/2/3 only if a
+    product has no list (e.g. a newly added one). Three icons keyed by
+    position: storage / memory / feature.
+  {%- endcomment -%}
+  {%- capture _icon_storage -%}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><line x1="22" x2="2" y1="12" y2="12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/><line x1="6" x2="6.01" y1="16" y2="16"/><line x1="10" x2="10.01" y1="16" y2="16"/></svg>{%- endcapture -%}
+  {%- capture _icon_mem -%}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect width="16" height="16" x="4" y="4" rx="2"/><rect width="6" height="6" x="9" y="9" rx="1"/><path d="M15 2v2M15 20v2M2 15h2M2 9h2M20 15h2M20 9h2M9 2v2M9 20v2"/></svg>{%- endcapture -%}
+  {%- capture _icon_feat -%}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 14a1 1 0 0 1-.78-1.63l9.9-10.2a.5.5 0 0 1 .86.46l-1.92 6.02A1 1 0 0 0 13 10h7a1 1 0 0 1 .78 1.63l-9.9 10.2a.5.5 0 0 1-.86-.46l1.92-6.02A1 1 0 0 0 11 14z"/></svg>{%- endcapture -%}
+  {%- assign _pspecs = product.metafields.custom.dgx_specs.value -%}
+
+  {%- comment -%} panel inner content — identical for both modes, captured once {%- endcomment -%}
+  {%- capture _panel_inner -%}
+    <div class="pm-dgxsc__eyebrow">{{ eyebrow | default: product.vendor | upcase }}</div>
+    <h3 class="pm-dgxsc__headline">{{ _headline }}</h3>
+    {%- if _pspecs != blank and _pspecs.size > 0 -%}
+      <ul class="pm-dgxsc__specs">
+        {%- for _s in _pspecs limit: 3 -%}
+          <li class="pm-dgxsc__spec">{%- case forloop.index0 -%}{%- when 0 -%}{{ _icon_storage }}{%- when 1 -%}{{ _icon_mem }}{%- else -%}{{ _icon_feat }}{%- endcase -%}<span>{{ _s }}</span></li>
+        {%- endfor -%}
+      </ul>
+    {%- elsif spec_1 != blank or spec_2 != blank or spec_3 != blank -%}
+      <ul class="pm-dgxsc__specs">
+        {%- if spec_1 != blank -%}<li class="pm-dgxsc__spec">{{ _icon_storage }}<span>{{ spec_1 }}</span></li>{%- endif -%}
+        {%- if spec_2 != blank -%}<li class="pm-dgxsc__spec">{{ _icon_mem }}<span>{{ spec_2 }}</span></li>{%- endif -%}
+        {%- if spec_3 != blank -%}<li class="pm-dgxsc__spec">{{ _icon_feat }}<span>{{ spec_3 }}</span></li>{%- endif -%}
+      </ul>
+    {%- endif -%}
+    <div class="pm-dgxsc__meta">
+      <span class="pm-dgxsc__avail{% unless product.available %} pm-dgxsc__avail--out{% endunless %}">{% if product.available %}Available now{% else %}Made to order{% endif %}</span>
+      {%- if product.price > 0 -%}<span class="pm-dgxsc__price"><span class="pm-dgxsc__price-from">From</span> {{ product.price | money }}</span>{%- endif -%}
+    </div>
+    <a class="pm-dgxsc__cta" href="{{ product.url }}">{{ cta_label | default: 'Shop' }}<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M5 12h14M12 5l7 7-7 7"/></svg></a>
+  {%- endcapture -%}
+
+  {%- if video != blank or youtube_id != blank -%}
+    {%- comment -%}
+      ── Video slide — same split grid as product slides: copy panel (left)
+      + a media zone (right) holding a CONTAINED looping video (fully
+      visible, not cropped — data-fit="contain"). The product IMAGE sits at
+      the top of the LEFT panel, above the eyebrow/title.
+
+      Two image treatments, picked automatically by what's available:
+       • transparent_image supplied → "clean" mode. Real alpha cutout, drawn
+         as-is: no tile background, no blend trick, no stretch — object-fit
+         contain so it can't distort. This is the real thing Anuj asked for.
+       • fallback (product.featured_image) → the catalog shot is an opaque
+         white-bg JPEG, so it's faked onto the dark panel via a feathered
+         light tile + mix-blend-mode:multiply, stretched to fill the tile
+         (object-fit:fill) since the source photo's own padding varies wildly
+         per product and "contain" left square shots looking tiny.
+    {%- endcomment -%}
+    {%- assign _thumb_src = transparent_image | default: product.featured_image -%}
+    {%- assign _thumb_clean = false -%}
+    {%- if transparent_image != blank -%}{%- assign _thumb_clean = true -%}{%- endif -%}
+    <article class="pm-dgxsc__slide pm-dgxsc__slide--video" data-thumb="{{ _thumb | escape }}" data-label="{{ eyebrow | default: product.vendor | escape }}" data-has-video="1">
+      <div class="pm-dgxsc__panel pm-dgxsc__panel--withthumb">
+        {%- if _thumb_src -%}
+          <span class="pm-dgxsc__panel-thumb{% if _thumb_clean %} pm-dgxsc__panel-thumb--clean{% endif %}"><img src="{{ _thumb_src | image_url: width: 640 }}" width="{{ _thumb_src.width }}" height="{{ _thumb_src.height }}" alt="{{ product.title | escape }}" loading="lazy"></span>
+        {%- endif -%}
+        {{ _panel_inner }}
+      </div>
+      <div class="pm-dgxsc__media pm-dgxsc__media--video">
+        {%- if video != blank -%}
+          {%- comment -%}
+            Self-hosted video (Shopify-hosted) — the hybrid player. Rendered
+            NATIVELY, not as a JS-injected iframe like the YouTube path: a real
+            <video> can object-fit: contain in CSS (no per-frame sizing math),
+            Shopify serves adaptive HLS where supported + MP4 everywhere, and we
+            get a free poster from the video's preview_image. Autoplays muted +
+            loops (ambient); the carousel JS wires the "Watch with sound" control
+            (data-dgxsc-sound) — one slide with sound at a time, paused off-screen.
+          {%- endcomment -%}
+          {%- assign _poster = video.preview_image | image_url: width: 1100 -%}
+          <div class="pm-dgxsc__nativevideo" data-dgxsc-nativevideo>
+            <video class="pm-dgxsc__vid" autoplay muted loop playsinline preload="metadata"{% if _poster != blank %} poster="{{ _poster }}"{% endif %}>
+              {%- for _src in video.sources -%}<source src="{{ _src.url }}" type="{{ _src.mime_type }}">{%- endfor -%}
+            </video>
+            <button type="button" class="pm-dgxsc__sound" data-dgxsc-sound aria-label="Watch with sound" aria-pressed="false">
+              <svg class="pm-dgxsc__sound-off" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+              <svg class="pm-dgxsc__sound-on" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+              <span class="pm-dgxsc__sound-label">Watch with sound</span>
+            </button>
+          </div>
+        {%- else -%}
+          <div class="pm-dgxsc__bgvideo" data-dgxsc-bgvideo data-yt="{{ youtube_id | escape }}" data-fit="contain" aria-hidden="true"></div>
+        {%- endif -%}
+      </div>
+    </article>
+  {%- else -%}
+    {%- comment -%} ── Product slide — split editorial stage ── {%- endcomment -%}
+    <article class="pm-dgxsc__slide" data-thumb="{{ _thumb | escape }}" data-label="{{ eyebrow | default: product.vendor | escape }}">
+      <div class="pm-dgxsc__panel">{{ _panel_inner }}</div>
+      <div class="pm-dgxsc__media">
+        <img class="pm-dgxsc__product" src="{{ _hero }}" width="{{ product.featured_image.width }}" height="{{ product.featured_image.height }}" alt="{{ product.title | escape }}" loading="lazy">
+      </div>
+    </article>
+  {%- endif -%}
+{%- endif -%}

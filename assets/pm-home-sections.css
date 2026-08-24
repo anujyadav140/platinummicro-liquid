@@ -1,7 +1,11 @@
 /* =============================================================================
    pm-home-sections.css — Home / marketing sections
-   Hero banner, banner strip, card section, brand wall, promotion card, about banner.
+   Hero banner, banner strip, card section, brand wall, promotion card,
+   about banner, DGX Spark showcase.
    PM theme CSS layer · load order 4/12 (see README → "CSS architecture").
+   Loaded sitewide (layout/theme.liquid, unconditional) — not homepage-only
+   despite the filename, which is why the DGX Spark showcase block below is
+   safe to reuse on product pages too (snippets/pm-dgx-pdp-showcase.liquid).
    ============================================================================= */
 
 /* --- Hero Banner ---------------------------------------------------------- */
@@ -685,3 +689,283 @@
   .pm-about-banner__body { font-size: var(--ab-body-size, 18px); }
 }
 
+/* --- DGX Spark Showcase (v3 — compact; ambient-video slide) ----------------
+   Premium carousel for the NVIDIA DGX Spark lineup. Two slide modes:
+   PRODUCT slides = split editorial stage (dark copy panel + light spotlight
+   where the white-bg catalog cutout floats via mix-blend-mode:multiply).
+   VIDEO slides = full-bleed autoplaying/looping/muted YouTube background
+   (iframe injected + cover-sized by the carousel JS) with copy overlaid on
+   a left gradient scrim. Compact heights, horizontal frosted spec chips.
+   Loaded sitewide, so it also drives snippets/pm-dgx-pdp-showcase.liquid.
+   Shell: snippets/pm-dgx-showcase-{slide,carousel}.liquid. */
+.pm-dgxsc { background: var(--pm-paper); padding: var(--dgxsc-pt, 56px) 0 var(--dgxsc-pb, 56px); }
+.pm-dgxsc__head { margin-bottom: 22px; }
+.pm-dgxsc__title { font-size: 27px; font-weight: 800; letter-spacing: -0.02em; color: var(--pm-ink-900); margin: 5px 0 0; }
+@media (min-width: 768px) { .pm-dgxsc__title { font-size: 32px; } }
+
+.pm-dgxsc__stage { position: relative; }
+.pm-dgxsc__viewport { position: relative; border-radius: 20px; overflow: hidden; box-shadow: 0 1px 2px rgba(7,21,37,.06), 0 20px 40px -18px rgba(7,21,37,.30); }
+.pm-dgxsc__track {
+  display: flex;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.pm-dgxsc__track::-webkit-scrollbar { display: none; }
+
+/* Compact shared slide height — both modes snap in the same track */
+.pm-dgxsc__slide {
+  flex: 0 0 100%;
+  scroll-snap-align: start;
+  display: grid;
+  grid-template-columns: 44% 56%;
+  grid-template-rows: 100%; /* definite single row → the square catalog cutouts size against a fixed cell instead of ballooning the slide */
+  height: 446px;
+  background: var(--pm-navy-deep);
+}
+@media (min-width: 1200px) { .pm-dgxsc__slide { height: 476px; } }
+@media (max-width: 767px) { .pm-dgxsc__slide { grid-template-columns: 1fr; grid-template-rows: auto; height: auto; } }
+
+/* Editorial panel (dark) */
+.pm-dgxsc__panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  padding: 30px 34px;
+  background:
+    radial-gradient(120% 100% at 0% 0%, rgba(46,109,180,.18), transparent 60%),
+    linear-gradient(160deg, var(--pm-navy-deep) 0%, var(--pm-navy-deepest) 100%);
+  overflow: hidden;
+}
+.pm-dgxsc__panel::before {
+  content: ''; position: absolute; top: 0; left: 0; width: 52px; height: 3px;
+  background: var(--pm-terracotta); border-radius: 0 0 3px 0;
+}
+@media (max-width: 767px) { .pm-dgxsc__panel { padding: 26px 22px 30px; gap: 12px; } }
+.pm-dgxsc__eyebrow {
+  font-size: 11px; font-weight: 800; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--pm-terracotta-light);
+}
+.pm-dgxsc__headline {
+  font-size: 22px; font-weight: 800; line-height: 1.16; letter-spacing: -0.02em;
+  color: var(--pm-white); margin: 0;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+  flex-shrink: 0; /* never let the flex column shrink the title to 0 (overflow:hidden makes its min-height 0, so it'd otherwise absorb any overflow and vanish) */
+}
+@media (min-width: 1200px) { .pm-dgxsc__headline { font-size: 26px; } }
+
+/* Spec highlights — compact horizontal frosted chips */
+.pm-dgxsc__specs { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.pm-dgxsc__spec {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 12px; font-weight: 600; color: rgba(255,255,255,.92);
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.16);
+  border-radius: 99px; padding: 6px 12px 6px 10px;
+  -webkit-backdrop-filter: blur(4px); backdrop-filter: blur(4px);
+}
+.pm-dgxsc__spec svg { width: 15px; height: 15px; flex: none; color: rgba(255,255,255,.62); }
+
+.pm-dgxsc__meta { display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; margin-top: 2px; }
+.pm-dgxsc__avail {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-size: 12.5px; font-weight: 700; color: #7EDCAE;
+}
+.pm-dgxsc__avail::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: currentColor; box-shadow: 0 0 0 3px rgba(126,220,174,.18); }
+.pm-dgxsc__avail--out { color: #F2C879; }
+.pm-dgxsc__avail--out::before { box-shadow: 0 0 0 3px rgba(242,200,121,.18); }
+.pm-dgxsc__price { font-size: 20px; font-weight: 800; color: var(--pm-white); letter-spacing: -0.01em; font-variant-numeric: tabular-nums; }
+.pm-dgxsc__price-from { font-size: 12px; font-weight: 600; color: rgba(255,255,255,.55); letter-spacing: 0; }
+
+.pm-dgxsc__cta {
+  align-self: flex-start;
+  display: inline-flex; align-items: center; gap: 8px;
+  margin-top: 4px; padding: 12px 22px;
+  background: var(--pm-terracotta); color: var(--pm-white);
+  font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  border-radius: 8px; box-shadow: var(--pm-shadow-md);
+  transition: transform var(--pm-dur-fast), background var(--pm-dur-fast);
+}
+.pm-dgxsc__cta:hover { background: var(--pm-terracotta-light); color: var(--pm-white); transform: translateY(-1px); }
+.pm-dgxsc__cta svg { flex: none; transition: transform var(--pm-dur-base) var(--pm-ease-standard); }
+.pm-dgxsc__cta:hover svg { transform: translateX(3px); }
+
+/* Product spotlight (light) */
+.pm-dgxsc__media {
+  position: relative;
+  display: grid; grid-template-rows: 100%; place-items: center; /* definite row → % sizing on the image actually resolves, same pattern as .panel-thumb below */
+  padding: 26px;
+  background: radial-gradient(90% 82% at 50% 26%, #ffffff 0%, #F4F1EC 55%, #ECE7DF 100%);
+  overflow: hidden;
+}
+.pm-dgxsc__media::after {
+  content: ''; position: absolute; left: 50%; bottom: 13%;
+  width: 56%; height: 22px; transform: translateX(-50%);
+  background: radial-gradient(closest-side, rgba(7,21,37,.22), transparent 78%);
+  filter: blur(4px); pointer-events: none;
+}
+/* FULL STRETCH, not contain — same fix as the video-slide's panel-thumb image
+   (see below) and for the same reason: catalog photos carry wildly different
+   built-in white margins per product, so "contain" made some slides (tight
+   crops like ASUS) fill the spotlight and others (square/padded shots like
+   MSI) render as a tiny logo in a big empty box. Anuj: "make it so the
+   product image for each SKU is consistent... asus is how i want them,
+   msi is how i dont want them." Filling width+height and stretching
+   guarantees every slide looks equally full regardless of source crop. */
+.pm-dgxsc__product {
+  position: relative; z-index: 1;
+  width: 100%; height: 100%;
+  object-fit: fill;
+  mix-blend-mode: multiply;
+}
+@media (max-width: 767px) {
+  .pm-dgxsc__media { order: -1; height: 190px; padding: 20px; }
+}
+
+/* ── Video slide — same split grid; media zone (right) holds a CONTAINED
+   looping video (fully visible, not cropped). Anuj (round 5): no floating
+   card — the product IMAGE sits at the top of the LEFT panel instead
+   (.pm-dgxsc__panel-thumb), above the eyebrow/title. ── */
+.pm-dgxsc__slide--video { grid-template-columns: 40% 60%; }
+@media (max-width: 767px) { .pm-dgxsc__slide--video { grid-template-columns: 1fr; } }
+/* Video slide gets a PLAIN navy panel — drop the blue top-left corner glow;
+   with the product image sitting in that corner it read as a cheap shader.
+   Anuj: "no cringe blue shaders on the corner." */
+.pm-dgxsc__slide--video .pm-dgxsc__panel {
+  background: linear-gradient(160deg, var(--pm-navy-deep) 0%, var(--pm-navy-deepest) 100%);
+}
+.pm-dgxsc__media--video { padding: 0; background: #05070c; }
+.pm-dgxsc__media--video::after { display: none; }
+.pm-dgxsc__bgvideo { position: absolute; inset: 0; overflow: hidden; }
+.pm-dgxsc__bgvideo iframe {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  border: 0; pointer-events: none; /* JS sets width/height (contain fit) */
+}
+/* ── Self-hosted native <video> (the HYBRID player) — same media zone as the
+   YouTube variant, but a real <video> that can object-fit in CSS (no JS sizing
+   math), plus a "Watch with sound" control. CHROME-LESS: the browser's native
+   control bar is never enabled (Anuj), so our pill is the only control. Ambient
+   (muted loop) by default; .is-unmuted just swaps the pill's icon. ── */
+.pm-dgxsc__nativevideo { position: absolute; inset: 0; overflow: hidden; }
+.pm-dgxsc__vid {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  width: 100%; height: 100%; object-fit: contain; background: #05070c;
+}
+.pm-dgxsc__sound {
+  position: absolute; z-index: 3; right: 14px; bottom: 14px;
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 13px; border: 0; border-radius: 99px; cursor: pointer;
+  background: rgba(7,21,37,.62); color: #fff;
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  font-size: 12px; font-weight: 600; line-height: 1;
+  transition: background var(--pm-dur-base) var(--pm-ease-standard), transform var(--pm-dur-base) var(--pm-ease-standard);
+}
+.pm-dgxsc__sound:hover { background: rgba(7,21,37,.85); transform: translateY(-1px); }
+.pm-dgxsc__sound:focus-visible { outline: 2px solid var(--pm-terracotta-light); outline-offset: 2px; }
+.pm-dgxsc__sound svg { flex: none; }
+.pm-dgxsc__sound-on { display: none; }
+.pm-dgxsc__sound-label { white-space: nowrap; }
+/* unmuted: swap to the sound-on icon, drop the label, shrink to an icon chip.
+   (No control bar to sit above anymore — the pill keeps its bottom-right spot.) */
+.pm-dgxsc__nativevideo.is-unmuted .pm-dgxsc__sound-off { display: none; }
+.pm-dgxsc__nativevideo.is-unmuted .pm-dgxsc__sound-on { display: inline-flex; }
+.pm-dgxsc__nativevideo.is-unmuted .pm-dgxsc__sound-label { display: none; }
+.pm-dgxsc__nativevideo.is-unmuted .pm-dgxsc__sound { padding: 8px; }
+@media (max-width: 767px) {
+  .pm-dgxsc__sound { right: 10px; bottom: 10px; padding: 7px 11px; font-size: 11px; }
+}
+/* the video slide's left panel leads with a big product image, then the
+   copy — give it a roomy, evenly-spaced rhythm */
+.pm-dgxsc__panel--withthumb { gap: 14px; justify-content: center; padding-top: 22px; padding-bottom: 22px; }
+/* Big product image on the LEFT panel of the video slide. Anuj: "make the
+   product IMAGE big… bg should NOT be white but TRANSPARENT… no cropping."
+   The catalog shot is a white-bg JPEG, so instead of a white card we lay it
+   on a feathered spotlight: a bright core (keeps the product crisp under
+   mix-blend-mode:multiply) that dissolves to fully transparent at the edges,
+   so the tile melts into the dark navy panel — no visible white box. */
+.pm-dgxsc__panel-thumb {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%; max-width: 260px; height: 87px; flex: none;
+  margin: 0 auto 2px; padding: 5px 16px 7px;
+  border-radius: 16px;
+  /* clean neutral spotlight: solid warm-light core (so the multiply cutout
+     reads) that feathers to TRANSPARENT at the very edges — no navy/blue
+     colour stop. Anuj: "no cringe blue shaders on the corner… keep it normal." */
+  background: radial-gradient(96% 135% at 50% 46%, #ffffff 0%, #F5F1EA 60%, #F5F1EA 74%, rgba(245,241,234,0) 100%);
+  display: grid; grid-template-rows: 100%;
+  overflow: hidden; /* hard clip — never let a tall/square image spill onto the title */
+}
+@media (min-width: 1200px) { .pm-dgxsc__panel-thumb { max-width: 280px; height: 102px; } }
+.pm-dgxsc__panel-thumb img {
+  position: relative; z-index: 1;
+  /* FULL STRETCH, not contain. Catalog photos are square with a lot of built-in
+     white margin around a small product — object-fit:contain sized the box
+     correctly but the product itself still rendered as a tiny logo floating in
+     empty space (only the wide ASUS shot happened to fill the frame naturally).
+     Filling width+height exactly and stretching guarantees every product tile
+     looks equally full, no matter the source photo's crop. The tile's
+     `overflow:hidden` still guards against any spill. */
+  width: 100%; height: 100%; object-fit: fill;
+  mix-blend-mode: multiply;
+}
+/* "Clean" mode — Anuj is manually supplying real transparent-background
+   cutouts for video-slide products (image_picker on the block). A real alpha
+   PNG needs none of the fakery above: no light tile (nothing to key against),
+   no multiply blend (would just darken it), no stretch (would distort a
+   properly isolated product shot instead of hiding sloppy JPEG padding). It
+   floats directly on the dark panel at its own aspect ratio. Same outer
+   footprint as the fallback tile, so layout stays identical either way. */
+.pm-dgxsc__panel-thumb.pm-dgxsc__panel-thumb--clean {
+  background: none;
+  padding: 0;
+}
+.pm-dgxsc__panel-thumb.pm-dgxsc__panel-thumb--clean img {
+  width: auto; height: auto;
+  max-width: 100%; max-height: 100%;
+  object-fit: contain;
+  justify-self: center; align-self: center;
+  mix-blend-mode: normal;
+}
+@media (max-width: 767px) {
+  .pm-dgxsc__media--video { order: -1; height: 230px; }
+  .pm-dgxsc__panel-thumb { max-width: 196px; height: 76px; }
+}
+
+/* Counter (overlaid on the stage, top-right) */
+.pm-dgxsc__counter {
+  position: absolute; top: 14px; right: 14px; z-index: 4;
+  padding: 5px 11px; border-radius: 99px;
+  background: rgba(7,21,37,.55); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  color: rgba(255,255,255,.75); font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums;
+}
+.pm-dgxsc__counter b { color: var(--pm-white); font-weight: 800; }
+
+/* Thumbnail nav rail */
+.pm-dgxsc__nav { display: flex; align-items: center; justify-content: center; gap: 12px; margin-top: 16px; }
+.pm-dgxsc__arrow {
+  flex: none; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%;
+  border: 1.5px solid var(--pm-ink-200); background: var(--pm-white); color: var(--pm-ink-700);
+  cursor: pointer; transition: border-color var(--pm-dur-fast), color var(--pm-dur-fast), opacity var(--pm-dur-fast);
+}
+.pm-dgxsc__arrow:hover { border-color: var(--pm-terracotta); color: var(--pm-terracotta); }
+.pm-dgxsc__arrow:disabled { opacity: 0.35; cursor: default; border-color: var(--pm-ink-200); color: var(--pm-ink-700); }
+.pm-dgxsc__rail { display: flex; gap: 9px; overflow-x: auto; scrollbar-width: none; padding: 4px; scroll-snap-type: x proximity; }
+.pm-dgxsc__rail::-webkit-scrollbar { display: none; }
+.pm-dgxsc__thumb {
+  flex: none; position: relative; width: 60px; height: 44px; border-radius: 8px; overflow: hidden;
+  background: var(--pm-white); border: 2px solid var(--pm-ink-200); cursor: pointer; padding: 4px;
+  scroll-snap-align: center; transition: border-color var(--pm-dur-fast), transform var(--pm-dur-fast);
+}
+.pm-dgxsc__thumb img { width: 100%; height: 100%; object-fit: contain; mix-blend-mode: multiply; }
+.pm-dgxsc__thumb:hover { transform: translateY(-2px); }
+.pm-dgxsc__thumb.is-active { border-color: var(--pm-terracotta); box-shadow: 0 0 0 3px var(--pm-terracotta-pale); }
+/* Anuj: "REMOVE THE PLAY BUTTON LAD from every one of em" — the red play-icon
+   badge (formerly .pm-dgxsc__thumb--video::after) is gone; video slides get
+   no special thumbnail treatment now. */
+
+/* PDP embed wrapper — reuses .pm-pdp__longblock / .pm-pdp__h2 from pm-product.css */
+.pm-dgxsc-pdp__hint { margin: 6px 0 18px; font-size: 13px; font-weight: 600; color: var(--pm-ink-500); }
+.pm-dgxsc-pdp .pm-dgxsc__stage { margin-top: 4px; }

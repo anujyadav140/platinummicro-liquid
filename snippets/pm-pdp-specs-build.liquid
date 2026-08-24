@@ -35,7 +35,69 @@
 {%- liquid
   assign cand_list = 'custom.product_custom_fields|custom.custom_fields|custom.specifications|custom.specs|custom.spec_sheet|custom.product_specs|custom.category_details|pm.product_custom_fields|pm.custom_fields|pm.specifications|pm.specs|pm.category_details|pm.warranty|bc.product_custom_fields|bc.custom_fields|specs.body|specs.data' | split: '|'
   assign seen = '|'
+  assign ns_list = 'custom,pm,specs,bc' | split: ','
+  comment
+    skip_keys: reserved/aggregate keys never emitted as their own spec row.
+    dgx_short_title is a display/showcase helper (a variant name), not a spec —
+    excluded so it never surfaces as a "Dgx short title: …" row in the PDP table.
+  endcomment
+  assign skip_keys = 'mpn,upc,key_features,dgx_short_title,bc_product_id,product_custom_fields,custom_fields,specifications,specs,spec_sheet,product_specs,category_details,warranty,body,data' | split: ','
 -%}
+
+{%- comment -%}
+  ── Pass 0: VARIANT-level per-spec metafields (override the product) ──
+  When the caller passes a `variant` (the PDP's selected variant), its own
+  metafields are emitted FIRST, so any spec it defines wins over the product's
+  same-named spec via the `seen` ledger below. This is how a multi-variant
+  product shows the SELECTED variant's specs instead of one shared set — e.g.
+  the merged DGX Spark systems, where the 1TB and 4TB variants each carry their
+  own `custom.dgx_specs`. Fully generic: any product, any variant, any spec —
+  no per-product code, no string replacement. Product with no variant metafields
+  falls straight through to the product-level passes unchanged.
+{%- endcomment -%}
+{%- if variant != blank -%}
+  {%- for ns_ in ns_list -%}
+    {%- for entry in variant.metafields[ns_] -%}
+      {%- assign k_   = entry.first -%}
+      {%- assign skip = false -%}
+      {%- for sk_ in skip_keys -%}
+        {%- if sk_ == k_ -%}{%- assign skip = true -%}{%- endif -%}
+      {%- endfor -%}
+      {%- if skip -%}{%- continue -%}{%- endif -%}
+
+      {%- assign mf_   = entry.last -%}
+      {%- assign mtype = mf_.type | default: '' -%}
+      {%- assign nm    = mf_.definition.name -%}
+      {%- if nm == blank -%}
+        {%- assign nm = k_ | replace: '-', ' ' | replace: '_', ' ' | capitalize -%}
+      {%- endif -%}
+
+      {%- assign vl = '' -%}
+      {%- if mtype contains 'list' -%}
+        {%- for item in mf_.value -%}
+          {%- assign part = item.name | default: item -%}
+          {%- if forloop.first -%}{%- assign vl = part -%}{%- else -%}{%- assign vl = vl | append: ', ' | append: part -%}{%- endif -%}
+        {%- endfor -%}
+      {%- else -%}
+        {%- assign ref_name = mf_.value.name -%}
+        {%- if ref_name != blank -%}
+          {%- assign vl = ref_name -%}
+        {%- else -%}
+          {%- capture vl -%}{{ mf_ }}{%- endcapture -%}
+        {%- endif -%}
+      {%- endif -%}
+      {%- assign vl = vl | strip -%}
+
+      {%- if nm != '' and vl != '' -%}
+        {%- assign sk0 = '|' | append: nm | downcase | append: '|' -%}
+        {%- unless seen contains sk0 -%}
+          {%- assign seen = seen | append: nm | downcase | append: '|' -%}
+          {{ nm }}~~KV~~{{ vl }}~~ROW~~
+        {%- endunless -%}
+      {%- endif -%}
+    {%- endfor -%}
+  {%- endfor -%}
+{%- endif -%}
 
 {%- comment -%} ── Pass 1: Aggregate metafields ── {%- endcomment -%}
 {%- for cand in cand_list -%}
@@ -153,9 +215,7 @@
   {%- endif -%}
 {%- endfor -%}
 
-{%- comment -%} ── Pass 3: per-spec metafields in custom/pm/specs/bc ── {%- endcomment -%}
-{%- assign ns_list   = 'custom,pm,specs,bc' | split: ',' -%}
-{%- assign skip_keys = 'mpn,upc,key_features,bc_product_id,product_custom_fields,custom_fields,specifications,specs,spec_sheet,product_specs,category_details,warranty,body,data' | split: ',' -%}
+{%- comment -%} ── Pass 3: per-spec metafields in custom/pm/specs/bc (ns_list + skip_keys defined at top, shared with Pass 0) ── {%- endcomment -%}
 {%- for ns_ in ns_list -%}
   {%- for entry in product.metafields[ns_] -%}
     {%- assign k_   = entry.first -%}

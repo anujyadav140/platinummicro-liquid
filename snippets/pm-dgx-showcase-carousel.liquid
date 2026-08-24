@@ -1,0 +1,257 @@
+{%- comment -%}
+  PM — DGX Spark Showcase, carousel shell (v2).
+  Wraps pre-rendered <article class="pm-dgxsc__slide"> markup (built via
+  repeated renders of pm-dgx-showcase-slide) in a scroll-snap track, and
+  builds a thumbnail navigation rail + counter in JS from each slide's
+  data-thumb/data-label attributes — so both callers (homepage section,
+  PDP panel) stay dead simple and the rail always matches the slides that
+  are actually present. Also owns the click-to-play YouTube facade: the
+  first click on a slide's play button swaps the poster for an autoplaying
+  embed (lite-youtube pattern — nothing loads from YouTube until asked).
+  Self-initializes every [data-dgx-showcase] on the page.
+
+  Params:
+    slides_html  (required) — pre-rendered slide markup, already assembled
+    slide_count  (required) — how many slides (for the "01 / N" counter)
+    id_suffix    (optional) — appended to root id so two instances never collide
+{%- endcomment -%}
+<div class="pm-dgxsc__stage" data-dgx-showcase id="pm-dgxsc-{{ id_suffix | default: 'main' }}">
+  <div class="pm-dgxsc__viewport">
+    <div class="pm-dgxsc__track" data-dgxsc-track>
+      {{ slides_html }}
+    </div>
+    {%- if slide_count > 1 -%}
+      <span class="pm-dgxsc__counter"><b data-dgxsc-current>1</b> / {{ slide_count }}</span>
+    {%- endif -%}
+  </div>
+
+  {%- if slide_count > 1 -%}
+    <div class="pm-dgxsc__nav">
+      <button type="button" class="pm-dgxsc__arrow" data-dgxsc-prev aria-label="Previous system">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="pm-dgxsc__rail" data-dgxsc-rail aria-label="Choose a system"></div>
+      <button type="button" class="pm-dgxsc__arrow" data-dgxsc-next aria-label="Next system">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+  {%- endif -%}
+</div>
+
+<script>
+(function () {
+  function init(root) {
+    if (root.getAttribute('data-dgxsc-init')) return; /* guard double-init */
+    root.setAttribute('data-dgxsc-init', '1');
+    var track = root.querySelector('[data-dgxsc-track]');
+    if (!track || !track.children.length) return;
+    var slides = Array.prototype.slice.call(track.children);
+    var total = slides.length;
+    var prevBtn = root.querySelector('[data-dgxsc-prev]');
+    var nextBtn = root.querySelector('[data-dgxsc-next]');
+    var curEl = root.querySelector('[data-dgxsc-current]');
+    var rail = root.querySelector('[data-dgxsc-rail]');
+
+    /* Build the thumbnail rail from each slide's data-thumb/data-label */
+    var thumbs = [];
+    if (rail) {
+      slides.forEach(function (slide, i) {
+        var url = slide.getAttribute('data-thumb') || '';
+        var label = slide.getAttribute('data-label') || '';
+        var b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'pm-dgxsc__thumb';
+        b.setAttribute('aria-label', label || ('System ' + (i + 1)));
+        b.setAttribute('title', label);
+        if (url) {
+          var im = document.createElement('img');
+          im.src = url; im.alt = ''; im.loading = 'lazy';
+          b.appendChild(im);
+        }
+        b.addEventListener('click', function () {
+          track.scrollTo({ left: i * track.clientWidth, behavior: 'smooth' });
+        });
+        rail.appendChild(b);
+        thumbs.push(b);
+      });
+    }
+
+    function currentIndex() {
+      var w = track.clientWidth || 1;
+      return Math.max(0, Math.min(Math.round(track.scrollLeft / w), total - 1));
+    }
+    function sync() {
+      var idx = currentIndex();
+      if (curEl) curEl.textContent = ('0' + (idx + 1)).slice(-2);
+      thumbs.forEach(function (t, i) { t.classList.toggle('is-active', i === idx); });
+      if (prevBtn) prevBtn.disabled = idx <= 0;
+      if (nextBtn) nextBtn.disabled = idx >= total - 1;
+      syncVideos(idx);
+    }
+    function go(delta) {
+      var idx = Math.max(0, Math.min(currentIndex() + delta, total - 1));
+      track.scrollTo({ left: idx * track.clientWidth, behavior: 'smooth' });
+    }
+    if (prevBtn) prevBtn.addEventListener('click', function () { go(-1); });
+    if (nextBtn) nextBtn.addEventListener('click', function () { go(1); });
+
+    var t;
+    track.addEventListener('scroll', function () { clearTimeout(t); t = setTimeout(sync, 80); });
+    window.addEventListener('resize', sync);
+
+    /* Looping video — inject an autoplaying, muted, chrome-less YouTube
+       embed and size the 16:9 iframe against its box (iframes can't
+       object-fit). data-fit="contain" (default here) fits the WHOLE frame
+       inside so nothing is cropped — Anuj: "zoomed out so everything is
+       seen"; "cover" would instead fill+crop. loop needs playlist=<id>;
+       autoplay needs mute=1. Recomputed on resize. */
+    function fitSize(box, ifr, mode) {
+      var w = box.clientWidth, h = box.clientHeight, ar = 16 / 9;
+      if (!w || !h) return;
+      var wide = (w / h > ar);
+      if (mode === 'contain') {
+        if (wide) { ifr.style.height = h + 'px'; ifr.style.width = (h * ar) + 'px'; }
+        else { ifr.style.width = w + 'px'; ifr.style.height = (w / ar) + 'px'; }
+      } else { /* cover */
+        if (wide) { ifr.style.width = w + 'px'; ifr.style.height = (w / ar) + 'px'; }
+        else { ifr.style.height = h + 'px'; ifr.style.width = (h * ar) + 'px'; }
+      }
+    }
+    /* Seamless loop via the YouTube IFrame API. The old loop=1&playlist=<id>
+       trick RELOADS the player each cycle, which flashes YouTube's chrome
+       (title/controls) for ~2-3s on restart. We instead drive one player and
+       seek — never reload. Anuj's insight: YouTube's chrome shows at the very
+       start (00:00 title card) and the very end (pause + replay/related
+       overlay). So we TRIM both ends — begin HEAD seconds in and loop back
+       TAIL seconds before the true end — and the video lives entirely in the
+       "clean" middle where no chrome ever appears. A 250ms poll watches
+       currentTime and seeks back to HEAD once it crosses (duration − TAIL);
+       the ENDED handler is just a safety net. Degrades to play-once if the
+       API is blocked. */
+    var YT_HEAD = 3, YT_TAIL = 5;
+    function whenYTReady(cb) {
+      if (window.YT && window.YT.Player) { cb(); return; }
+      window.__pmYTQ = window.__pmYTQ || [];
+      window.__pmYTQ.push(cb);
+      if (window.__pmYTLoading) return;
+      window.__pmYTLoading = true;
+      var prev = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = function () {
+        if (typeof prev === 'function') { try { prev(); } catch (e) {} }
+        (window.__pmYTQ || []).forEach(function (f) { try { f(); } catch (e) {} });
+        window.__pmYTQ = [];
+      };
+      var tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      document.head.appendChild(tag);
+    }
+    var _ytn = 0;
+    var bgs = root.querySelectorAll('[data-dgxsc-bgvideo]');
+    Array.prototype.forEach.call(bgs, function (box) {
+      var id = box.getAttribute('data-yt');
+      if (!id || box.querySelector('iframe')) return;
+      var mode = box.getAttribute('data-fit') || 'cover';
+      var ifr = document.createElement('iframe');
+      ifr.id = 'pm-dgxsc-yt-' + (root.id || 'x') + '-' + (_ytn++);
+      ifr.src = 'https://www.youtube.com/embed/' + id +
+        '?enablejsapi=1&autoplay=1&mute=1&controls=0&modestbranding=1&rel=0&showinfo=0&iv_load_policy=3&disablekb=1&playsinline=1&fs=0&start=3&cc_load_policy=0&cc_lang_pref=none&origin=' + encodeURIComponent(location.origin);
+      ifr.setAttribute('title', 'Product video');
+      ifr.setAttribute('frameborder', '0');
+      ifr.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture');
+      ifr.setAttribute('tabindex', '-1');
+      ifr.setAttribute('aria-hidden', 'true');
+      box.appendChild(ifr);
+      fitSize(box, ifr, mode);
+      window.addEventListener('resize', function () { fitSize(box, ifr, mode); });
+      whenYTReady(function () {
+        try {
+          new YT.Player(ifr.id, {
+            events: {
+              onReady: function (e) {
+                try { e.target.mute(); e.target.seekTo(YT_HEAD, true); e.target.playVideo(); } catch (er) {}
+                /* force captions off — cc_load_policy handles most cases, unloadModule kills any that still auto-show */
+                try { e.target.unloadModule('captions'); e.target.unloadModule('cc'); } catch (er) {}
+                fitSize(box, ifr, mode);
+                var dur = 0;
+                if (box.__pmLoopT) clearInterval(box.__pmLoopT);
+                box.__pmLoopT = setInterval(function () {
+                  try {
+                    if (dur < 1) dur = e.target.getDuration() || 0;
+                    if (dur > YT_HEAD + YT_TAIL + 1 && e.target.getCurrentTime() >= dur - YT_TAIL) {
+                      e.target.seekTo(YT_HEAD, true);
+                    }
+                  } catch (er) {}
+                }, 250);
+              },
+              onStateChange: function (e) { if (e.data === 0) { try { e.target.seekTo(YT_HEAD, true); e.target.playVideo(); } catch (er) {} } }
+            }
+          });
+        } catch (er) {}
+      });
+    });
+
+    /* ── Self-hosted native <video> slides — the HYBRID player. Autoplay
+       muted loop is ambient; the per-slide button turns sound ON (solos the
+       slide, restarts from 0) and OFF. CHROME-LESS: never shows the browser's
+       native <video> control bar (Anuj: "no chrome-type playback shown at
+       all") — our sound pill is the only control. Only ONE slide ever has
+       sound; non-active slides are paused + reset to muted ambient, and
+       everything pauses when the showcase scrolls off-screen. Coexists with
+       the YouTube path above (different data-attr). ── */
+    var natives = [];
+    function muteAmbient(rec) {
+      try { rec.vid.muted = true; } catch (e) {}
+      rec.box.classList.remove('is-unmuted');
+      if (rec.btn) { rec.btn.setAttribute('aria-pressed', 'false'); rec.btn.setAttribute('aria-label', 'Watch with sound'); }
+    }
+    function playRec(rec) { var p; try { p = rec.vid.play(); } catch (e) {} if (p && p.catch) p.catch(function () {}); }
+    function syncVideos(activeIdx) {
+      if (!natives || !natives.length) return;
+      natives.forEach(function (rec) {
+        if (rec.idx === activeIdx) { playRec(rec); }
+        else { try { rec.vid.pause(); } catch (e) {} muteAmbient(rec); }
+      });
+    }
+    Array.prototype.forEach.call(root.querySelectorAll('[data-dgxsc-nativevideo]'), function (box) {
+      var vid = box.querySelector('video');
+      if (!vid) return;
+      var btn = box.querySelector('[data-dgxsc-sound]');
+      var slideIdx = -1;
+      for (var i = 0; i < slides.length; i++) { if (slides[i].contains(box)) { slideIdx = i; break; } }
+      var rec = { box: box, vid: vid, btn: btn, idx: slideIdx };
+      natives.push(rec);
+      if (btn) {
+        btn.addEventListener('click', function () {
+          if (vid.muted) {
+            /* sound ON: solo this slide, restart from 0, unmute — no native
+               controls (chrome-less); our pill stays the only control */
+            natives.forEach(function (o) { if (o !== rec) { try { o.vid.pause(); } catch (e) {} muteAmbient(o); } });
+            try { vid.currentTime = 0; vid.muted = false; } catch (e) {}
+            box.classList.add('is-unmuted');
+            btn.setAttribute('aria-pressed', 'true');
+            btn.setAttribute('aria-label', 'Mute video');
+            playRec(rec);
+          } else {
+            muteAmbient(rec); /* back to ambient (keeps playing, muted) */
+          }
+        });
+      }
+    });
+    /* Pause everything when the showcase isn't on screen (battery + no phantom
+       audio from a slide you scrolled past); resume the active one on return. */
+    if (natives.length && 'IntersectionObserver' in window) {
+      var vio = new IntersectionObserver(function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) { syncVideos(currentIndex()); }
+          else { natives.forEach(function (rec) { try { rec.vid.pause(); } catch (er) {} }); }
+        });
+      }, { threshold: 0.12 });
+      vio.observe(root);
+    }
+
+    sync();
+  }
+  var roots = document.querySelectorAll('[data-dgx-showcase]');
+  for (var i = 0; i < roots.length; i++) init(roots[i]);
+})();
+</script>
