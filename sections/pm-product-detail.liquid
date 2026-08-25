@@ -48,6 +48,49 @@
   {%- endif -%}
 {%- endif -%}
 
+{%- comment -%}
+  ── Per-variant H1 title ──
+  The merged DGX Spark systems share ONE product title with a config token
+  baked in — ASUS "…128GB LPDDR5X 1TB NVMe SSD…", HP "…128GB - 4TB SSD…",
+  MSI "…EdgeXpert12S…". Each variant RELOADS (data-pm-variant-reload), so every
+  other field already tracks _v; the title was the one thing stuck on the
+  product-level string (Anuj: title doesn't change when you switch the config).
+  Fix: for the option that actually varies, replace whichever NON-selected value
+  shows up in the title with the selected variant's value — matching both the
+  spaced ("2 TB") and unspaced ("2TB") forms, since catalog titles drop the
+  space. The heuristic is gated to DGX (_is_dgx) so a short/common option value
+  on some other product (a size "S", a colour) can't coincidentally match and
+  corrupt an unrelated title; single-variant / non-DGX titles pass through
+  untouched. A custom.variant_title metafield on the variant, if set, overrides
+  outright (honoured on any product, not just DGX).
+{%- endcomment -%}
+{%- assign _display_title = product.title -%}
+{%- if _v.metafields.custom.variant_title != blank -%}
+  {%- assign _display_title = _v.metafields.custom.variant_title -%}
+{%- elsif _is_dgx and product.has_only_default_variant == false -%}
+  {%- assign _vpos = 0 -%}
+  {%- for _opt in product.options_with_values -%}
+    {%- if _opt.values.size > 1 -%}{%- assign _vpos = _opt.position -%}{%- endif -%}
+  {%- endfor -%}
+  {%- if _vpos > 0 -%}
+    {%- assign _sel = _v.option1 -%}
+    {%- if _vpos == 2 -%}{%- assign _sel = _v.option2 -%}{%- elsif _vpos == 3 -%}{%- assign _sel = _v.option3 -%}{%- endif -%}
+    {%- assign _sel_ns = _sel | replace: ' ', '' -%}
+    {%- for _variant in product.variants -%}
+      {%- assign _val = _variant.option1 -%}
+      {%- if _vpos == 2 -%}{%- assign _val = _variant.option2 -%}{%- elsif _vpos == 3 -%}{%- assign _val = _variant.option3 -%}{%- endif -%}
+      {%- unless _val == _sel -%}
+        {%- assign _val_ns = _val | replace: ' ', '' -%}
+        {%- if _display_title contains _val -%}
+          {%- assign _display_title = _display_title | replace: _val, _sel -%}
+        {%- elsif _display_title contains _val_ns -%}
+          {%- assign _display_title = _display_title | replace: _val_ns, _sel_ns -%}
+        {%- endif -%}
+      {%- endunless -%}
+    {%- endfor -%}
+  {%- endif -%}
+{%- endif -%}
+
 {%- comment -%} ── MPN: prefer metafield, fall back to SKU so the line never goes empty ── {%- endcomment -%}
 {%- assign _mpn = product.metafields.custom.mpn | default: product.metafields.specs.mpn -%}
 {%- if _mpn == blank -%}
@@ -228,7 +271,7 @@
         <a href="{{ collection.url }}" class="pm-pdp__crumb-link">{{ collection.title }}</a>
       {%- endif -%}
       <svg class="pm-pdp__crumb-sep" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
-      <span class="pm-pdp__crumb-current">{{ product.title | truncate: 80 }}</span>
+      <span class="pm-pdp__crumb-current">{{ _display_title | truncate: 80 }}</span>
     </nav>
 
     {%- comment -%} ── Main grid: Gallery + Info pane ─────────────────────── {%- endcomment -%}
@@ -388,7 +431,7 @@
 
         {%- comment -%} ── Details column ─────────────────────────────── {%- endcomment -%}
         <div class="pm-pdp__details">
-          <h1 class="pm-pdp__title">{{ product.title }}</h1>
+          <h1 class="pm-pdp__title">{{ _display_title }}</h1>
 
           {%- if product.vendor != blank -%}
             <a href="{{ routes.collections_url }}/vendors?q={{ product.vendor | url_encode }}" class="pm-pdp__brand">{{ product.vendor }}</a>
