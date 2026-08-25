@@ -49,25 +49,37 @@
 {%- endif -%}
 
 {%- comment -%}
-  ── Per-variant H1 title ──
-  The merged DGX Spark systems share ONE product title with a config token
-  baked in — ASUS "…128GB LPDDR5X 1TB NVMe SSD…", HP "…128GB - 4TB SSD…",
-  MSI "…EdgeXpert12S…". Each variant RELOADS (data-pm-variant-reload), so every
-  other field already tracks _v; the title was the one thing stuck on the
-  product-level string (Anuj: title doesn't change when you switch the config).
-  Fix: for the option that actually varies, replace whichever NON-selected value
-  shows up in the title with the selected variant's value — matching both the
-  spaced ("2 TB") and unspaced ("2TB") forms, since catalog titles drop the
-  space. The heuristic is gated to DGX (_is_dgx) so a short/common option value
-  on some other product (a size "S", a colour) can't coincidentally match and
-  corrupt an unrelated title; single-variant / non-DGX titles pass through
-  untouched. A custom.variant_title metafield on the variant, if set, overrides
+  ── Per-variant title + description ──
+  The merged DGX Spark systems share ONE product-level title AND description
+  with a config token baked in — ASUS "…128GB LPDDR5X 1TB NVMe SSD…", HP
+  "…128GB - 4TB SSD…", MSI "…EdgeXpert12S…" title / "…EdgeXpert-12SUS…" copy.
+  Each variant RELOADS (data-pm-variant-reload), so every variant-level field
+  already tracks _v; the title, breadcrumb and description copy were the pieces
+  still stuck on the product-level string (Anuj: they don't change when you
+  switch the config). Fix: for the option that actually varies, replace whichever
+  NON-selected value shows up in the text with the selected variant's value —
+  matching both the spaced ("2 TB") and unspaced ("2TB"/"12S") forms, since
+  catalog copy drops the space. Each swap only fires when the exact token is
+  present, so generic descriptions (ASUS/HP name no storage figure) pass through
+  untouched. Gated to DGX (_is_dgx) so a short/common option value on another
+  product (a size "S", a colour) can't coincidentally match and corrupt unrelated
+  copy; single-variant / non-DGX pages pass straight through. Per-variant
+  custom.variant_title / custom.variant_description metafields, if set, override
   outright (honoured on any product, not just DGX).
 {%- endcomment -%}
 {%- assign _display_title = product.title -%}
+{%- assign _display_desc = product.description -%}
+{%- assign _title_locked = false -%}
+{%- assign _desc_locked = false -%}
 {%- if _v.metafields.custom.variant_title != blank -%}
   {%- assign _display_title = _v.metafields.custom.variant_title -%}
-{%- elsif _is_dgx and product.has_only_default_variant == false -%}
+  {%- assign _title_locked = true -%}
+{%- endif -%}
+{%- if _v.metafields.custom.variant_description != blank -%}
+  {%- assign _display_desc = _v.metafields.custom.variant_description -%}
+  {%- assign _desc_locked = true -%}
+{%- endif -%}
+{%- if _is_dgx and product.has_only_default_variant == false -%}
   {%- assign _vpos = 0 -%}
   {%- for _opt in product.options_with_values -%}
     {%- if _opt.values.size > 1 -%}{%- assign _vpos = _opt.position -%}{%- endif -%}
@@ -81,11 +93,20 @@
       {%- if _vpos == 2 -%}{%- assign _val = _variant.option2 -%}{%- elsif _vpos == 3 -%}{%- assign _val = _variant.option3 -%}{%- endif -%}
       {%- unless _val == _sel -%}
         {%- assign _val_ns = _val | replace: ' ', '' -%}
-        {%- if _display_title contains _val -%}
-          {%- assign _display_title = _display_title | replace: _val, _sel -%}
-        {%- elsif _display_title contains _val_ns -%}
-          {%- assign _display_title = _display_title | replace: _val_ns, _sel_ns -%}
-        {%- endif -%}
+        {%- unless _title_locked -%}
+          {%- if _display_title contains _val -%}
+            {%- assign _display_title = _display_title | replace: _val, _sel -%}
+          {%- elsif _display_title contains _val_ns -%}
+            {%- assign _display_title = _display_title | replace: _val_ns, _sel_ns -%}
+          {%- endif -%}
+        {%- endunless -%}
+        {%- unless _desc_locked -%}
+          {%- if _display_desc contains _val -%}
+            {%- assign _display_desc = _display_desc | replace: _val, _sel -%}
+          {%- elsif _display_desc contains _val_ns -%}
+            {%- assign _display_desc = _display_desc | replace: _val_ns, _sel_ns -%}
+          {%- endif -%}
+        {%- endunless -%}
       {%- endunless -%}
     {%- endfor -%}
   {%- endif -%}
@@ -241,7 +262,7 @@
 
   <script id="pm-pdp-pdf-data" type="application/json">
   {
-    "title": {{ product.title | json | replace: '</', '<\/' }},
+    "title": {{ _display_title | json | replace: '</', '<\/' }},
     "vendor": {{ product.vendor | default: '' | json | replace: '</', '<\/' }},
     "sku": {{ _sku | default: '' | json | replace: '</', '<\/' }},
     "mpn": {{ _mpn | default: '' | json | replace: '</', '<\/' }},
@@ -252,7 +273,7 @@
     "available": {% if _instock %}true{% else %}false{% endif %},
     "stock": {{ _stock | default: 0 }},
     "image": {% if product.featured_image %}{{ product.featured_image | image_url: width: 1200 | json | replace: '</', '<\/' }}{% else %}""{% endif %},
-    "description_html": {{ product.description | default: '' | json | replace: '</', '<\/' }},
+    "description_html": {{ _display_desc | default: '' | json | replace: '</', '<\/' }},
     "features": {{ _features_json }},
     "specs": {{ _specs_json }}
   }
@@ -991,8 +1012,8 @@
         {%- comment -%} ── Description (wider, left) ─────────────────────── {%- endcomment -%}
         <div class="pm-pdp__desc-col">
           <h2 class="pm-pdp__h2">Description</h2>
-          {%- if product.description != blank -%}
-            <div class="pm-pdp__desc-body rte">{{ product.description }}</div>
+          {%- if _display_desc != blank -%}
+            <div class="pm-pdp__desc-body rte">{{ _display_desc }}</div>
             {%- comment -%}
               Hide broken inline images in the migrated description. Some BigCommerce
               descriptions embedded images hosted on BC's CDN that weren't rehosted
